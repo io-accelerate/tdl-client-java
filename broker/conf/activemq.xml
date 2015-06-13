@@ -70,8 +70,15 @@
             http://activemq.apache.org/jmx.html
         -->
 
-        <managementContext>
+     <!-- 
+   <managementContext>
             <managementContext createConnector="false"/>
+        </managementContext>
+ -->
+        
+       <managementContext>
+           <managementContext  createConnector="true" 
+                    connectorHost="localhost" connectorPort="20011"/>
         </managementContext>
 
         <!--

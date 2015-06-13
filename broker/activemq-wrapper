@@ -40,4 +40,11 @@ EXTRA_OPTS="xbean:file:${conf_file}"
 if [ "$1" == "stop" ]; then
    EXTRA_OPTS=""
 fi
+
+# Retrieve JMX options. ACTIVEMQ_OPTS is being used by the activemq_bin
+JMX_HOST=`cat ${conf_file} | grep -oe "connectorHost=[^ ]*" | cut -d "\"" -f2`
+JMX_PORT=`cat ${conf_file} | grep -oe "connectorPort=[^ ]*" | cut -d "\"" -f2`
+export ACTIVEMQ_OPTS="-Dactivemq.jmx.url=service:jmx:rmi:///jndi/rmi://${JMX_HOST}:${JMX_PORT}/jmxrmi"
+
+# Run
 ${activemq_bin} "$@" "${EXTRA_OPTS}"
