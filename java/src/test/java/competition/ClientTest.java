@@ -10,6 +10,8 @@ public class ClientTest {
 
     @Before
     public void setUp() throws Exception {
+
+
         // Before testing make sure activemq broker is up and running
 
         // External ActiveMq embedded into this repo
