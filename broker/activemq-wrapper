@@ -35,4 +35,9 @@ chmod u+x "${activemq_bin}"
 
 # Wrap the activemq broker commands
 echo "Execute: ${activemq_bin}"
-${activemq_bin} "$@" "xbean:file:${CONF_FOLDER}/activemq.xml"
+conf_file="${CONF_FOLDER}/activemq.xml"
+EXTRA_OPTS="xbean:file:${conf_file}"
+if [ "$1" == "stop" ]; then
+   EXTRA_OPTS=""
+fi
+${activemq_bin} "$@" "${EXTRA_OPTS}"

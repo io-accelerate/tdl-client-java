@@ -24,7 +24,7 @@
     <!-- Allows us to use system properties as variables in this configuration file -->
     <bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
         <property name="locations">
-            <value>file:${activemq.conf}/credentials.properties</value>
+            <value>credentials.properties</value>
         </property>
     </bean>
 
@@ -37,7 +37,9 @@
     <!--
         The <broker> element is used to configure the ActiveMQ broker.
     -->
-    <broker xmlns="http://activemq.apache.org/schema/core" brokerName="localhost" dataDirectory="${activemq.data}">
+    <broker xmlns="http://activemq.apache.org/schema/core" 
+            brokerName="TEST.BROKER" dataDirectory="${activemq.data}"
+            useJmx="true">
 
         <destinationPolicy>
             <policyMap>
@@ -67,8 +69,9 @@
 
             http://activemq.apache.org/jmx.html
         -->
+
         <managementContext>
-           <managementContext connectorPort="20011" jmxDomainName="test-activemq.domain"/>
+            <managementContext createConnector="false"/>
         </managementContext>
 
         <!--
