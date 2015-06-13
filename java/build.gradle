@@ -8,6 +8,7 @@ repositories {
 }
 
 dependencies {
+    compile 'com.google.guava:guava:18.0'
     compile 'org.apache.activemq:activemq-client:5.11.1'
 
     testCompile ('junit:junit:4.12') {
