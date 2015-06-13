@@ -2,6 +2,7 @@
 
 SCRIPT_FOLDER="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CACHE_FOLDER="${SCRIPT_FOLDER}/.cache"
+CONF_FOLDER="${SCRIPT_FOLDER}/conf"
 mkdir -p "${CACHE_FOLDER}"
 
 function echo_error() { echo "$@" 1>&2; }
@@ -34,4 +35,4 @@ chmod u+x "${activemq_bin}"
 
 # Wrap the activemq broker commands
 echo "Execute: ${activemq_bin}"
-${activemq_bin} "$@"
+${activemq_bin} "$@" "xbean:file:${CONF_FOLDER}/activemq.xml"
