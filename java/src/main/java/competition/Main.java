@@ -12,6 +12,12 @@ import java.util.Map;
 public class Main {
 
 
+    // 1. The first start of the client should not consume any messages
+    // 2. Returning null from business method should stop the processing
+    // 3. Throwing messages from business method should stop the processing
+    // 4. Returning a valid response should not consume messages if the user does not intend to go live
+    // 5. The client should process all messages if the user decides to go live
+
     public static void main(String[] args) throws Exception {
         //Debt: Should add a unit test for this entire library
         String brokerURL = "tcp://localhost:61616";
