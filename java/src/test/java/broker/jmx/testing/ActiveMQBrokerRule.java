@@ -1,8 +1,8 @@
-package utils.jmx.testing;
+package broker.jmx.testing;
 
+import broker.jmx.RemoteJmxBroker;
 import org.junit.rules.ExternalResource;
-import utils.jmx.RemoteJmxBroker;
-import utils.jmx.RemoteJmxQueue;
+import broker.jmx.RemoteJmxQueue;
 
 /**
  * Created by julianghionoiu on 13/06/2015.

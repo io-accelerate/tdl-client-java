@@ -5,8 +5,8 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
-import utils.jmx.RemoteJmxQueue;
-import utils.jmx.testing.ActiveMQBrokerRule;
+import broker.jmx.RemoteJmxQueue;
+import broker.jmx.testing.ActiveMQBrokerRule;
 
 import java.util.List;
 
@@ -24,65 +24,81 @@ public class ClientAcceptanceTest {
             "X1, 1",
             "X2, 6");
 
+
+
+    private static final int JMX_PORT = 20011;
+    private static final int OPENWIRE_PORT = 21616;
+    public static final String BROKER_URL = "tcp://localhost:"+OPENWIRE_PORT;
+
     @ClassRule
-    public static ActiveMQBrokerRule broker = new ActiveMQBrokerRule("localhost", 20011, "TEST.BROKER");
+    public static ActiveMQBrokerRule broker = new ActiveMQBrokerRule("localhost", JMX_PORT, "TEST.BROKER");
+
+
 
     //Queues
     RemoteJmxQueue requestQueue;
     RemoteJmxQueue responseQueue;
+    Client client;
+    private static final String USERNAME = "test";
 
     @Before
     public void setUp() throws Exception {
         //Given we have a couple of requests waiting
-        requestQueue = broker.addQueue("test.req");
+        requestQueue = broker.addQueue(USERNAME +".req");
         requestQueue.purge();
         requestQueue.sendTextMessage("X1, 0");
         requestQueue.sendTextMessage("X2, 5");
 
         //And no responses
-        responseQueue = broker.addQueue("test.resp");
+        responseQueue = broker.addQueue(USERNAME +".resp");
         responseQueue.purge();
+
+        //Initialize client
+        client = new Client(BROKER_URL, USERNAME);
     }
 
-    @Ignore("Work in progress")
+    //~~~~ Go live
+
     @Test
     public void if_user_goes_live_client_should_process_all_messages() throws Exception {
-        // Client is set to go live
 
-        // Start client with correct implementation
+        client.goLiveWith(params -> {
+            Integer param = Integer.parseInt(params);
+            return param + 1;
+        });
 
-        assertThat(requestQueue.getSize(), equalTo(asLong(0)));
-        assertThat(responseQueue.getMessageContents(), equalTo(EXPECTED_RESPONSES));
+        assertThat("Requests have not been consumed",requestQueue.getSize(), equalTo(asLong(0)));
+        assertThat("The responses are not correct",responseQueue.getMessageContents(), equalTo(EXPECTED_RESPONSES));
     }
 
-    @Test
-    public void if_user_does_not_go_live_client_should_not_consume_or_publish_any_messages() throws Exception {
-        // Client is set in development mode (not live)
-
-        // Start client with correct implementation
-
-        // Queues are untouched
-
-        assertQueuesAreUntouched();
-    }
-
+    @Ignore("Not implemented")
     @Test
     public void returning_null_from_user_method_should_stop_all_processing() throws Exception {
-        // Client is set to go live
 
-        // Start client with null implementation
+        client.goLiveWith(param -> null);
 
-        // Queues are untouched
         assertQueuesAreUntouched();
     }
 
+    @Ignore("Not implemented")
     @Test
     public void throwing_exceptions_from_user_method_should_stop_all_processing() throws Exception {
-        // Client is set to go live
 
-        // Start client with faulty
+        client.goLiveWith(param -> {
+            throw new IllegalArgumentException("s");
+        });
 
-        // Queues are untouched
+        assertQueuesAreUntouched();
+    }
+
+    //~~~~ Trial run
+
+    @Ignore("Not implemented")
+    @Test
+    public void if_user_does_a_trial_run_should_not_consume_or_publish_any_messages() throws Exception {
+
+        client.trialRunWith();
+
         assertQueuesAreUntouched();
     }
 
@@ -94,6 +110,6 @@ public class ClientAcceptanceTest {
     }
 
     private static Long asLong(Integer value) {
-        return new Long(value);
+        return (long) value;
     }
 }

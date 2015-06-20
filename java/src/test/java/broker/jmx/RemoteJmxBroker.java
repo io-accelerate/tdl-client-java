@@ -1,14 +1,10 @@
-package utils.jmx;
+package broker.jmx;
 
 import javax.management.MBeanServerConnection;
 import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
 import java.io.IOException;
-
-import static utils.jmx.JmxUtils.asBroker;
-import static utils.jmx.JmxUtils.params;
-import static utils.jmx.JmxUtils.types;
 
 /**
  * Created by julianghionoiu on 13/06/2015.
@@ -38,13 +34,13 @@ public class RemoteJmxBroker {
     }
 
     public RemoteJmxQueue addQueue(String queueName) throws Exception {
-        jmxSession.invoke(asBroker(brokerName),
-                "addQueue", params(queueName), types(String.class.getName()));
+        jmxSession.invoke(JmxUtils.asBroker(brokerName),
+                "addQueue", JmxUtils.params(queueName), JmxUtils.types(String.class.getName()));
         return getQueue(queueName);
     }
 
     public void removeQueue(String queueName) throws Exception {
-        jmxSession.invoke(asBroker(brokerName),
-                "removeQueue", params(queueName), types(String.class.getName()));
+        jmxSession.invoke(JmxUtils.asBroker(brokerName),
+                "removeQueue", JmxUtils.params(queueName), JmxUtils.types(String.class.getName()));
     }
 }

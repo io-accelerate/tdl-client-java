@@ -1,4 +1,4 @@
-package utils.jmx;
+package broker.jmx;
 
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
