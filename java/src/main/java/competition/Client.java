@@ -15,50 +15,81 @@ public class Client {
     private final String brokerURL;
     private final String username;
 
-    private static final long REQUEST_TIMEOUT = 1000L;
-
     public Client(String brokerURL, String username) {
         this.brokerURL = brokerURL;
         this.username = username;
     }
 
-    public void goLiveWith(RequestListener requestListener) {
-        performMagic(requestListener, true);
+    public void goLiveWith(UserImplementation userImplementation) {
+        performMagic(userImplementation, connection -> new RespondToAllRequests(connection));
 
     }
 
-    public void trialRunWith(RequestListener requestListener) {
-        performMagic(requestListener, false);
+    public void trialRunWith(UserImplementation userImplementation) {
+        performMagic(userImplementation, connection -> new PeekAtFirstRequest(connection));
     }
 
-    private void performMagic(RequestListener requestListener, boolean isGoLive) {
-        //Design: this whole code can be abstracted into something
-        try (CompetitionServerConnection connection = new CompetitionServerConnection(brokerURL, username)){
-            CompetitionMessageListener competitionMessageListener = new CompetitionMessageListener(requestListener);
+    @FunctionalInterface
+    private interface ProcessingStrategy {
+        void processUsing(MessageProcessor messageProcessor) throws JMSException;
+    }
 
-            //Design: The wait time should be bigger in order to handle network delays
-            Message message = connection.receive(REQUEST_TIMEOUT);
+    @FunctionalInterface
+    private interface ProcessingStrategyBuilder {
+        ProcessingStrategy buildOn(CompetitionServerConnection connection) throws JMSException;
+    }
 
+    private static class RespondToAllRequests implements ProcessingStrategy {
+        private CompetitionServerConnection connection;
 
-            if (isGoLive) {
-                while (message != null) {
-                    //Design: This method could exit if we put a special close message to the queue
-                    Response response = competitionMessageListener.doMessage(message);
-                    if (response == null ) {
-                        break;
-                    }
+        public RespondToAllRequests(CompetitionServerConnection connection) {
+            this.connection = connection;
+        }
 
-
-                    connection.send(response.getRequestId() + ", " + response.getResult());
-                    message.acknowledge();
-                    message = connection.receive(REQUEST_TIMEOUT);
+        @Override
+        public void processUsing(MessageProcessor messageProcessor) throws JMSException {
+            Message message = connection.receive();
+            while (message != null) {
+                Response response = messageProcessor.onRequest(message);
+                if ( response == null ) {
+                    break;
                 }
 
-            } else {
-                if (message != null) {
-                    competitionMessageListener.doMessage(message);
-                }
+                connection.send(response.getRequestId() + ", " + response.getResult());
+                message.acknowledge();
+
+                //Obs: This method could exit faster if we put a special close message to the queue
+                message = connection.receive();
             }
+        }
+    }
+
+    private static class PeekAtFirstRequest implements ProcessingStrategy {
+        private CompetitionServerConnection connection;
+
+        private PeekAtFirstRequest(CompetitionServerConnection connection) {
+            this.connection = connection;
+        }
+
+        @Override
+        public void processUsing(MessageProcessor messageProcessor) throws JMSException {
+            Message message = connection.receive();
+            if (message != null) {
+                messageProcessor.onRequest(message);
+            }
+        }
+    }
+
+
+    private void performMagic(UserImplementation userImplementation, ProcessingStrategyBuilder processingStrategyBuilder) {
+        //Obs: this whole code can be abstracted into something
+        try (CompetitionServerConnection connection = new CompetitionServerConnection(brokerURL, username)){
+            MessageProcessor messageProcessor = new MessageProcessor(userImplementation);
+            processingStrategyBuilder
+                    .buildOn(connection)
+                    .processUsing(messageProcessor);
+
+
             LoggerFactory.getLogger(Client.class).info("Stopping client.");
         } catch (Exception e) {
             LOGGER.error("Problem communicating with the broker", e);
@@ -84,6 +115,8 @@ public class Client {
     }
 
     private static class CompetitionServerConnection implements AutoCloseable {
+        private static final long REQUEST_TIMEOUT = 1000L;
+
         private final Connection connection;
         private final Session session;
         private final MessageConsumer messageConsumer;
@@ -105,8 +138,10 @@ public class Client {
             messageProducer.setDeliveryMode(DeliveryMode.NON_PERSISTENT);
         }
 
-        public Message receive(long timeout) throws JMSException {
-            return messageConsumer.receive(timeout);
+        public Message receive() throws JMSException {
+
+            //Obs: We should have no timeout
+            return messageConsumer.receive(REQUEST_TIMEOUT);
         }
 
         public void send(String content) throws JMSException {
@@ -123,16 +158,17 @@ public class Client {
     }
 
 
-    private static class CompetitionMessageListener {
-        private final RequestListener requestListener;
+    private static class MessageProcessor {
+        private final UserImplementation userImplementation;
 
-        public CompetitionMessageListener(RequestListener requestListener) {
-            this.requestListener = requestListener;
+        public MessageProcessor(UserImplementation userImplementation) {
+            this.userImplementation = userImplementation;
         }
 
-        public Response doMessage(Message message) {
+        public Response onRequest(Message message) {
             Response response = null;
             try {
+                //Debt: The serialization strategy should be abstracted
                 //Future: The serialization strategy should be revisited. It has to use standard protocols.
                 String messageText = "";
                 if (message instanceof TextMessage) {
@@ -148,7 +184,7 @@ public class Client {
 
                 //Deserialize
                 String[] items = messageText.split(", ", 2);
-                LoggerFactory.getLogger(CompetitionMessageListener.class)
+                LoggerFactory.getLogger(MessageProcessor.class)
                         .debug("Items: " + Arrays.toString(items));
                 String requestId = items[0];
                 String serializedParams = items[1];
@@ -158,16 +194,16 @@ public class Client {
                 Object result = null;
                 boolean responseOk = true;
                 try {
-                    result = requestListener.onRequest(serializedParams);
+                    result = userImplementation.process(serializedParams);
                 } catch (Exception e) {
-                    LoggerFactory.getLogger(CompetitionMessageListener.class)
+                    LoggerFactory.getLogger(MessageProcessor.class)
                             .info("The user implementation has thrown exception.", e);
                     responseOk = false;
                 }
 
 
                 if (result == null) {
-                    LoggerFactory.getLogger(CompetitionMessageListener.class)
+                    LoggerFactory.getLogger(MessageProcessor.class)
                             .info("User implementation has returned \"null\".");
                     responseOk = false;
                 }
@@ -179,17 +215,16 @@ public class Client {
                     System.out.println("id = " + requestId + ", req = " + serializedParams + ", resp = " + serializedResponse);
                 }
             } catch (JMSException e) {
-                //DEBT: Fix logging (no binding found)
-                LoggerFactory.getLogger(CompetitionMessageListener.class).error("Error sending response", e);
+                LoggerFactory.getLogger(MessageProcessor.class).error("Error sending response", e);
             }
 
             return response;
         }
     }
 
-    //Design: serializedParam can become Request and the returned object could be called Response
+    //Obs: serializedParam can become Request and the returned object could be called Response
     @FunctionalInterface
-    public interface RequestListener {
-        Object onRequest(String serializedParam);
+    public interface UserImplementation {
+        Object process(String serializedParam);
     }
 }

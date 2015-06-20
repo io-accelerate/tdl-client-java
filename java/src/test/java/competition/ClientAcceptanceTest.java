@@ -6,7 +6,6 @@ import org.junit.contrib.java.lang.system.SystemOutRule;
 import utils.jmx.broker.RemoteJmxQueue;
 import utils.jmx.broker.testing.ActiveMQBrokerRule;
 
-import java.util.Arrays;
 import java.util.List;
 
 import static org.hamcrest.Matchers.containsString;
@@ -29,7 +28,7 @@ public class ClientAcceptanceTest {
     private static final List<String> EXPECTED_DISPLAYED_TEXT = Lists.newArrayList(
             FIRST_EXPECTED_TEXT, SECOND_EXPECTED_TEXT);
 
-    private static final Client.RequestListener CORRECT_SOLUTION = serializedParams -> {
+    private static final Client.UserImplementation CORRECT_SOLUTION = serializedParams -> {
         String[] params = serializedParams.split(", ");
         Integer x = Integer.parseInt(params[0]);
         Integer y = Integer.parseInt(params[1]);
