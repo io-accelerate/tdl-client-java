@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.jms.*;
+import java.util.Arrays;
 
 /**
  * Created by julianghionoiu on 20/06/2015.
@@ -137,16 +138,18 @@ public class Client {
                 }
 
                 //Deserialize
-                String[] items = messageText.split(", ");
+                String[] items = messageText.split(", ", 2);
+                LoggerFactory.getLogger(CompetitionMessageListener.class)
+                        .debug("Items: " + Arrays.toString(items));
                 String requestId = items[0];
-                String serializedParam = items[1];
+                String serializedParams = items[1];
 
                 //DEBT: Very complex conditional logic should refactor
                 //Compute
                 Object response = null;
                 boolean responseOk = true;
                 try {
-                    response = requestListener.onRequest(serializedParam);
+                    response = requestListener.onRequest(serializedParams);
                 } catch (Exception e) {
                     LoggerFactory.getLogger(CompetitionMessageListener.class)
                             .info("The user implementation has thrown exception.", e);
@@ -163,7 +166,7 @@ public class Client {
                 if (responseOk) {
                     //Serialize
                     String serializedResponse = response.toString();
-                    System.out.println("id = " + requestId + ", req = " + serializedParam + ", resp = " + serializedResponse);
+                    System.out.println("id = " + requestId + ", req = " + serializedParams + ", resp = " + serializedResponse);
 
                     //Serialize and respond
                     if (isGoLive) {

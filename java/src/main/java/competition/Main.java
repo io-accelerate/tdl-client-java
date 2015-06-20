@@ -7,10 +7,13 @@ public class Main {
 
 
     public static void main(String[] args) throws Exception {
-        new Client("tcp://localhost:21616", "jgh").goLiveWith((String serializedParam) -> {
-            Integer param = Integer.parseInt(serializedParam);
-            return param + 1;
-        });
+        Client client = new Client("tcp://localhost:21616", "jgh");
 
+        client.goLiveWith(serializedParams -> {
+            String[] params = serializedParams.split(", ");
+            Integer x = Integer.parseInt(params[0]);
+            Integer y = Integer.parseInt(params[1]);
+            return x + y;
+        });
     }
 }

@@ -6,6 +6,7 @@ import org.junit.contrib.java.lang.system.SystemOutRule;
 import utils.jmx.broker.RemoteJmxQueue;
 import utils.jmx.broker.testing.ActiveMQBrokerRule;
 
+import java.util.Arrays;
 import java.util.List;
 
 import static org.hamcrest.Matchers.containsString;
@@ -18,15 +19,22 @@ import static org.junit.Assert.assertThat;
  */
 public class ClientAcceptanceTest {
     private static final List<String> REQUESTS = Lists.newArrayList(
-            "X1, 0",
-            "X2, 5");
+            "X1, 0, 1",
+            "X2, 5, 6");
     private static final List<String> EXPECTED_RESPONSES = Lists.newArrayList(
             "X1, 1",
-            "X2, 6");
-    private static final String FIRST_EXPECTED_TEXT = "id = X1, req = 0, resp = 1";
-    private static final String SECOND_EXPECTED_TEXT = "id = X2, req = 5, resp = 6";
+            "X2, 11");
+    private static final String FIRST_EXPECTED_TEXT  = "id = X1, req = 0, 1, resp = 1";
+    private static final String SECOND_EXPECTED_TEXT = "id = X2, req = 5, 6, resp = 11";
     private static final List<String> EXPECTED_DISPLAYED_TEXT = Lists.newArrayList(
             FIRST_EXPECTED_TEXT, SECOND_EXPECTED_TEXT);
+
+    private static final Client.RequestListener CORRECT_SOLUTION = serializedParams -> {
+        String[] params = serializedParams.split(", ");
+        Integer x = Integer.parseInt(params[0]);
+        Integer y = Integer.parseInt(params[1]);
+        return x + y;
+    };
 
 
     private static final int JMX_PORT = 20011;
@@ -52,8 +60,9 @@ public class ClientAcceptanceTest {
         //Given we have a couple of requests waiting
         requestQueue = broker.addQueue(test +".req");
         requestQueue.purge();
-        requestQueue.sendTextMessage("X1, 0");
-        requestQueue.sendTextMessage("X2, 5");
+        for (String request : REQUESTS) {
+            requestQueue.sendTextMessage(request);
+        }
 
         //And no responses
         responseQueue = broker.addQueue(test +".resp");
@@ -68,10 +77,7 @@ public class ClientAcceptanceTest {
     @Test
     public void if_user_goes_live_client_should_process_all_messages() throws Exception {
 
-        client.goLiveWith(params -> {
-            Integer param = Integer.parseInt(params);
-            return param + 1;
-        });
+        client.goLiveWith(CORRECT_SOLUTION);
 
         assertThat("Requests have not been consumed",requestQueue.getSize(), equalTo(asLong(0)));
         assertThat("The responses are not correct",responseQueue.getMessageContents(), equalTo(EXPECTED_RESPONSES));
@@ -80,10 +86,7 @@ public class ClientAcceptanceTest {
     @Test
     public void a_run_should_show_the_messages_and_the_responses() throws Exception {
 
-        client.goLiveWith(params -> {
-            Integer param = Integer.parseInt(params);
-            return param + 1;
-        });
+        client.goLiveWith(CORRECT_SOLUTION);
 
         String output = systemOutRule.getLog();
         for (String expectedLine : EXPECTED_DISPLAYED_TEXT) {
@@ -114,10 +117,7 @@ public class ClientAcceptanceTest {
     @Test
     public void a_trial_run_should_only_show_the_first_message_and_the_response() throws Exception {
 
-        client.trialRunWith(params -> {
-            Integer param = Integer.parseInt(params);
-            return param + 1;
-        });
+        client.trialRunWith(CORRECT_SOLUTION);
 
         String output = systemOutRule.getLog();
         assertThat("Expected displayed response and request",
@@ -129,10 +129,7 @@ public class ClientAcceptanceTest {
     @Test
     public void if_user_does_a_trial_run_should_not_consume_or_publish_any_messages() throws Exception {
 
-        client.trialRunWith(params -> {
-            Integer param = Integer.parseInt(params);
-            return param + 1;
-        });
+        client.trialRunWith(CORRECT_SOLUTION);
 
         assertQueuesAreUntouched();
     }
