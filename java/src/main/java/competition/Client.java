@@ -24,6 +24,15 @@ public class Client {
     //Design: A factory will be useful
 
     public void goLiveWith(RequestListener requestListener) {
+        performMagic(requestListener);
+
+    }
+
+    public void trialRunWith(RequestListener requestListener) {
+        performMagic(requestListener);
+    }
+
+    private void performMagic(RequestListener requestListener) {
         //Debt: Should add a unit test for this entire library
         String requestQueue = username +".req";
         String responseQueue = username +".resp";
@@ -71,10 +80,6 @@ public class Client {
                 //At least we tried
             }
         }
-    }
-
-    public void trialRunWith(RequestListener requestListener) {
-
     }
 
     private static class CompetitionMessageProducer {
@@ -133,8 +138,7 @@ public class Client {
                 String requestId = items[0];
                 String serializedParam = items[1];
 
-                //DEBT: Complex conditional logic
-
+                //DEBT: Very complex conditional logic should refactor
                 //Compute
                 Object response = null;
                 boolean responseOk = true;
@@ -159,7 +163,7 @@ public class Client {
 
                     //Serialize and respond
                     producer.send(requestId + ", " + serializedResponse);
-                    System.out.println("id = " + requestId + ", req = " + serializedParam + ", resp: " + serializedResponse);
+                    System.out.println("id = " + requestId + ", req = " + serializedParam + ", resp = " + serializedResponse);
                     message.acknowledge();
                     shouldContinue = true;
                 }
@@ -172,6 +176,7 @@ public class Client {
         }
     }
 
+    @FunctionalInterface
     public interface RequestListener {
         Object onRequest(String serializedParam);
     }

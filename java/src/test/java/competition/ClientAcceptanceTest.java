@@ -1,15 +1,14 @@
 package competition;
 
 import com.google.common.collect.Lists;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.*;
+import org.junit.contrib.java.lang.system.SystemOutRule;
 import utils.jmx.broker.RemoteJmxQueue;
 import utils.jmx.broker.testing.ActiveMQBrokerRule;
 
 import java.util.List;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
 
@@ -17,12 +16,18 @@ import static org.junit.Assert.assertThat;
  * Created by julianghionoiu on 13/06/2015.
  */
 public class ClientAcceptanceTest {
+
     List<String> REQUESTS = Lists.newArrayList(
             "X1, 0",
             "X2, 5");
     List<String> EXPECTED_RESPONSES = Lists.newArrayList(
             "X1, 1",
             "X2, 6");
+    List<String> EXPECTED_DISPLAYED_TEXT = Lists.newArrayList(
+            "id = X1, req = 0, resp = 1",
+            "id = X2, req = 5, resp = 6");
+
+
 
 
 
@@ -33,6 +38,8 @@ public class ClientAcceptanceTest {
     @ClassRule
     public static ActiveMQBrokerRule broker = new ActiveMQBrokerRule("localhost", JMX_PORT, "TEST.BROKER");
 
+    @Rule
+    public final SystemOutRule systemOutRule = new SystemOutRule().enableLog();
 
 
     //Queues
@@ -72,6 +79,18 @@ public class ClientAcceptanceTest {
         assertThat("The responses are not correct",responseQueue.getMessageContents(), equalTo(EXPECTED_RESPONSES));
     }
 
+    @Test
+    public void a_run_should_show_the_messages_and_the_responses() throws Exception {
+
+        client.goLiveWith(params -> {
+            Integer param = Integer.parseInt(params);
+            return param + 1;
+        });
+
+        for (String expectedLine : EXPECTED_DISPLAYED_TEXT) {
+            assertThat(systemOutRule.getLog(), containsString(expectedLine));
+        }
+    }
 
     @Test
     public void returning_null_from_user_method_should_stop_all_processing() throws Exception {
@@ -85,7 +104,7 @@ public class ClientAcceptanceTest {
     public void throwing_exceptions_from_user_method_should_stop_all_processing() throws Exception {
 
         client.goLiveWith(param -> {
-            throw new IllegalArgumentException("s");
+            throw new IllegalStateException("faulty user code");
         });
 
         assertQueuesAreUntouched();
@@ -93,7 +112,6 @@ public class ClientAcceptanceTest {
 
     //~~~~ Trial run
 
-    @Ignore("WIP")
     @Test
     public void a_trial_run_should_show_the_first_message_and_the_response() throws Exception {
 
@@ -102,7 +120,7 @@ public class ClientAcceptanceTest {
             return param + 1;
         });
 
-        assertQueuesAreUntouched();
+        assertThat(systemOutRule.getLog(), containsString(EXPECTED_DISPLAYED_TEXT.get(0)));
     }
 
     @Ignore("WIP")
