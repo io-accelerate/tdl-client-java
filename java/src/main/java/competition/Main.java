@@ -11,8 +11,7 @@ public class Main {
     public static void main(String[] args) throws Exception {
         Client client = new Client("tcp://localhost:21616", "jgh");
 
-        client.goLiveWith(serializedParams -> {
-            String[] params = serializedParams.split(", ");
+        client.goLiveWith(params -> {
             Integer x = Integer.parseInt(params[0]);
             Integer y = Integer.parseInt(params[1]);
             return x + y;

@@ -20,13 +20,30 @@ public class Client {
     }
 
     public void goLiveWith(UserImplementation userImplementation) {
-        performMagic(userImplementation, connection -> new RespondToAllRequests(connection));
-
+        run(userImplementation, RespondToAllRequests::new);
     }
 
     public void trialRunWith(UserImplementation userImplementation) {
-        performMagic(userImplementation, connection -> new PeekAtFirstRequest(connection));
+        run(userImplementation, PeekAtFirstRequest::new);
     }
+
+
+    private void run(UserImplementation userImplementation, ProcessingStrategyBuilder processingStrategyBuilder) {
+        try (CentralQueueConnection connection = new CentralQueueConnection(brokerURL, username)){
+            DeserializeAndRespondToMessage deserializeAndRespondToMessage
+                    = new DeserializeAndRespondToMessage(userImplementation);
+            processingStrategyBuilder
+                    .buildOn(connection)
+                    .processUsing(deserializeAndRespondToMessage);
+
+            LoggerFactory.getLogger(Client.class).info("Stopping client.");
+        } catch (Exception e) {
+            LOGGER.error("Problem communicating with the broker", e);
+        }
+    }
+
+
+    //~~~~ Processing strategies
 
     @FunctionalInterface
     public interface ProcessingStrategy {
@@ -47,14 +64,14 @@ public class Client {
 
         @Override
         public void processUsing(DeserializeAndRespondToMessage deserializeAndRespondToMessage) throws JMSException {
-            Message message = connection.receive();
+            StringMessage message = connection.receive();
             while (message != null) {
-                Response response = deserializeAndRespondToMessage.onRequest(message);
+                String response = deserializeAndRespondToMessage.onRequest(message.getContent());
                 if ( response == null ) {
                     break;
                 }
 
-                connection.send(response.getRequestId() + ", " + response.getResult());
+                connection.send(response);
                 message.acknowledge();
 
                 //Obs: This method could exit faster if we put a special close message to the queue
@@ -72,47 +89,40 @@ public class Client {
 
         @Override
         public void processUsing(DeserializeAndRespondToMessage deserializeAndRespondToMessage) throws JMSException {
-            Message message = connection.receive();
+            StringMessage message = connection.receive();
             if (message != null) {
-                deserializeAndRespondToMessage.onRequest(message);
+                deserializeAndRespondToMessage.onRequest(message.getContent());
             }
         }
     }
 
+    //~~~~ Transport -> Serialization -> Process
 
-    private void performMagic(UserImplementation userImplementation, ProcessingStrategyBuilder processingStrategyBuilder) {
-        //Obs: this whole code can be abstracted into something
-        try (CentralQueueConnection connection = new CentralQueueConnection(brokerURL, username)){
-            DeserializeAndRespondToMessage deserializeAndRespondToMessage
-                    = new DeserializeAndRespondToMessage(userImplementation);
-            processingStrategyBuilder
-                    .buildOn(connection)
-                    .processUsing(deserializeAndRespondToMessage);
+    private static class Request {
+        private final String requestId;
+        private final String[] params;
 
-
-            LoggerFactory.getLogger(Client.class).info("Stopping client.");
-        } catch (Exception e) {
-            LOGGER.error("Problem communicating with the broker", e);
-        }
-    }
-
-    private static class Response {
-        private String requestId;
-        private Object result;
-
-        public Response(String requestId, Object result) {
+        public Request(String requestId, String[] params) {
             this.requestId = requestId;
-            this.result = result;
+            this.params = params;
         }
 
         public String getRequestId() {
             return requestId;
         }
 
-        public Object getResult() {
-            return result;
+        public String[] getParams() {
+            return params;
         }
     }
+
+//    private static class CsvSerializationProvider {
+//
+//
+//        public Request deserialize();
+//
+//
+//    }
 
     private static class DeserializeAndRespondToMessage {
         private final UserImplementation userImplementation;
@@ -121,60 +131,49 @@ public class Client {
             this.userImplementation = userImplementation;
         }
 
-        public Response onRequest(Message message) {
+        public String onRequest(String messageText) {
             Response response = null;
-            try {
-                //Debt: The serialization strategy should be abstracted
-                //Future: The serialization strategy should be revisited. It has to use standard protocols.
-                String messageText = "";
-                if (message instanceof TextMessage) {
-                    TextMessage textMessage = (TextMessage) message;
-                    messageText = textMessage.getText();
-                }
-                if (message instanceof BytesMessage) {
-                    BytesMessage bytesMessage = (BytesMessage) message;
-                    byte[] body = new byte[(int)bytesMessage.getBodyLength()];
-                    bytesMessage.readBytes(body, (int) bytesMessage.getBodyLength());
-                    messageText = new String (body);
-                }
 
-                //Deserialize
+            //Debt: The serialization strategy should be abstracted
+            Request request;
+            {
                 String[] items = messageText.split(", ", 2);
                 LoggerFactory.getLogger(DeserializeAndRespondToMessage.class)
-                        .debug("Items: " + Arrays.toString(items));
+                        .debug("Received items: " + Arrays.toString(items));
                 String requestId = items[0];
                 String serializedParams = items[1];
 
-                //DEBT: Very complex conditional logic should refactor
-                //Compute
-                Object result = null;
-                boolean responseOk = true;
-                try {
-                    result = userImplementation.process(serializedParams);
-                } catch (Exception e) {
-                    LoggerFactory.getLogger(DeserializeAndRespondToMessage.class)
-                            .info("The user implementation has thrown exception.", e);
-                    responseOk = false;
-                }
-
-
-                if (result == null) {
-                    LoggerFactory.getLogger(DeserializeAndRespondToMessage.class)
-                            .info("User implementation has returned \"null\".");
-                    responseOk = false;
-                }
-
-                if (responseOk) {
-                    //Serialize
-                    String serializedResponse = result.toString();
-                    response = new Response(requestId, result);
-                    System.out.println("id = " + requestId + ", req = " + serializedParams + ", resp = " + serializedResponse);
-                }
-            } catch (JMSException e) {
-                LoggerFactory.getLogger(DeserializeAndRespondToMessage.class).error("Error sending response", e);
+                String[] params = serializedParams.split(", ");
+                request = new Request(requestId, params);
             }
 
-            return response;
+
+            //DEBT: Very complex conditional logic should refactor
+            //Compute
+            Object result = null;
+            boolean responseOk = true;
+            try {
+                result = userImplementation.process(request.getParams());
+            } catch (Exception e) {
+                LoggerFactory.getLogger(DeserializeAndRespondToMessage.class)
+                        .info("The user implementation has thrown exception.", e);
+                responseOk = false;
+            }
+
+            if (result == null) {
+                LoggerFactory.getLogger(DeserializeAndRespondToMessage.class)
+                        .info("User implementation has returned \"null\".");
+                responseOk = false;
+            }
+
+            if (responseOk) {
+                response = new Response(request.getRequestId(), result);
+                System.out.println("id = " + request.getRequestId() + ", " +
+                        "req = " + Arrays.asList(request.getParams()) + ", " +
+                        "resp = " + response.getResult().toString());
+            }
+
+            return response.getRequestId() + ", " + response.getResult();
         }
     }
 

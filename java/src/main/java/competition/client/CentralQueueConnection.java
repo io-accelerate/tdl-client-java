@@ -33,13 +33,9 @@ class CentralQueueConnection implements AutoCloseable {
     }
 
 
-
-    public Message receive() throws JMSException {
+    public StringMessage receive() throws JMSException {
         //Obs: We should have no timeout
-        Message message = messageConsumer.receive(REQUEST_TIMEOUT);
-
-
-        return message;
+        return new StringMessage(messageConsumer.receive(REQUEST_TIMEOUT));
     }
 
     public void send(String content) throws JMSException {

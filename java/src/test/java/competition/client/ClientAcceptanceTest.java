@@ -24,13 +24,12 @@ public class ClientAcceptanceTest {
     private static final List<String> EXPECTED_RESPONSES = Lists.newArrayList(
             "X1, 1",
             "X2, 11");
-    private static final String FIRST_EXPECTED_TEXT  = "id = X1, req = 0, 1, resp = 1";
-    private static final String SECOND_EXPECTED_TEXT = "id = X2, req = 5, 6, resp = 11";
+    private static final String FIRST_EXPECTED_TEXT  = "id = X1, req = [0, 1], resp = 1";
+    private static final String SECOND_EXPECTED_TEXT = "id = X2, req = [5, 6], resp = 11";
     private static final List<String> EXPECTED_DISPLAYED_TEXT = Lists.newArrayList(
             FIRST_EXPECTED_TEXT, SECOND_EXPECTED_TEXT);
 
-    private static final UserImplementation CORRECT_SOLUTION = serializedParams -> {
-        String[] params = serializedParams.split(", ");
+    private static final UserImplementation CORRECT_SOLUTION = params -> {
         Integer x = Integer.parseInt(params[0]);
         Integer y = Integer.parseInt(params[1]);
         return x + y;

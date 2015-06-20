@@ -5,5 +5,5 @@ package competition.client;
  */ //Obs: serializedParam can become Request and the returned object could be called Response
 @FunctionalInterface
 public interface UserImplementation {
-    Object process(String serializedParam);
+    Object process(String ... params);
 }
