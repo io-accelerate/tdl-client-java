@@ -112,6 +112,15 @@ public class ClientAcceptanceTest {
         assertQueuesAreUntouched();
     }
 
+    @Test
+    public void exit_gracefully_if_broker_not_available() throws Exception {
+        client = new Client(BROKER_URL+"1", "broker");
+
+        client.goLiveWith(CORRECT_SOLUTION);
+
+        //No exception
+    }
+
     //~~~~ Trial run
 
     @Test

@@ -31,11 +31,11 @@ public class Client {
 
     private void run(ProcessingStrategyBuilder processingStrategyBuilder, UserImplementation userImplementation) {
         try (CentralQueueConnection connection = new CentralQueueConnection(brokerURL, username)){
-            DeserializeAndRespondToMessage deserializeAndRespondToMessage
-                    = new DeserializeAndRespondToMessage(userImplementation);
+            DeserializeAndProcessMessage deserializeAndProcessMessage
+                    = new DeserializeAndProcessMessage(userImplementation);
 
             ProcessingStrategy strategy = processingStrategyBuilder.buildOn(connection);
-            strategy.processUsing(deserializeAndRespondToMessage);
+            strategy.processUsing(deserializeAndProcessMessage);
 
             LoggerFactory.getLogger(Client.class).info("Stopping client.");
         } catch (Exception e) {
@@ -47,7 +47,7 @@ public class Client {
 
     @FunctionalInterface
     public interface ProcessingStrategy {
-        void processUsing(DeserializeAndRespondToMessage deserializeAndRespondToMessage) throws JMSException;
+        void processUsing(DeserializeAndProcessMessage deserializeAndProcessMessage) throws JMSException;
     }
 
     @FunctionalInterface
@@ -65,10 +65,10 @@ public class Client {
         }
 
         @Override
-        public void processUsing(DeserializeAndRespondToMessage deserializeAndRespondToMessage) throws JMSException {
+        public void processUsing(DeserializeAndProcessMessage deserializeAndProcessMessage) throws JMSException {
             StringMessage message = connection.receive();
-            while (message != null) {
-                String response = deserializeAndRespondToMessage.onRequest(message.getContent());
+            while (message.isValid()) {
+                String response = deserializeAndProcessMessage.onRequest(message.getContent());
                 if ( response == null ) {
                     break;
                 }
@@ -90,10 +90,10 @@ public class Client {
         }
 
         @Override
-        public void processUsing(DeserializeAndRespondToMessage deserializeAndRespondToMessage) throws JMSException {
+        public void processUsing(DeserializeAndProcessMessage deserializeAndProcessMessage) throws JMSException {
             StringMessage message = connection.receive();
-            if (message != null) {
-                deserializeAndRespondToMessage.onRequest(message.getContent());
+            if (message.isValid()) {
+                deserializeAndProcessMessage.onRequest(message.getContent());
             }
         }
     }

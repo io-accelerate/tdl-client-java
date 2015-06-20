@@ -12,11 +12,11 @@ import competition.client.serialization.CsvSerializationProvider;
 /**
  * Created by julianghionoiu on 20/06/2015.
  */
-public class DeserializeAndRespondToMessage {
+public class DeserializeAndProcessMessage {
     private final CsvSerializationProvider serializationProvider;
     private final RespondToRequest responseStrategy;
 
-    public DeserializeAndRespondToMessage(UserImplementation userImplementation) {
+    public DeserializeAndProcessMessage(UserImplementation userImplementation) {
         this.serializationProvider = new CsvSerializationProvider();
         this.responseStrategy = new ValidateResponse(new AuditTraffic(new CallUserImplementation(userImplementation)));
     }

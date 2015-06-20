@@ -1,15 +1,14 @@
-package competition;
+package competition.example;
 
 import competition.client.Client;
 
 /**
  * Created by julianghionoiu on 11/06/2015.
  */
-public class Main {
+public class AddNumbersExample {
 
-    //DEBT: Provide an example on how to use logging
     public static void main(String[] args) throws Exception {
-        Client client = new Client("tcp://localhost:21616", "jgh");
+        Client client = new Client("tcp://localhost:21616", "your_user");
 
         client.goLiveWith(params -> {
             Integer x = Integer.parseInt(params[0]);

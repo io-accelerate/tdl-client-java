@@ -1,6 +1,6 @@
 package competition.client.respond;
 
-import competition.client.DeserializeAndRespondToMessage;
+import competition.client.DeserializeAndProcessMessage;
 import competition.client.abstractions.Request;
 import competition.client.abstractions.Response;
 import competition.client.abstractions.UserImplementation;
@@ -22,12 +22,12 @@ public class CallUserImplementation implements RespondToRequest {
         try {
             result = userImplementation.process(request.getParams());
         } catch (Exception e) {
-            LoggerFactory.getLogger(DeserializeAndRespondToMessage.class)
+            LoggerFactory.getLogger(DeserializeAndProcessMessage.class)
                     .info("The user implementation has thrown exception.", e);
         }
 
         if (result == null) {
-            LoggerFactory.getLogger(DeserializeAndRespondToMessage.class)
+            LoggerFactory.getLogger(DeserializeAndProcessMessage.class)
                     .info("User implementation has returned \"null\".");
         }
 

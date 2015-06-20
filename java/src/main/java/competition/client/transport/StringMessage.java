@@ -14,6 +14,10 @@ public class StringMessage {
         this.message = message;
     }
 
+    public boolean isValid() {
+        return message != null;
+    }
+
     public String getContent() throws JMSException {
         String messageText = "undecoded";
 

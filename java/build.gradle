@@ -26,8 +26,8 @@ dependencies {
 // Making the app runnable
 
 apply plugin: 'application'
-
-mainClassName = 'competition.Main'
+mainClassName = 'competition.example.AddNumbersExample'
+applicationDefaultJvmArgs = ["-Dlogback.configurationFile=logback.xml"]
 
 run {
     standardInput = System.in
