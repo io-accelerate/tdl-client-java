@@ -32,32 +32,54 @@ public class Client {
     }
 
     private void performMagic(RequestListener requestListener, boolean isGoLive) {
-        String requestQueue = username +".req";
-        String responseQueue = username +".resp";
-
-        //Design: serializedParam can become Request and the returned object could be called Response
-
         //Design: this whole code can be abstracted into something
         try (CompetitionServerConnection connection = new CompetitionServerConnection(brokerURL, username)){
-            CompetitionMessageListener competitionMessageListener = new CompetitionMessageListener(
-                    requestListener, connection, isGoLive);
+            CompetitionMessageListener competitionMessageListener = new CompetitionMessageListener(requestListener);
 
             //Design: The wait time should be bigger in order to handle network delays
             Message message = connection.receive(REQUEST_TIMEOUT);
-            while (message != null) {
-                //Design: This method could exit if we put a special close message to the queue
-                boolean shouldContinue = competitionMessageListener.doMessage(message);
 
-                if (shouldContinue && isGoLive) {
+
+            if (isGoLive) {
+                while (message != null) {
+                    //Design: This method could exit if we put a special close message to the queue
+                    Response response = competitionMessageListener.doMessage(message);
+                    if (response == null ) {
+                        break;
+                    }
+
+
+                    connection.send(response.getRequestId() + ", " + response.getResult());
+                    message.acknowledge();
                     message = connection.receive(REQUEST_TIMEOUT);
-                } else {
-                    break;
+                }
+
+            } else {
+                if (message != null) {
+                    competitionMessageListener.doMessage(message);
                 }
             }
-
             LoggerFactory.getLogger(Client.class).info("Stopping client.");
         } catch (Exception e) {
             LOGGER.error("Problem communicating with the broker", e);
+        }
+    }
+
+    private static class Response {
+        private String requestId;
+        private Object result;
+
+        public Response(String requestId, Object result) {
+            this.requestId = requestId;
+            this.result = result;
+        }
+
+        public String getRequestId() {
+            return requestId;
+        }
+
+        public Object getResult() {
+            return result;
         }
     }
 
@@ -103,17 +125,13 @@ public class Client {
 
     private static class CompetitionMessageListener {
         private final RequestListener requestListener;
-        private final CompetitionServerConnection connection;
-        private final boolean isGoLive;
 
-        public CompetitionMessageListener(RequestListener requestListener, CompetitionServerConnection connection, boolean isGoLive) {
+        public CompetitionMessageListener(RequestListener requestListener) {
             this.requestListener = requestListener;
-            this.connection = connection;
-            this.isGoLive = isGoLive;
         }
 
-        public boolean doMessage(Message message) {
-            boolean shouldContinue = false;
+        public Response doMessage(Message message) {
+            Response response = null;
             try {
                 //Future: The serialization strategy should be revisited. It has to use standard protocols.
                 String messageText = "";
@@ -137,10 +155,10 @@ public class Client {
 
                 //DEBT: Very complex conditional logic should refactor
                 //Compute
-                Object response = null;
+                Object result = null;
                 boolean responseOk = true;
                 try {
-                    response = requestListener.onRequest(serializedParams);
+                    result = requestListener.onRequest(serializedParams);
                 } catch (Exception e) {
                     LoggerFactory.getLogger(CompetitionMessageListener.class)
                             .info("The user implementation has thrown exception.", e);
@@ -148,7 +166,7 @@ public class Client {
                 }
 
 
-                if (response == null) {
+                if (result == null) {
                     LoggerFactory.getLogger(CompetitionMessageListener.class)
                             .info("User implementation has returned \"null\".");
                     responseOk = false;
@@ -156,25 +174,20 @@ public class Client {
 
                 if (responseOk) {
                     //Serialize
-                    String serializedResponse = response.toString();
+                    String serializedResponse = result.toString();
+                    response = new Response(requestId, result);
                     System.out.println("id = " + requestId + ", req = " + serializedParams + ", resp = " + serializedResponse);
-
-                    //Serialize and respond
-                    if (isGoLive) {
-                        connection.send(requestId + ", " + serializedResponse);
-                        message.acknowledge();
-                    }
-                    shouldContinue = true;
                 }
             } catch (JMSException e) {
                 //DEBT: Fix logging (no binding found)
                 LoggerFactory.getLogger(CompetitionMessageListener.class).error("Error sending response", e);
             }
 
-            return shouldContinue;
+            return response;
         }
     }
 
+    //Design: serializedParam can become Request and the returned object could be called Response
     @FunctionalInterface
     public interface RequestListener {
         Object onRequest(String serializedParam);
