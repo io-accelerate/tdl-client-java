@@ -38,24 +38,18 @@ public class Client {
         //Design: serializedParam can become Request and the returned object could be called Response
 
         //Design: this whole code can be abstracted into something
-        try (ActiveMQConnection connection = new ActiveMQConnection(brokerURL)){
-            Session session = connection.createSession(false, Session.CLIENT_ACKNOWLEDGE);
-
-            MessageConsumer responseConsumer = session.createConsumer(session.createQueue(requestQueue));
-            CompetitionMessageProducer messageProducer = CompetitionMessageProducer.createForQueue(responseQueue, session);
-
-            //This class will handle the incoming messages
+        try (CompetitionServerConnection connection = new CompetitionServerConnection(brokerURL, username)){
             CompetitionMessageListener competitionMessageListener = new CompetitionMessageListener(
-                    requestListener, messageProducer, isGoLive);
+                    requestListener, connection, isGoLive);
 
             //Design: The wait time should be bigger in order to handle network delays
-            Message message = responseConsumer.receive(REQUEST_TIMEOUT);
+            Message message = connection.receive(REQUEST_TIMEOUT);
             while (message != null) {
                 //Design: This method could exit if we put a special close message to the queue
                 boolean shouldContinue = competitionMessageListener.doMessage(message);
 
                 if (shouldContinue && isGoLive) {
-                    message = responseConsumer.receive(REQUEST_TIMEOUT);
+                    message = connection.receive(REQUEST_TIMEOUT);
                 } else {
                     break;
                 }
@@ -67,66 +61,54 @@ public class Client {
         }
     }
 
-    private static class ActiveMQConnection implements AutoCloseable {
-        private Connection connection;
-
-        public ActiveMQConnection(String brokerURL)  {
-            ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(brokerURL);
-            try {
-                connection = connectionFactory.createConnection();
-                connection.start();
-            } catch (JMSException e) {
-                connection = null;
-                e.printStackTrace();
-            }
-        }
-
-        public Session createSession(boolean transacted, int acknowledgeMode) throws JMSException {
-            return connection.createSession(transacted, acknowledgeMode);
-        }
-
-
-        @Override
-        public void close() throws Exception {
-            connection.close();
-        }
-    }
-
-    private static class CompetitionMessageProducer {
+    private static class CompetitionServerConnection implements AutoCloseable {
+        private final Connection connection;
         private final Session session;
-        private final MessageProducer producer;
+        private final MessageConsumer messageConsumer;
+        private final MessageProducer messageProducer;
 
-        //~~~ Factories
+        public CompetitionServerConnection(String brokerURL, String username) throws JMSException {
+            ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(brokerURL);
+            connection = connectionFactory.createConnection();
 
-        public CompetitionMessageProducer(Session session, MessageProducer producer) {
-            this.session = session;
-            this.producer = producer;
+            LoggerFactory.getLogger(CompetitionServerConnection.class).info("Starting client");
+            connection.start();
+            session = connection.createSession(false, Session.CLIENT_ACKNOWLEDGE);
+
+            String requestQueue = username +".req";
+            messageConsumer = session.createConsumer(session.createQueue(requestQueue));
+
+            String responseQueue = username +".resp";
+            messageProducer = session.createProducer(session.createQueue(responseQueue));
+            messageProducer.setDeliveryMode(DeliveryMode.NON_PERSISTENT);
         }
 
-        public static CompetitionMessageProducer createForQueue(String queueName, Session session) throws JMSException {
-            MessageProducer producer =  session.createProducer(session.createQueue(queueName));
-            producer.setDeliveryMode(DeliveryMode.NON_PERSISTENT);
-            return new CompetitionMessageProducer(session, producer);
+        public Message receive(long timeout) throws JMSException {
+            return messageConsumer.receive(timeout);
         }
-
-        //~~~ Actions
 
         public void send(String content) throws JMSException {
             TextMessage txtMessage = session.createTextMessage();
             txtMessage.setText(content);
-            producer.send(txtMessage);
+            messageProducer.send(txtMessage);
+        }
+
+        @Override
+        public void close() throws Exception {
+            LoggerFactory.getLogger(CompetitionServerConnection.class).info("Stopping client");
+            connection.close();
         }
     }
 
-    //DEBT: This belongs closer to the client
+
     private static class CompetitionMessageListener {
         private final RequestListener requestListener;
-        private final CompetitionMessageProducer producer;
+        private final CompetitionServerConnection connection;
         private final boolean isGoLive;
 
-        public CompetitionMessageListener(RequestListener requestListener, CompetitionMessageProducer producer, boolean isGoLive) {
+        public CompetitionMessageListener(RequestListener requestListener, CompetitionServerConnection connection, boolean isGoLive) {
             this.requestListener = requestListener;
-            this.producer = producer;
+            this.connection = connection;
             this.isGoLive = isGoLive;
         }
 
@@ -179,7 +161,7 @@ public class Client {
 
                     //Serialize and respond
                     if (isGoLive) {
-                        producer.send(requestId + ", " + serializedResponse);
+                        connection.send(requestId + ", " + serializedResponse);
                         message.acknowledge();
                     }
                     shouldContinue = true;
