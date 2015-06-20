@@ -1,5 +1,17 @@
 apply plugin: 'java'
 
+//~~~~ Settings for Gradle
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath "net.saliman:gradle-cobertura-plugin:2.2.8"
+        classpath 'org.kt3k.gradle.plugin:coveralls-gradle-plugin:2.4.0'
+    }
+}
+
+//~~~~ Settings for the source code
 sourceCompatibility = 1.8
 version = '1.0'
 
@@ -23,8 +35,19 @@ dependencies {
 }
 
 
-// Making the app runnable
+//~~~~~ For coverage
+apply plugin: "net.saliman.cobertura"
+apply plugin: 'com.github.kt3k.coveralls'
 
+cobertura {
+    coverageFormats = ['html', 'xml']
+    coverageIncludes = ['.*competition.client.*']
+    coverageIgnores = ['.*org.slf4j.Logger.*']
+}
+test.finalizedBy(project.tasks.cobertura)
+
+
+//~~~~ Making the app runnable
 apply plugin: 'application'
 mainClassName = 'competition.example.AddNumbersExample'
 applicationDefaultJvmArgs = ["-Dlogback.configurationFile=logback.xml"]
