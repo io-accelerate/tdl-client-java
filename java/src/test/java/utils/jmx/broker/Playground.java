@@ -1,4 +1,4 @@
-package broker.jmx;
+package utils.jmx.broker;
 
 import java.util.List;
 

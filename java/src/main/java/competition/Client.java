@@ -32,7 +32,7 @@ public class Client {
 
         //Design: this whole code can be abstracted into something
         ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(brokerURL);
-        Connection connection;
+        Connection connection = null;
         try {
             connection = connectionFactory.createConnection();
             connection.start();
@@ -51,21 +51,29 @@ public class Client {
             Message message = responseConsumer.receive(REQUEST_TIMEOUT);
             while (message != null) {
                 //Design: This method could exit if we put a special close message to the queue
-                competitionMessageListener.onMessage(message);
-                message.acknowledge();
-                message = responseConsumer.receive(REQUEST_TIMEOUT);
+                boolean shouldContinue = competitionMessageListener.doMessage(message);
+
+                if (shouldContinue) {
+                    message = responseConsumer.receive(REQUEST_TIMEOUT);
+                } else {
+                    break;
+                }
             }
 
-            //TODO: Transform these into a closable object
-            responseConsumer.close();
-            session.close();
-            connection.close();
+            LoggerFactory.getLogger(Client.class).info("Stopping client.");
         } catch (JMSException e) {
             LOGGER.error("Problem communicating with the broker", e);
+        } finally {
+            //Debt: Transform connection into a closable object
+            try {
+                connection.close();
+            } catch (Exception e1) {
+                //At least we tried
+            }
         }
     }
 
-    public void trialRunWith() {
+    public void trialRunWith(RequestListener requestListener) {
 
     }
 
@@ -95,7 +103,7 @@ public class Client {
         }
     }
 
-    private static class CompetitionMessageListener implements MessageListener {
+    private static class CompetitionMessageListener {
         private final RequestListener requestListener;
         private final CompetitionMessageProducer producer;
 
@@ -104,8 +112,8 @@ public class Client {
             this.producer = producer;
         }
 
-        @Override
-        public void onMessage(Message message) {
+        public boolean doMessage(Message message) {
+            boolean shouldContinue = false;
             try {
                 //Debt: The serialization strategy should be revisited. It has to use standard protocols.
                 String messageText = "";
@@ -125,20 +133,42 @@ public class Client {
                 String requestId = items[0];
                 String serializedParam = items[1];
 
+                //DEBT: Complex conditional logic
+
                 //Compute
-                Object response = requestListener.onRequest(serializedParam);
+                Object response = null;
+                boolean responseOk = true;
+                try {
+                    response = requestListener.onRequest(serializedParam);
+                } catch (Exception e) {
+                    LoggerFactory.getLogger(CompetitionMessageListener.class)
+                            .info("The user implementation has thrown exception.", e);
+                    responseOk = false;
+                }
 
-                //Serialize
-                String serializedResponse = response.toString();
 
-                //Serialize and respond
-                producer.send(requestId + ", " + serializedResponse);
-                System.out.println("id = " + requestId + ", req = " + serializedParam + ", resp: " + serializedResponse);
-                message.acknowledge();
+                if (response == null) {
+                    LoggerFactory.getLogger(CompetitionMessageListener.class)
+                            .info("User implementation has returned \"null\".");
+                    responseOk = false;
+                }
+
+                if (responseOk) {
+                    //Serialize
+                    String serializedResponse = response.toString();
+
+                    //Serialize and respond
+                    producer.send(requestId + ", " + serializedResponse);
+                    System.out.println("id = " + requestId + ", req = " + serializedParam + ", resp: " + serializedResponse);
+                    message.acknowledge();
+                    shouldContinue = true;
+                }
             } catch (JMSException e) {
                 //DEBT: Fix logging (no binding found)
-                LoggerFactory.getLogger(CompetitionMessageListener.class).error("Error sending response",e);
+                LoggerFactory.getLogger(CompetitionMessageListener.class).error("Error sending response", e);
             }
+
+            return shouldContinue;
         }
     }
 
