@@ -22,8 +22,6 @@ public class Client {
         this.username = username;
     }
 
-    //Design: A factory will be useful
-
     public void goLiveWith(RequestListener requestListener) {
         performMagic(requestListener, true);
 
@@ -34,24 +32,16 @@ public class Client {
     }
 
     private void performMagic(RequestListener requestListener, boolean isGoLive) {
-        //Debt: Should add a unit test for this entire library
         String requestQueue = username +".req";
         String responseQueue = username +".resp";
 
         //Design: serializedParam can become Request and the returned object could be called Response
 
         //Design: this whole code can be abstracted into something
-        ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(brokerURL);
-        Connection connection = null;
-        try {
-            connection = connectionFactory.createConnection();
-            connection.start();
+        try (ActiveMQConnection connection = new ActiveMQConnection(brokerURL)){
             Session session = connection.createSession(false, Session.CLIENT_ACKNOWLEDGE);
 
-            //Create the consumer
             MessageConsumer responseConsumer = session.createConsumer(session.createQueue(requestQueue));
-
-            //Create the producer
             CompetitionMessageProducer messageProducer = CompetitionMessageProducer.createForQueue(responseQueue, session);
 
             //This class will handle the incoming messages
@@ -72,15 +62,33 @@ public class Client {
             }
 
             LoggerFactory.getLogger(Client.class).info("Stopping client.");
-        } catch (JMSException e) {
+        } catch (Exception e) {
             LOGGER.error("Problem communicating with the broker", e);
-        } finally {
-            //Debt: Transform connection into a closable object
+        }
+    }
+
+    private static class ActiveMQConnection implements AutoCloseable {
+        private Connection connection;
+
+        public ActiveMQConnection(String brokerURL)  {
+            ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(brokerURL);
             try {
-                connection.close();
-            } catch (Exception e1) {
-                //At least we tried
+                connection = connectionFactory.createConnection();
+                connection.start();
+            } catch (JMSException e) {
+                connection = null;
+                e.printStackTrace();
             }
+        }
+
+        public Session createSession(boolean transacted, int acknowledgeMode) throws JMSException {
+            return connection.createSession(transacted, acknowledgeMode);
+        }
+
+
+        @Override
+        public void close() throws Exception {
+            connection.close();
         }
     }
 
@@ -110,6 +118,7 @@ public class Client {
         }
     }
 
+    //DEBT: This belongs closer to the client
     private static class CompetitionMessageListener {
         private final RequestListener requestListener;
         private final CompetitionMessageProducer producer;
@@ -124,7 +133,7 @@ public class Client {
         public boolean doMessage(Message message) {
             boolean shouldContinue = false;
             try {
-                //Debt: The serialization strategy should be revisited. It has to use standard protocols.
+                //Future: The serialization strategy should be revisited. It has to use standard protocols.
                 String messageText = "";
                 if (message instanceof TextMessage) {
                     TextMessage textMessage = (TextMessage) message;

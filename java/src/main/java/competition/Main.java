@@ -5,7 +5,7 @@ package competition;
  */
 public class Main {
 
-
+    //DEBT: Provide an example on how to use logging
     public static void main(String[] args) throws Exception {
         Client client = new Client("tcp://localhost:21616", "jgh");
 
