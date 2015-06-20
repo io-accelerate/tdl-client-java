@@ -1,6 +1,5 @@
-package competition.client;
+package competition.client.transport;
 
-import javax.jms.BytesMessage;
 import javax.jms.JMSException;
 import javax.jms.Message;
 import javax.jms.TextMessage;
@@ -16,16 +15,11 @@ public class StringMessage {
     }
 
     public String getContent() throws JMSException {
-        String messageText = "";
+        String messageText = "undecoded";
+
         if (message instanceof TextMessage) {
             TextMessage textMessage = (TextMessage) message;
             messageText = textMessage.getText();
-        }
-        if (message instanceof BytesMessage) {
-            BytesMessage bytesMessage = (BytesMessage) message;
-            byte[] body = new byte[(int) bytesMessage.getBodyLength()];
-            bytesMessage.readBytes(body, (int) bytesMessage.getBodyLength());
-            messageText = new String(body);
         }
 
         return messageText;

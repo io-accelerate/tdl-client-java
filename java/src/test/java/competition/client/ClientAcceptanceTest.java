@@ -1,6 +1,7 @@
 package competition.client;
 
 import com.google.common.collect.Lists;
+import competition.client.abstractions.UserImplementation;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;

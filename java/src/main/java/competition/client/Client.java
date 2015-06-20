@@ -1,10 +1,12 @@
 package competition.client;
 
+import competition.client.abstractions.UserImplementation;
+import competition.client.transport.CentralQueueConnection;
+import competition.client.transport.StringMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.jms.*;
-import java.util.Arrays;
+import javax.jms.JMSException;
 
 /**
  * Created by julianghionoiu on 20/06/2015.
@@ -20,21 +22,20 @@ public class Client {
     }
 
     public void goLiveWith(UserImplementation userImplementation) {
-        run(userImplementation, RespondToAllRequests::new);
+        run(RespondToAllRequests::new, userImplementation);
     }
 
     public void trialRunWith(UserImplementation userImplementation) {
-        run(userImplementation, PeekAtFirstRequest::new);
+        run(PeekAtFirstRequest::new, userImplementation);
     }
 
-
-    private void run(UserImplementation userImplementation, ProcessingStrategyBuilder processingStrategyBuilder) {
+    private void run(ProcessingStrategyBuilder processingStrategyBuilder, UserImplementation userImplementation) {
         try (CentralQueueConnection connection = new CentralQueueConnection(brokerURL, username)){
             DeserializeAndRespondToMessage deserializeAndRespondToMessage
                     = new DeserializeAndRespondToMessage(userImplementation);
-            processingStrategyBuilder
-                    .buildOn(connection)
-                    .processUsing(deserializeAndRespondToMessage);
+
+            ProcessingStrategy strategy = processingStrategyBuilder.buildOn(connection);
+            strategy.processUsing(deserializeAndRespondToMessage);
 
             LoggerFactory.getLogger(Client.class).info("Stopping client.");
         } catch (Exception e) {
@@ -42,8 +43,7 @@ public class Client {
         }
     }
 
-
-    //~~~~ Processing strategies
+    //~~~~ Abstractions
 
     @FunctionalInterface
     public interface ProcessingStrategy {
@@ -54,6 +54,8 @@ public class Client {
     public interface ProcessingStrategyBuilder {
         ProcessingStrategy buildOn(CentralQueueConnection connection) throws JMSException;
     }
+
+    //~~~~ Processing strategies
 
     private static class RespondToAllRequests implements ProcessingStrategy {
         private CentralQueueConnection connection;
@@ -95,86 +97,4 @@ public class Client {
             }
         }
     }
-
-    //~~~~ Transport -> Serialization -> Process
-
-    private static class Request {
-        private final String requestId;
-        private final String[] params;
-
-        public Request(String requestId, String[] params) {
-            this.requestId = requestId;
-            this.params = params;
-        }
-
-        public String getRequestId() {
-            return requestId;
-        }
-
-        public String[] getParams() {
-            return params;
-        }
-    }
-
-//    private static class CsvSerializationProvider {
-//
-//
-//        public Request deserialize();
-//
-//
-//    }
-
-    private static class DeserializeAndRespondToMessage {
-        private final UserImplementation userImplementation;
-
-        public DeserializeAndRespondToMessage(UserImplementation userImplementation) {
-            this.userImplementation = userImplementation;
-        }
-
-        public String onRequest(String messageText) {
-            Response response = null;
-
-            //Debt: The serialization strategy should be abstracted
-            Request request;
-            {
-                String[] items = messageText.split(", ", 2);
-                LoggerFactory.getLogger(DeserializeAndRespondToMessage.class)
-                        .debug("Received items: " + Arrays.toString(items));
-                String requestId = items[0];
-                String serializedParams = items[1];
-
-                String[] params = serializedParams.split(", ");
-                request = new Request(requestId, params);
-            }
-
-
-            //DEBT: Very complex conditional logic should refactor
-            //Compute
-            Object result = null;
-            boolean responseOk = true;
-            try {
-                result = userImplementation.process(request.getParams());
-            } catch (Exception e) {
-                LoggerFactory.getLogger(DeserializeAndRespondToMessage.class)
-                        .info("The user implementation has thrown exception.", e);
-                responseOk = false;
-            }
-
-            if (result == null) {
-                LoggerFactory.getLogger(DeserializeAndRespondToMessage.class)
-                        .info("User implementation has returned \"null\".");
-                responseOk = false;
-            }
-
-            if (responseOk) {
-                response = new Response(request.getRequestId(), result);
-                System.out.println("id = " + request.getRequestId() + ", " +
-                        "req = " + Arrays.asList(request.getParams()) + ", " +
-                        "resp = " + response.getResult().toString());
-            }
-
-            return response.getRequestId() + ", " + response.getResult();
-        }
-    }
-
 }

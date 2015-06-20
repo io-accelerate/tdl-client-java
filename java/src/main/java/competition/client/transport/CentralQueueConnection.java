@@ -1,4 +1,4 @@
-package competition.client;
+package competition.client.transport;
 
 import org.apache.activemq.ActiveMQConnectionFactory;
 import org.slf4j.LoggerFactory;
@@ -8,7 +8,7 @@ import javax.jms.*;
 /**
  * Created by julianghionoiu on 20/06/2015.
  */
-class CentralQueueConnection implements AutoCloseable {
+public class CentralQueueConnection implements AutoCloseable {
     private static final long REQUEST_TIMEOUT = 1000L;
 
     private final Connection connection;
