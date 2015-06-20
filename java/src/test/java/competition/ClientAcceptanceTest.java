@@ -10,25 +10,23 @@ import java.util.List;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
 
 /**
  * Created by julianghionoiu on 13/06/2015.
  */
 public class ClientAcceptanceTest {
-
-    List<String> REQUESTS = Lists.newArrayList(
+    private static final List<String> REQUESTS = Lists.newArrayList(
             "X1, 0",
             "X2, 5");
-    List<String> EXPECTED_RESPONSES = Lists.newArrayList(
+    private static final List<String> EXPECTED_RESPONSES = Lists.newArrayList(
             "X1, 1",
             "X2, 6");
-    List<String> EXPECTED_DISPLAYED_TEXT = Lists.newArrayList(
-            "id = X1, req = 0, resp = 1",
-            "id = X2, req = 5, resp = 6");
-
-
-
+    private static final String FIRST_EXPECTED_TEXT = "id = X1, req = 0, resp = 1";
+    private static final String SECOND_EXPECTED_TEXT = "id = X2, req = 5, resp = 6";
+    private static final List<String> EXPECTED_DISPLAYED_TEXT = Lists.newArrayList(
+            FIRST_EXPECTED_TEXT, SECOND_EXPECTED_TEXT);
 
 
     private static final int JMX_PORT = 20011;
@@ -87,8 +85,9 @@ public class ClientAcceptanceTest {
             return param + 1;
         });
 
+        String output = systemOutRule.getLog();
         for (String expectedLine : EXPECTED_DISPLAYED_TEXT) {
-            assertThat(systemOutRule.getLog(), containsString(expectedLine));
+            assertThat(output, containsString(expectedLine));
         }
     }
 
@@ -113,17 +112,20 @@ public class ClientAcceptanceTest {
     //~~~~ Trial run
 
     @Test
-    public void a_trial_run_should_show_the_first_message_and_the_response() throws Exception {
+    public void a_trial_run_should_only_show_the_first_message_and_the_response() throws Exception {
 
         client.trialRunWith(params -> {
             Integer param = Integer.parseInt(params);
             return param + 1;
         });
 
-        assertThat(systemOutRule.getLog(), containsString(EXPECTED_DISPLAYED_TEXT.get(0)));
+        String output = systemOutRule.getLog();
+        assertThat("Expected displayed response and request",
+                output, containsString(FIRST_EXPECTED_TEXT));
+        assertThat("Should not have displayed the next message",
+                output, not(containsString(SECOND_EXPECTED_TEXT)));
     }
 
-    @Ignore("WIP")
     @Test
     public void if_user_does_a_trial_run_should_not_consume_or_publish_any_messages() throws Exception {
 
@@ -138,8 +140,10 @@ public class ClientAcceptanceTest {
     //~~~ Utils
 
     private void assertQueuesAreUntouched() throws Exception {
-        assertThat(requestQueue.getSize(), equalTo(asLong(REQUESTS.size())));
-        assertThat(responseQueue.getSize(), equalTo(asLong(0)));
+        assertThat("The request queue has different size. Messages have been consumed.",
+                requestQueue.getSize(), equalTo(asLong(REQUESTS.size())));
+        assertThat("The response queue has different size. Messages have been published.",
+                responseQueue.getSize(), equalTo(asLong(0)));
     }
 
     private static Long asLong(Integer value) {

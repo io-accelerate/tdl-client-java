@@ -24,15 +24,15 @@ public class Client {
     //Design: A factory will be useful
 
     public void goLiveWith(RequestListener requestListener) {
-        performMagic(requestListener);
+        performMagic(requestListener, true);
 
     }
 
     public void trialRunWith(RequestListener requestListener) {
-        performMagic(requestListener);
+        performMagic(requestListener, false);
     }
 
-    private void performMagic(RequestListener requestListener) {
+    private void performMagic(RequestListener requestListener, boolean isGoLive) {
         //Debt: Should add a unit test for this entire library
         String requestQueue = username +".req";
         String responseQueue = username +".resp";
@@ -54,7 +54,8 @@ public class Client {
             CompetitionMessageProducer messageProducer = CompetitionMessageProducer.createForQueue(responseQueue, session);
 
             //This class will handle the incoming messages
-            CompetitionMessageListener competitionMessageListener = new CompetitionMessageListener(requestListener, messageProducer);
+            CompetitionMessageListener competitionMessageListener = new CompetitionMessageListener(
+                    requestListener, messageProducer, isGoLive);
 
             //Design: The wait time should be bigger in order to handle network delays
             Message message = responseConsumer.receive(REQUEST_TIMEOUT);
@@ -62,7 +63,7 @@ public class Client {
                 //Design: This method could exit if we put a special close message to the queue
                 boolean shouldContinue = competitionMessageListener.doMessage(message);
 
-                if (shouldContinue) {
+                if (shouldContinue && isGoLive) {
                     message = responseConsumer.receive(REQUEST_TIMEOUT);
                 } else {
                     break;
@@ -111,10 +112,12 @@ public class Client {
     private static class CompetitionMessageListener {
         private final RequestListener requestListener;
         private final CompetitionMessageProducer producer;
+        private final boolean isGoLive;
 
-        public CompetitionMessageListener(RequestListener requestListener, CompetitionMessageProducer producer) {
+        public CompetitionMessageListener(RequestListener requestListener, CompetitionMessageProducer producer, boolean isGoLive) {
             this.requestListener = requestListener;
             this.producer = producer;
+            this.isGoLive = isGoLive;
         }
 
         public boolean doMessage(Message message) {
@@ -160,11 +163,13 @@ public class Client {
                 if (responseOk) {
                     //Serialize
                     String serializedResponse = response.toString();
+                    System.out.println("id = " + requestId + ", req = " + serializedParam + ", resp = " + serializedResponse);
 
                     //Serialize and respond
-                    producer.send(requestId + ", " + serializedResponse);
-                    System.out.println("id = " + requestId + ", req = " + serializedParam + ", resp = " + serializedResponse);
-                    message.acknowledge();
+                    if (isGoLive) {
+                        producer.send(requestId + ", " + serializedResponse);
+                        message.acknowledge();
+                    }
                     shouldContinue = true;
                 }
             } catch (JMSException e) {
