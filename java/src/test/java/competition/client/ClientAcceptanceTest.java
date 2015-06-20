@@ -1,16 +1,17 @@
-package competition;
+package competition.client;
 
 import com.google.common.collect.Lists;
-import org.junit.*;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.contrib.java.lang.system.SystemOutRule;
 import utils.jmx.broker.RemoteJmxQueue;
 import utils.jmx.broker.testing.ActiveMQBrokerRule;
 
 import java.util.List;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertThat;
 
 /**
@@ -28,7 +29,7 @@ public class ClientAcceptanceTest {
     private static final List<String> EXPECTED_DISPLAYED_TEXT = Lists.newArrayList(
             FIRST_EXPECTED_TEXT, SECOND_EXPECTED_TEXT);
 
-    private static final Client.UserImplementation CORRECT_SOLUTION = serializedParams -> {
+    private static final UserImplementation CORRECT_SOLUTION = serializedParams -> {
         String[] params = serializedParams.split(", ");
         Integer x = Integer.parseInt(params[0]);
         Integer y = Integer.parseInt(params[1]);

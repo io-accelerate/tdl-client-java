@@ -1,5 +1,7 @@
 package competition;
 
+import competition.client.Client;
+
 /**
  * Created by julianghionoiu on 11/06/2015.
  */

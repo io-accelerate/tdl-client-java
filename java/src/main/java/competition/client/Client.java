@@ -1,6 +1,5 @@
-package competition;
+package competition.client;
 
-import org.apache.activemq.ActiveMQConnectionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,27 +29,27 @@ public class Client {
     }
 
     @FunctionalInterface
-    private interface ProcessingStrategy {
-        void processUsing(MessageProcessor messageProcessor) throws JMSException;
+    public interface ProcessingStrategy {
+        void processUsing(DeserializeAndRespondToMessage deserializeAndRespondToMessage) throws JMSException;
     }
 
     @FunctionalInterface
-    private interface ProcessingStrategyBuilder {
-        ProcessingStrategy buildOn(CompetitionServerConnection connection) throws JMSException;
+    public interface ProcessingStrategyBuilder {
+        ProcessingStrategy buildOn(CentralQueueConnection connection) throws JMSException;
     }
 
     private static class RespondToAllRequests implements ProcessingStrategy {
-        private CompetitionServerConnection connection;
+        private CentralQueueConnection connection;
 
-        public RespondToAllRequests(CompetitionServerConnection connection) {
+        public RespondToAllRequests(CentralQueueConnection connection) {
             this.connection = connection;
         }
 
         @Override
-        public void processUsing(MessageProcessor messageProcessor) throws JMSException {
+        public void processUsing(DeserializeAndRespondToMessage deserializeAndRespondToMessage) throws JMSException {
             Message message = connection.receive();
             while (message != null) {
-                Response response = messageProcessor.onRequest(message);
+                Response response = deserializeAndRespondToMessage.onRequest(message);
                 if ( response == null ) {
                     break;
                 }
@@ -65,17 +64,17 @@ public class Client {
     }
 
     private static class PeekAtFirstRequest implements ProcessingStrategy {
-        private CompetitionServerConnection connection;
+        private CentralQueueConnection connection;
 
-        private PeekAtFirstRequest(CompetitionServerConnection connection) {
+        private PeekAtFirstRequest(CentralQueueConnection connection) {
             this.connection = connection;
         }
 
         @Override
-        public void processUsing(MessageProcessor messageProcessor) throws JMSException {
+        public void processUsing(DeserializeAndRespondToMessage deserializeAndRespondToMessage) throws JMSException {
             Message message = connection.receive();
             if (message != null) {
-                messageProcessor.onRequest(message);
+                deserializeAndRespondToMessage.onRequest(message);
             }
         }
     }
@@ -83,11 +82,12 @@ public class Client {
 
     private void performMagic(UserImplementation userImplementation, ProcessingStrategyBuilder processingStrategyBuilder) {
         //Obs: this whole code can be abstracted into something
-        try (CompetitionServerConnection connection = new CompetitionServerConnection(brokerURL, username)){
-            MessageProcessor messageProcessor = new MessageProcessor(userImplementation);
+        try (CentralQueueConnection connection = new CentralQueueConnection(brokerURL, username)){
+            DeserializeAndRespondToMessage deserializeAndRespondToMessage
+                    = new DeserializeAndRespondToMessage(userImplementation);
             processingStrategyBuilder
                     .buildOn(connection)
-                    .processUsing(messageProcessor);
+                    .processUsing(deserializeAndRespondToMessage);
 
 
             LoggerFactory.getLogger(Client.class).info("Stopping client.");
@@ -114,54 +114,10 @@ public class Client {
         }
     }
 
-    private static class CompetitionServerConnection implements AutoCloseable {
-        private static final long REQUEST_TIMEOUT = 1000L;
-
-        private final Connection connection;
-        private final Session session;
-        private final MessageConsumer messageConsumer;
-        private final MessageProducer messageProducer;
-
-        public CompetitionServerConnection(String brokerURL, String username) throws JMSException {
-            ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(brokerURL);
-            connection = connectionFactory.createConnection();
-
-            LoggerFactory.getLogger(CompetitionServerConnection.class).info("Starting client");
-            connection.start();
-            session = connection.createSession(false, Session.CLIENT_ACKNOWLEDGE);
-
-            String requestQueue = username +".req";
-            messageConsumer = session.createConsumer(session.createQueue(requestQueue));
-
-            String responseQueue = username +".resp";
-            messageProducer = session.createProducer(session.createQueue(responseQueue));
-            messageProducer.setDeliveryMode(DeliveryMode.NON_PERSISTENT);
-        }
-
-        public Message receive() throws JMSException {
-
-            //Obs: We should have no timeout
-            return messageConsumer.receive(REQUEST_TIMEOUT);
-        }
-
-        public void send(String content) throws JMSException {
-            TextMessage txtMessage = session.createTextMessage();
-            txtMessage.setText(content);
-            messageProducer.send(txtMessage);
-        }
-
-        @Override
-        public void close() throws Exception {
-            LoggerFactory.getLogger(CompetitionServerConnection.class).info("Stopping client");
-            connection.close();
-        }
-    }
-
-
-    private static class MessageProcessor {
+    private static class DeserializeAndRespondToMessage {
         private final UserImplementation userImplementation;
 
-        public MessageProcessor(UserImplementation userImplementation) {
+        public DeserializeAndRespondToMessage(UserImplementation userImplementation) {
             this.userImplementation = userImplementation;
         }
 
@@ -184,7 +140,7 @@ public class Client {
 
                 //Deserialize
                 String[] items = messageText.split(", ", 2);
-                LoggerFactory.getLogger(MessageProcessor.class)
+                LoggerFactory.getLogger(DeserializeAndRespondToMessage.class)
                         .debug("Items: " + Arrays.toString(items));
                 String requestId = items[0];
                 String serializedParams = items[1];
@@ -196,14 +152,14 @@ public class Client {
                 try {
                     result = userImplementation.process(serializedParams);
                 } catch (Exception e) {
-                    LoggerFactory.getLogger(MessageProcessor.class)
+                    LoggerFactory.getLogger(DeserializeAndRespondToMessage.class)
                             .info("The user implementation has thrown exception.", e);
                     responseOk = false;
                 }
 
 
                 if (result == null) {
-                    LoggerFactory.getLogger(MessageProcessor.class)
+                    LoggerFactory.getLogger(DeserializeAndRespondToMessage.class)
                             .info("User implementation has returned \"null\".");
                     responseOk = false;
                 }
@@ -215,16 +171,11 @@ public class Client {
                     System.out.println("id = " + requestId + ", req = " + serializedParams + ", resp = " + serializedResponse);
                 }
             } catch (JMSException e) {
-                LoggerFactory.getLogger(MessageProcessor.class).error("Error sending response", e);
+                LoggerFactory.getLogger(DeserializeAndRespondToMessage.class).error("Error sending response", e);
             }
 
             return response;
         }
     }
 
-    //Obs: serializedParam can become Request and the returned object could be called Response
-    @FunctionalInterface
-    public interface UserImplementation {
-        Object process(String serializedParam);
-    }
 }
