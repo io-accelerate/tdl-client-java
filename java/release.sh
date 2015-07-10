@@ -6,8 +6,7 @@ VERSION_FILE="${SCRIPT_FOLDER}/gradle.properties"
 CURRENT_VERSION=`cat ${VERSION_FILE} | cut -d "=" -f2`
 
 # Prompt for version confirmation
-read -p "Going to release version ${CURRENT_VERSION}. Proceed ? [y/n] " -n 1 -r
-echo    # (optional) move to a new line
+read -p "Going to release version ${CURRENT_VERSION}. Proceed ? [y/n] "
 if [[ ! $REPLY =~ ^[Yy]$ ]]
 then
     echo "Aborting."
