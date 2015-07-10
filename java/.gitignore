@@ -3,4 +3,4 @@ build
 .gradle
 .pid.lock
 activemq-data
-gradle.properties
+secret.gradle

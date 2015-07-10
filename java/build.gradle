@@ -14,8 +14,7 @@ buildscript {
 //~~~~ Settings for the source code
 sourceCompatibility = 1.8
 group = 'ro.ghionoiu'
-version = '0.0.1'
-
+version = releaseVersion
 
 repositories {
     mavenCentral()
@@ -77,7 +76,9 @@ jar {
  *    - Created request for jcenter ( response comes in a day )
  */
 
+
 apply plugin: 'maven'
+apply from: 'secret.gradle'
 
 uploadArchives {
     repositories {
