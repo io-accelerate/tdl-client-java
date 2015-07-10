@@ -75,10 +75,12 @@ jar {
  * To push to Maven Central use Bintray sync features:
  *    - Created request for jcenter ( response comes in a day )
  */
-
-
 apply plugin: 'maven'
-apply from: 'secret.gradle'
+
+// Load the secret keys: bintrayUser, bintrayKey
+if (file('secret.gradle').exists()) {
+    apply from: 'secret.gradle'
+}
 
 uploadArchives {
     repositories {
