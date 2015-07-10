@@ -77,9 +77,8 @@ jar {
  */
 apply plugin: 'maven'
 
-// Load the secret keys: bintrayUser, bintrayKey
-if (file('secret.gradle').exists()) {
-    apply from: 'secret.gradle'
+private String readSystem(String property) {
+    System.getenv(property) != null  ? System.getenv(property) : "unset"
 }
 
 uploadArchives {
@@ -88,7 +87,7 @@ uploadArchives {
             name = 'bintray-julianghionoiu-tdl-client-java'
             repository(id: 'bintray-julianghionoiu-osgb36-tdl-client-java',
                        url: 'https://api.bintray.com/maven/julianghionoiu/maven/tdl-client-java') {
-                authentication(userName: bintrayUser, password: bintrayKey)
+                authentication(userName: readSystem("BINTRAY_USER"), password: readSystem("BINTRAY_KEY"))
             }
             pom.artifactId = 'tdl-client-java'
         }
