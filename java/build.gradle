@@ -13,7 +13,9 @@ buildscript {
 
 //~~~~ Settings for the source code
 sourceCompatibility = 1.8
-version = '1.0'
+group = 'ro.ghionoiu'
+version = '0.0.1'
+
 
 repositories {
     mavenCentral()
@@ -47,7 +49,7 @@ cobertura {
 test.finalizedBy(project.tasks.cobertura)
 
 
-//~~~~ Making the app runnable
+//~~~~ DEBT: This is a library the executable code should move to examples
 apply plugin: 'application'
 mainClassName = 'competition.example.AddNumbersExample'
 applicationDefaultJvmArgs = ["-Dlogback.configurationFile=logback.xml"]
@@ -59,5 +61,33 @@ run {
 jar {
     manifest {
         attributes 'Main-Class': mainClassName
+    }
+}
+
+//~~~~~ Making the library deployable
+
+/**
+ * Prerequisites
+ *    - Create package in Bintray
+ *
+ * Now you can use regular maven upload to push files to you package.
+ * The version will be created automatically
+ *
+ * To push to Maven Central use Bintray sync features:
+ *    - Created request for jcenter ( response comes in a day )
+ */
+
+apply plugin: 'maven'
+
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            name = 'bintray-julianghionoiu-tdl-client-java'
+            repository(id: 'bintray-julianghionoiu-osgb36-tdl-client-java',
+                       url: 'https://api.bintray.com/maven/julianghionoiu/maven/tdl-client-java') {
+                authentication(userName: bintrayUser, password: bintrayKey)
+            }
+            pom.artifactId = 'tdl-client-java'
+        }
     }
 }
