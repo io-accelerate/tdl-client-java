@@ -1,0 +1,2 @@
+//DEBT: Rename the base folder to the correct value
+rootProject.name = 'tdl-client-java'
