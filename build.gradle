@@ -47,22 +47,6 @@ cobertura {
 }
 test.finalizedBy(project.tasks.cobertura)
 
-
-//~~~~ DEBT: This is a library the executable code should move to examples
-apply plugin: 'application'
-mainClassName = 'competition.example.AddNumbersExample'
-applicationDefaultJvmArgs = ["-Dlogback.configurationFile=logback.xml"]
-
-run {
-    standardInput = System.in
-}
-
-jar {
-    manifest {
-        attributes 'Main-Class': mainClassName
-    }
-}
-
 //~~~~~ Making the library deployable
 
 /**
@@ -73,7 +57,8 @@ jar {
  * The version will be created automatically
  *
  * To push to Maven Central use Bintray sync features:
- *    - Created request for jcenter ( response comes in a day )
+ *    - Created request for jcenter ( if missing )
+ *    - Manually sync the two repos
  */
 apply plugin: 'maven'
 
