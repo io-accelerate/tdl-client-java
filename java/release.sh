@@ -13,12 +13,8 @@ then
     exit
 fi
 
-# Get required info
-read -p "Input tag message: " -r
-TAG_MESSAGE="${REPLY}"
-
 # Release current version
-git tag -a "v${CURRENT_VERSION}" -m "${TAG_MESSAGE}"
+git tag -a "v${CURRENT_VERSION}" -m "Release ${CURRENT_VERSION}"
 git push origin "v${CURRENT_VERSION}"
 echo "Pushed tag to Git origin. It will now trigger the deployment pipeline."
 
