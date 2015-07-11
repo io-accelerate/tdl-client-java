@@ -4,15 +4,18 @@ apply plugin: 'java'
 buildscript {
     repositories {
         mavenCentral()
+        jcenter()
     }
     dependencies {
         classpath "net.saliman:gradle-cobertura-plugin:2.2.8"
         classpath 'org.kt3k.gradle.plugin:coveralls-gradle-plugin:2.4.0'
+        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.1'
     }
 }
 
 //~~~~ Settings for the source code
 sourceCompatibility = 1.8
+name = 'tdl-client-java'
 group = 'ro.ghionoiu'
 version = releaseVersion
 
@@ -76,6 +79,7 @@ jar {
  *    - Created request for jcenter ( response comes in a day )
  */
 apply plugin: 'maven'
+apply plugin: 'com.jfrog.bintray'
 
 private String readSystem(String property) {
     System.getenv(property) != null  ? System.getenv(property) : "unset"
@@ -90,6 +94,65 @@ uploadArchives {
                 authentication(userName: readSystem("BINTRAY_USER"), password: readSystem("BINTRAY_KEY"))
             }
             pom.artifactId = 'tdl-client-java'
+        }
+    }
+}
+
+configurations {
+    published
+}
+
+task sourceJar(type: Jar) {
+    from sourceSets.main.allSource
+    classifier = 'sources'
+}
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from javadoc.destinationDir
+}
+
+// Add the sourceJars to non-extractor modules
+artifacts {
+    published sourceJar
+    published javadocJar
+}
+
+bintray {
+    user = readSystem("BINTRAY_USER")
+    key = readSystem("BINTRAY_KEY")
+
+    configurations = ['published']
+
+    dryRun = false //Whether to run this as dry-run, without deploying
+    publish = true //If version should be auto published after an upload
+
+    //Package configuration. The plugin will use the repo and name properties to check if the package already exists. In that case, there's no need to configure the other package properties (like userOrg, desc, etc).
+    pkg {
+        repo = 'maven'
+        name = 'tdl-client-java'
+        desc = 'A Java client that allows users to get up to speed with the TDL system.'
+        websiteUrl = 'https://github.com/julianghionoiu/tdl-client-java'
+        issueTrackerUrl = 'https://github.com/julianghionoiu/tdl-client-java/issues'
+        vcsUrl = 'https://github.com/julianghionoiu/tdl-client-java'
+        licenses = ['GPL-3.0']
+        labels = ['activemq-client', 'kata']
+        publicDownloadNumbers = false
+
+        version {
+            name = releaseVersion //Bintray logical version name
+            vcsTag = 'v'+releaseVersion
+
+            //Configuration for GPG signing
+            gpg {
+                sign = true //Determines whether to GPG sign the files. The default is false
+            }
+
+            //Configuration for Maven Central sync of the version
+            mavenCentralSync {
+                sync = false //Optional (true by default). Determines whether to sync the version to Maven Central.
+//                user = 'userToken' //OSS user token
+//                password = 'paasword' //OSS user password
+            }
         }
     }
 }
