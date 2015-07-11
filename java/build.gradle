@@ -96,15 +96,14 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
 
 // Add the sourceJars to non-extractor modules
 artifacts {
-    published sourceJar
-    published javadocJar
+    archives sourceJar
+    archives javadocJar
 }
 
 uploadArchives {
     repositories.mavenDeployer {
         name = 'bintray-julianghionoiu-tdl-client-java'
-        configuration = configurations.published
-        repository(id: 'bintray-julianghionoiu-osgb36-tdl-client-java',
+        repository(id: 'bintray-julianghionoiu-tdl-client-java',
                 url: 'https://api.bintray.com/maven/julianghionoiu/maven/tdl-client-java') {
             authentication(userName: readSystem("BINTRAY_USER"), password: readSystem("BINTRAY_KEY"))
         }
