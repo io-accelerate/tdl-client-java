@@ -81,13 +81,9 @@ private String readSystem(String property) {
     System.getenv(property) != null  ? System.getenv(property) : "unset"
 }
 
-configurations {
-    published
-}
-
 task sourceJar(type: Jar) {
-    from sourceSets.main.allSource
     classifier = 'sources'
+    from sourceSets.main.allSource
 }
 task javadocJar(type: Jar, dependsOn: javadoc) {
     classifier = 'javadoc'
