@@ -21,8 +21,6 @@ public class Playground {
 
         queue.purge();
         System.out.println(queue.getSize());
-
-        broker.removeQueue("test.queue");
     }
 
 }

@@ -29,18 +29,9 @@ public class RemoteJmxBroker {
 
     //~~~~ Queue management
 
-    public RemoteJmxQueue getQueue(String queueName) {
-        return new RemoteJmxQueue(jmxSession, brokerName, queueName);
-    }
-
     public RemoteJmxQueue addQueue(String queueName) throws Exception {
         jmxSession.invoke(JmxUtils.asBroker(brokerName),
                 "addQueue", JmxUtils.params(queueName), JmxUtils.types(String.class.getName()));
-        return getQueue(queueName);
-    }
-
-    public void removeQueue(String queueName) throws Exception {
-        jmxSession.invoke(JmxUtils.asBroker(brokerName),
-                "removeQueue", JmxUtils.params(queueName), JmxUtils.types(String.class.getName()));
+        return new RemoteJmxQueue(jmxSession, brokerName, queueName);
     }
 }
