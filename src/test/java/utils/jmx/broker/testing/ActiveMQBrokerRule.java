@@ -28,15 +28,7 @@ public class ActiveMQBrokerRule  extends ExternalResource {
 
     //~~~~ Facade to broker
 
-    public RemoteJmxQueue getQueue(String queueName) {
-        return remoteJmxBroker.getQueue(queueName);
-    }
-
     public RemoteJmxQueue addQueue(String queueName) throws Exception {
         return remoteJmxBroker.addQueue(queueName);
-    }
-
-    public void removeQueue(String queueName) throws Exception {
-        remoteJmxBroker.removeQueue(queueName);
     }
 }

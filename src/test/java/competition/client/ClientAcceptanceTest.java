@@ -36,18 +36,19 @@ public class ClientAcceptanceTest {
         return x + y;
     };
 
-
+    //Broker JMX definition
     private static final int JMX_PORT = 20011;
-    private static final int OPENWIRE_PORT = 21616;
-    public static final String BROKER_URL = "tcp://localhost:"+OPENWIRE_PORT;
-
+    private static final String BROKER_NAME = "TEST.BROKER";
     @ClassRule
-    public static ActiveMQBrokerRule broker = new ActiveMQBrokerRule("localhost", JMX_PORT, "TEST.BROKER");
+    public static ActiveMQBrokerRule broker = new ActiveMQBrokerRule("localhost", JMX_PORT, BROKER_NAME);
+
+    //Broker client definition
+    private static final int OPENWIRE_PORT = 21616;
+    private static final String BROKER_URL = "tcp://localhost:"+OPENWIRE_PORT;
+    private static final String USERNAME = "test";
 
     @Rule
     public final SystemOutRule systemOutRule = new SystemOutRule().enableLog();
-
-
     //Queues
     RemoteJmxQueue requestQueue;
     RemoteJmxQueue responseQueue;
@@ -55,21 +56,19 @@ public class ClientAcceptanceTest {
 
     @Before
     public void setUp() throws Exception {
-        String test = "test";
-
         //Given we have a couple of requests waiting
-        requestQueue = broker.addQueue(test +".req");
+        requestQueue = broker.addQueue(USERNAME +".req");
         requestQueue.purge();
         for (String request : REQUESTS) {
             requestQueue.sendTextMessage(request);
         }
 
         //And no responses
-        responseQueue = broker.addQueue(test +".resp");
+        responseQueue = broker.addQueue(USERNAME +".resp");
         responseQueue.purge();
 
         //Initialize client
-        client = new Client(BROKER_URL, test);
+        client = new Client(BROKER_URL, USERNAME);
     }
 
     //~~~~ Go live

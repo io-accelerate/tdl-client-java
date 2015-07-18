@@ -8,15 +8,15 @@ import javax.management.ObjectName;
  */
 public class JmxUtils {
 
-    public static final Object[] params(Object... objects) {
+    public static Object[] params(Object... objects) {
         return objects;
     }
 
-    public static final String[] types(String... signature) {
+    public static String[] types(String... signature) {
         return signature;
     }
 
-    public static final ObjectName asBroker(String brokerName) {
+    public static ObjectName asBroker(String brokerName) {
         try {
             String ref = String.format("org.apache.activemq:type=Broker,brokerName=%s", brokerName);
             return new ObjectName(ref);
@@ -25,7 +25,7 @@ public class JmxUtils {
         }
     }
 
-    public static final ObjectName asQueue(String brokerName, String queueName) {
+    public static ObjectName asQueue(String brokerName, String queueName) {
         try {
             String ref = String.format("org.apache.activemq:type=Broker,brokerName=%s,destinationType=Queue,destinationName=%s",
                     brokerName, queueName);
