@@ -38,13 +38,13 @@ public class ClientAcceptanceTest {
 
     //Broker JMX definition
     private static final int JMX_PORT = 20011;
+    private static final String HOSTNAME = "localhost";
     private static final String BROKER_NAME = "TEST.BROKER";
     @ClassRule
-    public static ActiveMQBrokerRule broker = new ActiveMQBrokerRule("localhost", JMX_PORT, BROKER_NAME);
+    public static ActiveMQBrokerRule broker = new ActiveMQBrokerRule(HOSTNAME, JMX_PORT, BROKER_NAME);
 
     //Broker client definition
     private static final int OPENWIRE_PORT = 21616;
-    private static final String BROKER_URL = "tcp://localhost:"+OPENWIRE_PORT;
     private static final String USERNAME = "test";
 
     @Rule
@@ -68,7 +68,7 @@ public class ClientAcceptanceTest {
         responseQueue.purge();
 
         //Initialize client
-        client = new Client(BROKER_URL, USERNAME);
+        client = new Client(HOSTNAME, OPENWIRE_PORT, USERNAME);
     }
 
     //~~~~ Go live
@@ -113,7 +113,7 @@ public class ClientAcceptanceTest {
 
     @Test
     public void exit_gracefully_if_broker_not_available() throws Exception {
-        client = new Client(BROKER_URL+"1", "broker");
+        client = new Client(HOSTNAME+"1", OPENWIRE_PORT, "broker");
 
         client.goLiveWith(CORRECT_SOLUTION);
 

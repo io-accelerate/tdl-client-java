@@ -16,8 +16,8 @@ public class Client {
     private final String brokerURL;
     private final String username;
 
-    public Client(String brokerURL, String username) {
-        this.brokerURL = brokerURL;
+    public Client(String hostname, int port, String username) {
+        this.brokerURL = String.format("tcp://%s:%s", hostname, port);
         this.username = username;
     }
 

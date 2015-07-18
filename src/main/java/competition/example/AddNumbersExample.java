@@ -8,9 +8,10 @@ import competition.client.Client;
 public class AddNumbersExample {
 
     public static void main(String[] args) throws Exception {
-        String brokerURL = "tcp://localhost:21616";
+        String hostname = "localhost";
+        int port = 21616;
         String username =  "your_username";
-        Client client = new Client(brokerURL, username);
+        Client client = new Client(hostname, port, username);
 
         client.goLiveWith(params -> {
             Integer x = Integer.parseInt(params[0]);
