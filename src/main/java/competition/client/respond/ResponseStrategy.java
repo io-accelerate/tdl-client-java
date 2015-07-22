@@ -7,6 +7,6 @@ import competition.client.abstractions.Response;
  * Created by julianghionoiu on 20/06/2015.
  */
 @FunctionalInterface
-public interface RespondToRequest {
+public interface ResponseStrategy {
     Response respondTo(Request request);
 }

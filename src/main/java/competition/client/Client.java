@@ -1,7 +1,7 @@
 package competition.client;
 
 import competition.client.abstractions.UserImplementation;
-import competition.client.transport.CentralQueueConnection;
+import competition.client.transport.RemoteBroker;
 import competition.client.transport.StringMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,29 +13,27 @@ import javax.jms.JMSException;
  */
 public class Client {
     private static final Logger LOGGER = LoggerFactory.getLogger(Client.class);
-    private final String brokerURL;
+    private final String hostname;
+    private final int port;
     private final String username;
 
     public Client(String hostname, int port, String username) {
-        this.brokerURL = String.format("tcp://%s:%s", hostname, port);
+        this.hostname = hostname;
+        this.port = port;
         this.username = username;
     }
 
     public void goLiveWith(UserImplementation userImplementation) {
-        run(RespondToAllRequests::new, userImplementation);
+        run(new RespondToAllRequests(DeserializeAndRespondToMessage.using(userImplementation)));
     }
 
     public void trialRunWith(UserImplementation userImplementation) {
-        run(PeekAtFirstRequest::new, userImplementation);
+        run(new PeekAtFirstRequest(DeserializeAndRespondToMessage.using(userImplementation)));
     }
 
-    private void run(ProcessingStrategyBuilder processingStrategyBuilder, UserImplementation userImplementation) {
-        try (CentralQueueConnection connection = new CentralQueueConnection(brokerURL, username)){
-            DeserializeAndProcessMessage deserializeAndProcessMessage
-                    = new DeserializeAndProcessMessage(userImplementation);
-
-            ProcessingStrategy strategy = processingStrategyBuilder.buildOn(connection);
-            strategy.processUsing(deserializeAndProcessMessage);
+    private void run(HandlingStrategy strategy) {
+        try (RemoteBroker remoteBroker = new RemoteBroker(hostname, port, username)){
+            strategy.processNextMessageFrom(remoteBroker);
 
             LoggerFactory.getLogger(Client.class).info("Stopping client.");
         } catch (Exception e) {
@@ -46,54 +44,49 @@ public class Client {
     //~~~~ Abstractions
 
     @FunctionalInterface
-    public interface ProcessingStrategy {
-        void processUsing(DeserializeAndProcessMessage deserializeAndProcessMessage) throws JMSException;
+    public interface HandlingStrategy {
+        void processNextMessageFrom(RemoteBroker remoteBroker) throws JMSException;
     }
 
-    @FunctionalInterface
-    public interface ProcessingStrategyBuilder {
-        ProcessingStrategy buildOn(CentralQueueConnection connection) throws JMSException;
-    }
+    //~~~~ Queue handling policies
 
-    //~~~~ Processing strategies
+    private static class RespondToAllRequests implements HandlingStrategy {
+        private MessageHandler messageHandler;
 
-    private static class RespondToAllRequests implements ProcessingStrategy {
-        private CentralQueueConnection connection;
-
-        public RespondToAllRequests(CentralQueueConnection connection) {
-            this.connection = connection;
+        public RespondToAllRequests(MessageHandler messageHandler) {
+            this.messageHandler = messageHandler;
         }
 
         @Override
-        public void processUsing(DeserializeAndProcessMessage deserializeAndProcessMessage) throws JMSException {
-            StringMessage message = connection.receive();
+        public void processNextMessageFrom(RemoteBroker remoteBroker) throws JMSException {
+            StringMessage message = remoteBroker.receive();
             while (message.isValid()) {
-                String response = deserializeAndProcessMessage.onRequest(message.getContent());
+                String response = messageHandler.respondTo(message.getContent());
                 if ( response == null ) {
                     break;
                 }
 
-                connection.send(response);
+                remoteBroker.send(response);
                 message.acknowledge();
 
                 //Obs: This method could exit faster if we put a special close message to the queue
-                message = connection.receive();
+                message = remoteBroker.receive();
             }
         }
     }
 
-    private static class PeekAtFirstRequest implements ProcessingStrategy {
-        private CentralQueueConnection connection;
+    private static class PeekAtFirstRequest implements HandlingStrategy {
+        private MessageHandler messageHandler;
 
-        private PeekAtFirstRequest(CentralQueueConnection connection) {
-            this.connection = connection;
+        private PeekAtFirstRequest(MessageHandler messageHandler) {
+            this.messageHandler = messageHandler;
         }
 
         @Override
-        public void processUsing(DeserializeAndProcessMessage deserializeAndProcessMessage) throws JMSException {
-            StringMessage message = connection.receive();
+        public void processNextMessageFrom(RemoteBroker remoteBroker) throws JMSException {
+            StringMessage message = remoteBroker.receive();
             if (message.isValid()) {
-                deserializeAndProcessMessage.onRequest(message.getContent());
+                messageHandler.respondTo(message.getContent());
             }
         }
     }

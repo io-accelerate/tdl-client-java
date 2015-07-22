@@ -30,7 +30,7 @@ public class CsvSerializationProvider implements SerializationProvider {
     public String serialize(Response response) {
         String serializedResponse = null;
         if (response != null) {
-            serializedResponse = response.getRequestId() + ", " + response.getResult();
+            serializedResponse = response.getId() + ", " + response.getResult();
         }
 
         return serializedResponse;

@@ -1,6 +1,6 @@
 package competition.client.respond;
 
-import competition.client.DeserializeAndProcessMessage;
+import competition.client.DeserializeAndRespondToMessage;
 import competition.client.abstractions.Request;
 import competition.client.abstractions.Response;
 import competition.client.abstractions.UserImplementation;
@@ -9,10 +9,10 @@ import org.slf4j.LoggerFactory;
 /**
  * Created by julianghionoiu on 20/06/2015.
  */
-public class CallUserImplementation implements RespondToRequest {
+public class ObtainResponse implements ResponseStrategy {
     private final UserImplementation userImplementation;
 
-    public CallUserImplementation(UserImplementation userImplementation) {
+    public ObtainResponse(UserImplementation userImplementation) {
         this.userImplementation = userImplementation;
     }
 
@@ -22,15 +22,15 @@ public class CallUserImplementation implements RespondToRequest {
         try {
             result = userImplementation.process(request.getParams());
         } catch (Exception e) {
-            LoggerFactory.getLogger(DeserializeAndProcessMessage.class)
+            LoggerFactory.getLogger(DeserializeAndRespondToMessage.class)
                     .info("The user implementation has thrown exception.", e);
         }
 
         if (result == null) {
-            LoggerFactory.getLogger(DeserializeAndProcessMessage.class)
+            LoggerFactory.getLogger(DeserializeAndRespondToMessage.class)
                     .info("User implementation has returned \"null\".");
         }
 
-        return new Response(request.getRequestId(), result);
+        return new Response(request.getId(), result);
     }
 }

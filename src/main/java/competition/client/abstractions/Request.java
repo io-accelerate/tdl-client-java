@@ -1,24 +1,22 @@
 package competition.client.abstractions;
 
-import java.io.Console;
-
 /**
  * Created by julianghionoiu on 20/06/2015.
  */
 public class Request {
-    private final String requestId;
+    private final String id;
     private final String[] params;
 
-    public Request(String requestId, String[] params) {
-        this.requestId = requestId;
+    public Request(String id, String[] params) {
+        this.id = id;
         this.params = params;
 
 
         System.console();
     }
 
-    public String getRequestId() {
-        return requestId;
+    public String getId() {
+        return id;
     }
 
     public String[] getParams() {
