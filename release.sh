@@ -3,7 +3,7 @@
 SCRIPT_FOLDER="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 VERSION_FILE="${SCRIPT_FOLDER}/gradle.properties"
 
-CURRENT_VERSION=`cat ${VERSION_FILE} | cut -d "=" -f2`
+CURRENT_VERSION=`cat ${VERSION_FILE} | grep "releaseVersion" | cut -d "=" -f2 | tr -d " "`
 
 # Prompt for version confirmation
 read -p "Going to release version ${CURRENT_VERSION}. Proceed ? [y/n] "
