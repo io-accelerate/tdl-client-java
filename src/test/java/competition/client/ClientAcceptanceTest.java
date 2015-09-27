@@ -36,8 +36,8 @@ public class ClientAcceptanceTest {
         return x + y;
     };
 
-    //Broker JMX definition
-    private static final int JMX_PORT = 20011;
+    // Jolokia JMX definition
+    private static final int JMX_PORT = 28161;
     private static final String HOSTNAME = "localhost";
     private static final String BROKER_NAME = "TEST.BROKER";
     @ClassRule

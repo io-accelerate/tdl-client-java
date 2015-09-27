@@ -25,6 +25,8 @@ dependencies {
     compile 'com.google.guava:guava:18.0'
     compile 'org.apache.activemq:activemq-client:5.11.1'
 
+    testCompile 'com.google.code.gson:gson:2.3.1'
+    testCompile 'org.apache.httpcomponents:httpclient:4.5'
     testCompile ('junit:junit:4.12') {
         exclude module : 'hamcrest-core'
     }

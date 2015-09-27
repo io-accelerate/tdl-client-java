@@ -1,47 +1,63 @@
 package utils.jmx.broker;
 
+import com.google.gson.JsonElement;
+
 import javax.management.MBeanServerConnection;
-import javax.management.openmbean.CompositeData;
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.*;
 
 /**
  * Created by julianghionoiu on 13/06/2015.
  */
 public class RemoteJmxQueue {
-    private final MBeanServerConnection jmxSession;
-    private final String brokerName;
-    private final String queueName;
+    private final JolokiaSession jolokiaSession;
+    private final String queueBean;
 
-    public RemoteJmxQueue(MBeanServerConnection jmxSession, String brokerName, String queueName) {
-        this.jmxSession = jmxSession;
-        this.brokerName = brokerName;
-        this.queueName = queueName;
+    public RemoteJmxQueue(JolokiaSession jolokiaSession, String brokerName, String queueName) {
+        this.jolokiaSession = jolokiaSession;
+        this.queueBean = String.format("org.apache.activemq:type=Broker,brokerName=%s,destinationType=Queue,destinationName=%s",
+                brokerName, queueName);
     }
 
     //~~~~ Queue operations
 
     public void sendTextMessage(String message) throws Exception {
-        jmxSession.invoke(JmxUtils.asQueue(brokerName, queueName),
-                "sendTextMessage", JmxUtils.params(message), JmxUtils.types(String.class.getName()));
+        Map<String, Object> operation = new HashMap<>();
+        operation.put("type", "exec");
+        operation.put("mbean", queueBean);
+        operation.put("operation", "sendTextMessage(java.lang.String)");
+        operation.put("arguments", Collections.singletonList(message));
+        jolokiaSession.request(operation);
     }
 
     public Long getSize() throws Exception {
-        return (Long) jmxSession.getAttribute(JmxUtils.asQueue(brokerName, queueName),
-                "QueueSize");
+        Map<String, Object> attribute = new HashMap<>();
+        attribute.put("type", "read");
+        attribute.put("mbean", queueBean);
+        attribute.put("attribute", "QueueSize");
+        JsonElement response = jolokiaSession.request(attribute);
+        return response.getAsLong();
     }
 
     public List<String> getMessageContents() throws Exception {
-        CompositeData[] messages = (CompositeData[]) jmxSession.invoke(JmxUtils.asQueue(brokerName, queueName),
-                "browse", JmxUtils.params(), JmxUtils.types());
-        return Arrays.stream(messages)
-                .map(compositeData -> (String) compositeData.get("Text"))
-                .collect(Collectors.toList());
+        Map<String, Object> operation = new HashMap<>();
+        operation.put("type", "exec");
+        operation.put("mbean", queueBean);
+        operation.put("operation", "browse()");
+        JsonElement request = jolokiaSession.request(operation);
+
+        List<String> messageContents = new ArrayList<>();
+        request.getAsJsonArray().forEach(jsonElement -> {
+            String text = jsonElement.getAsJsonObject().getAsJsonPrimitive("Text").getAsString();
+            messageContents.add(text);
+        });
+        return messageContents;
     }
 
     public void purge() throws Exception {
-        jmxSession.invoke(JmxUtils.asQueue(brokerName, queueName),
-                "purge", JmxUtils.params(), JmxUtils.types());
+        Map<String, Object> operation = new HashMap<>();
+        operation.put("type", "exec");
+        operation.put("mbean", queueBean);
+        operation.put("operation", "purge()");
+        jolokiaSession.request(operation);
     }
 }
