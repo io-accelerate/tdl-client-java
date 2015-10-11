@@ -1,15 +1,15 @@
 package competition.client;
 
 import competition.client.abstractions.UserImplementation;
-import cucumber.api.PendingException;
-import cucumber.api.java.After;
-import cucumber.api.java.Before;
+import cucumber.api.Transform;
+import cucumber.api.Transformer;
 import cucumber.api.java.en.*;
-import org.junit.contrib.java.lang.system.SystemOutRule;
 import utils.jmx.broker.RemoteJmxQueue;
 import utils.stream.LogPrintStream;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
@@ -19,7 +19,7 @@ import static org.junit.Assert.assertThat;
 /**
  * Created by julianghionoiu on 11/10/2015.
  */
-public class MyStepdefs {
+public class ClientSteps {
     private final SingletonTestBroker broker;
 
     // Test broker location
@@ -35,7 +35,7 @@ public class MyStepdefs {
     int initialRequestCount;
     LogPrintStream logPrintStream;
 
-    public MyStepdefs(SingletonTestBroker broker) {
+    public ClientSteps(SingletonTestBroker broker) {
         this.broker = broker;
         this.logPrintStream = new LogPrintStream(System.out);
         this.initialRequestCount = 0;
@@ -57,7 +57,7 @@ public class MyStepdefs {
     }
 
     @Given("^the broker is not available$")
-    public void the_broker_is_not_available() throws Throwable {
+    public void client_with_wrong_broker() throws Throwable {
         client = new Client(HOSTNAME+"1", PORT, "broker");
     }
 
@@ -72,61 +72,51 @@ public class MyStepdefs {
 
     //~~~~~ Implementations
 
-    @When("^I go live with an implementation$")
-    public void I_go_live_with_an_implementation() throws Throwable {
-        UserImplementation returnNull = params -> null;
+    private static final Map<String, UserImplementation> IMPLEMENTATION_MAP = new HashMap<>();
 
-        client.goLiveWith(returnNull);
-    }
-
-    @When("^I go live with an implementation that adds to numbers$")
-    public void user_goes_live_with_correct_solution() throws Throwable {
-
-        UserImplementation addNumbers = params -> {
+    static {
+        IMPLEMENTATION_MAP.put("adds two numbers", params -> {
             Integer x = Integer.parseInt(params[0]);
             Integer y = Integer.parseInt(params[1]);
             return x + y;
-        };
-
-        client.goLiveWith(addNumbers);
-    }
-
-    @When("^I go live with an implementation that returns null$")
-    public void I_go_live_with_an_implementation_that_returns_null() throws Throwable {
-        UserImplementation returnNull = params -> null;
-
-        client.goLiveWith(returnNull);
-    }
-
-    @When("^I go live with an implementation that throws exception$")
-    public void I_go_live_with_an_implementation_that_throws_exception() throws Throwable {
-        UserImplementation throwException = param -> {
+        });
+        IMPLEMENTATION_MAP.put("returns null", params -> null);
+        IMPLEMENTATION_MAP.put("throws exception", param -> {
             throw new IllegalStateException("faulty user code");
-        };
-
-        client.goLiveWith(throwException);
+        });
+        IMPLEMENTATION_MAP.put("is valid", params -> "ok");
     }
 
-    @When("^I do a trial run with an implementation that adds to numbers$")
-    public void I_do_a_trial_run_with_an_implementation_that_adds_to_numbers() throws Throwable {
-        UserImplementation addNumbers = params -> {
-            Integer x = Integer.parseInt(params[0]);
-            Integer y = Integer.parseInt(params[1]);
-            return x + y;
-        };
+    public static class StringToImplementation extends Transformer<UserImplementation> {
+        @Override
+        public UserImplementation transform(String value) {
+            if (IMPLEMENTATION_MAP.containsKey(value)) {
+                return IMPLEMENTATION_MAP.get(value);
+            } else {
+                throw new IllegalArgumentException("Not a valid implementation reference: \"" + value+"\"");
+            }
+        }
+    }
 
-        client.trialRunWith(addNumbers);
+    @When("^I go live with an implementation that (.*)$")
+    public void go_live(@Transform(StringToImplementation.class) UserImplementation implementation) throws Throwable {
+        client.goLiveWith(implementation);
+    }
+
+    @When("^I do a trial run with an implementation that (.*)$")
+    public void trial_run(@Transform(StringToImplementation.class) UserImplementation implementation) throws Throwable {
+        client.trialRunWith(implementation);
     }
 
     //~~~~~ Assertions
 
     @Then("^the client should consume all requests$")
-    public void the_client_should_consume_all_requests() throws Throwable {
+    public void request_queue_empty() throws Throwable {
         assertThat("Requests have not been consumed",requestQueue.getSize(), equalTo(asLong(0)));
     }
 
     @And("^the client should publish the following responses:$")
-    public void the_client_should_publish_the_following_responses(List<String> expectedResponses) throws Throwable {
+    public void response_queue_contains_expected(List<String> expectedResponses) throws Throwable {
         assertThat("The responses are not correct",responseQueue.getMessageContents(), equalTo(expectedResponses));
     }
 
@@ -147,19 +137,19 @@ public class MyStepdefs {
     }
 
     @Then("^the client should not consume any request$")
-    public void the_client_should_not_consume_the_request() throws Throwable {
+    public void request_queue_unchanged() throws Throwable {
         assertThat("The request queue has different size. The message has been consumed.",
                 requestQueue.getSize(), equalTo(asLong(initialRequestCount)));
     }
 
     @And("^the client should not publish any response$")
-    public void the_client_should_not_publish_any_response() throws Throwable {
+    public void response_queue_unchanged() throws Throwable {
         assertThat("The response queue has different size. Messages have been published.",
                 responseQueue.getSize(), equalTo(asLong(0)));
     }
 
-    @Then("^I should ge no exception$")
-    public void I_should_ge_no_exception() throws Throwable {
+    @Then("^I should get no exception$")
+    public void I_should_get_no_exception() throws Throwable {
         //No exception
     }
 

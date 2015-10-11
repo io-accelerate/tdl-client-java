@@ -1,5 +1,5 @@
 # Created by julianghionoiu at 11/10/2015
-Feature: Go live
+Feature: Complete challenge
   # Enter feature description here
 
   Background:
@@ -9,7 +9,7 @@ Feature: Go live
     Given I receive the following requests:
       | X1, 0, 1  |
       | X2, 5, 6  |
-    When I go live with an implementation that adds to numbers
+    When I go live with an implementation that adds two numbers
     Then the client should consume all requests
     And the client should publish the following responses:
       | X1, 1    |
@@ -19,7 +19,7 @@ Feature: Go live
   Scenario: Display requests and response
     Given I receive the following requests:
       | X1, 0, 1  |
-    When I go live with an implementation that adds to numbers
+    When I go live with an implementation that adds two numbers
     Then the client should display to console:
       | id = X1, req = [0, 1], resp = 1  |
 
@@ -45,8 +45,8 @@ Feature: Go live
 
   Scenario: Exit gracefully is broker not available
     Given the broker is not available
-    When I go live with an implementation
-    Then I should ge no exception
+    When I go live with an implementation that is valid
+    Then I should get no exception
 
 
   #  Trial runs
@@ -56,7 +56,7 @@ Feature: Go live
     Given I receive the following requests:
       | X1, 0, 1  |
       | X2, 5, 6  |
-    When I do a trial run with an implementation that adds to numbers
+    When I do a trial run with an implementation that adds two numbers
     Then the client should not consume any request
     And the client should not publish any response
 
@@ -64,7 +64,7 @@ Feature: Go live
     Given I receive the following requests:
       | X1, 0, 1  |
       | X2, 5, 6  |
-    When I do a trial run with an implementation that adds to numbers
+    When I do a trial run with an implementation that adds two numbers
     Then the client should display to console:
       | id = X1, req = [0, 1], resp = 1  |
     But the client should not display to console:
