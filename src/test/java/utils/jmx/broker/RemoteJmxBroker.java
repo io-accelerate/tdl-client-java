@@ -32,7 +32,7 @@ public class RemoteJmxBroker {
         operation.put("type", "exec");
         operation.put("mbean", "org.apache.activemq:type=Broker,brokerName=TEST.BROKER");
         operation.put("operation", "addQueue");
-        operation.put("arguments", Collections.singletonList("test.req"));
+        operation.put("arguments", Collections.singletonList(queueName));
         jolokiaSession.request(operation);
         return new RemoteJmxQueue(jolokiaSession, brokerName, queueName);
     }

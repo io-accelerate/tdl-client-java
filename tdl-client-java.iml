@@ -34,5 +34,13 @@
     <orderEntry type="library" scope="TEST" name="Gradle: org.apache.httpcomponents:httpcore:4.4.1" level="project" />
     <orderEntry type="library" scope="TEST" name="Gradle: commons-logging:commons-logging:1.2" level="project" />
     <orderEntry type="library" scope="TEST" name="Gradle: commons-codec:commons-codec:1.9" level="project" />
+    <orderEntry type="library" scope="TEST" name="Gradle: info.cukes:cucumber-java:1.2.4" level="project" />
+    <orderEntry type="library" scope="TEST" name="Gradle: info.cukes:cucumber-junit:1.2.4" level="project" />
+    <orderEntry type="library" scope="TEST" name="Gradle: info.cukes:cucumber-core:1.2.4" level="project" />
+    <orderEntry type="library" scope="TEST" name="Gradle: info.cukes:cucumber-html:0.2.3" level="project" />
+    <orderEntry type="library" scope="TEST" name="Gradle: info.cukes:cucumber-jvm-deps:1.0.5" level="project" />
+    <orderEntry type="library" scope="TEST" name="Gradle: info.cukes:gherkin:2.12.2" level="project" />
+    <orderEntry type="library" scope="TEST" name="Gradle: info.cukes:cucumber-picocontainer:1.2.4" level="project" />
+    <orderEntry type="library" scope="TEST" name="Gradle: org.picocontainer:picocontainer:2.15" level="project" />
   </component>
 </module>

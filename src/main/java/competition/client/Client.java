@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.jms.JMSException;
+import java.io.PrintStream;
 
 /**
  * Created by julianghionoiu on 20/06/2015.
@@ -16,11 +17,17 @@ public class Client {
     private final String hostname;
     private final int port;
     private final String username;
+    private final PrintStream auditStream;
 
     public Client(String hostname, int port, String username) {
+        this(hostname, port, username, System.out);
+    }
+
+    protected Client(String hostname, int port, String username, PrintStream auditStream) {
         this.hostname = hostname;
         this.port = port;
         this.username = username;
+        this.auditStream = auditStream;
     }
 
     public void goLiveWith(UserImplementation userImplementation) {

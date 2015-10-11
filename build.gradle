@@ -20,11 +20,21 @@ repositories {
     mavenCentral()
 }
 
+
+ext.libraries = [
+    cucumber: [
+       'info.cukes:cucumber-java:1.2.4',
+       'info.cukes:cucumber-junit:1.2.4',
+       'info.cukes:cucumber-picocontainer:1.2.4',
+    ]
+]
+
 dependencies {
     compile 'ch.qos.logback:logback-classic:1.1.3'
     compile 'com.google.guava:guava:18.0'
     compile 'org.apache.activemq:activemq-client:5.11.1'
 
+    testCompile libraries.cucumber
     testCompile 'com.google.code.gson:gson:2.3.1'
     testCompile 'org.apache.httpcomponents:httpclient:4.5'
     testCompile ('junit:junit:4.12') {
@@ -37,8 +47,27 @@ dependencies {
     testCompile 'com.github.stefanbirkner:system-rules:1.11.0'
 }
 
+// ~~~~~ Enable the acceptance test task
 
-//~~~~~ For coverage
+configurations {
+    cucumberRuntime {
+        extendsFrom testRuntime
+    }
+}
+
+task acceptanceTest() {
+    dependsOn assemble, compileTestJava
+    doLast {
+        javaexec {
+            main = "cucumber.api.cli.Main"
+            classpath = configurations.cucumberRuntime + sourceSets.main.output + sourceSets.test.output
+            args = ['--plugin', 'pretty', '--glue', 'competition.client', 'src/test/resources']
+        }
+    }
+}
+
+// ~~~~~ Gather coverage
+
 apply plugin: "net.saliman.cobertura"
 apply plugin: 'com.github.kt3k.coveralls'
 
