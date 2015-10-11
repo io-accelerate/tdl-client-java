@@ -50,7 +50,7 @@ next_patch_version() {
 
 # Switch to next version
 NEXT_PATCH_VERSION=`next_patch_version`
-echo "Next version is: $NEXT_PATCH_VERSION"
+echo "Next patch version is: $NEXT_PATCH_VERSION"
 
 cat > "${VERSION_FILE}" <<-EOF
 previousVersion=$CURRENT_VERSION
