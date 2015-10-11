@@ -41,7 +41,7 @@ echo "Pushed tag to Git origin. It will now trigger the deployment pipeline."
 # Increment version
 next_patch_version() {
     if [ "$CURRENT_MAJOR_MINOR_VERSION" == "$PREVIOUS_MAJOR_MINOR_VERSION" ]; then
-        patch=$((patch+1))
+        patch=$((CURRENT_PATCH_VERSION+1))
     else
         patch="0"
     fi
@@ -55,5 +55,5 @@ echo "Next version is: $NEXT_PATCH_VERSION"
 cat > "${VERSION_FILE}" <<-EOF
 previousVersion=$CURRENT_VERSION
 # the current MAJOR.MINOR version is dynamically computed from the version of the Spec
-currentPatchVersion=1
+currentPatchVersion=$NEXT_PATCH_VERSION
 EOF
