@@ -4,10 +4,7 @@ import competition.client.abstractions.UserImplementation;
 import cucumber.api.PendingException;
 import cucumber.api.java.After;
 import cucumber.api.java.Before;
-import cucumber.api.java.en.And;
-import cucumber.api.java.en.Given;
-import cucumber.api.java.en.Then;
-import cucumber.api.java.en.When;
+import cucumber.api.java.en.*;
 import org.junit.contrib.java.lang.system.SystemOutRule;
 import utils.jmx.broker.RemoteJmxQueue;
 import utils.stream.LogPrintStream;
@@ -16,6 +13,7 @@ import java.util.List;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
 
 /**
@@ -34,12 +32,16 @@ public class MyStepdefs {
     Client client;
 
     //Testing utils
+    int initialRequestCount;
     LogPrintStream logPrintStream;
 
     public MyStepdefs(SingletonTestBroker broker) {
         this.broker = broker;
         this.logPrintStream = new LogPrintStream(System.out);
+        this.initialRequestCount = 0;
     }
+
+    //~~~~~ Setup
 
     @Given("^I start with a clean broker$")
     public void create_the_queues() throws Throwable {
@@ -54,11 +56,27 @@ public class MyStepdefs {
         client = new Client(HOSTNAME, PORT, username, logPrintStream);
     }
 
+    @Given("^the broker is not available$")
+    public void the_broker_is_not_available() throws Throwable {
+        client = new Client(HOSTNAME+"1", PORT, "broker");
+    }
+
     @Given("^I receive the following requests:$")
     public void initialize_request_queue(List<String> requests) throws Throwable {
         for (String request : requests) {
             requestQueue.sendTextMessage(request);
         }
+        initialRequestCount = requests.size();
+    }
+
+
+    //~~~~~ Implementations
+
+    @When("^I go live with an implementation$")
+    public void I_go_live_with_an_implementation() throws Throwable {
+        UserImplementation returnNull = params -> null;
+
+        client.goLiveWith(returnNull);
     }
 
     @When("^I go live with an implementation that adds to numbers$")
@@ -89,6 +107,19 @@ public class MyStepdefs {
         client.goLiveWith(throwException);
     }
 
+    @When("^I do a trial run with an implementation that adds to numbers$")
+    public void I_do_a_trial_run_with_an_implementation_that_adds_to_numbers() throws Throwable {
+        UserImplementation addNumbers = params -> {
+            Integer x = Integer.parseInt(params[0]);
+            Integer y = Integer.parseInt(params[1]);
+            return x + y;
+        };
+
+        client.trialRunWith(addNumbers);
+    }
+
+    //~~~~~ Assertions
+
     @Then("^the client should consume all requests$")
     public void the_client_should_consume_all_requests() throws Throwable {
         assertThat("Requests have not been consumed",requestQueue.getSize(), equalTo(asLong(0)));
@@ -107,16 +138,29 @@ public class MyStepdefs {
         }
     }
 
-    @Then("^the client should not consume the request$")
+    @But("^the client should not display to console:$")
+    public void the_client_should_not_display_to_console(List<String> rejectedOutputs) throws Throwable {
+        String output = logPrintStream.getLog();
+        for (String expectedLine : rejectedOutputs) {
+            assertThat(output, not(containsString(expectedLine)));
+        }
+    }
+
+    @Then("^the client should not consume any request$")
     public void the_client_should_not_consume_the_request() throws Throwable {
         assertThat("The request queue has different size. The message has been consumed.",
-                requestQueue.getSize(), equalTo(asLong(1)));
+                requestQueue.getSize(), equalTo(asLong(initialRequestCount)));
     }
 
     @And("^the client should not publish any response$")
     public void the_client_should_not_publish_any_response() throws Throwable {
         assertThat("The response queue has different size. Messages have been published.",
                 responseQueue.getSize(), equalTo(asLong(0)));
+    }
+
+    @Then("^I should ge no exception$")
+    public void I_should_ge_no_exception() throws Throwable {
+        //No exception
     }
 
     //~~~ Utils
