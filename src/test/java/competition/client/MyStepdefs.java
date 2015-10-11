@@ -64,13 +64,29 @@ public class MyStepdefs {
     @When("^I go live with an implementation that adds to numbers$")
     public void user_goes_live_with_correct_solution() throws Throwable {
 
-        UserImplementation CORRECT_SOLUTION = params -> {
+        UserImplementation addNumbers = params -> {
             Integer x = Integer.parseInt(params[0]);
             Integer y = Integer.parseInt(params[1]);
             return x + y;
         };
 
-        client.goLiveWith(CORRECT_SOLUTION);
+        client.goLiveWith(addNumbers);
+    }
+
+    @When("^I go live with an implementation that returns null$")
+    public void I_go_live_with_an_implementation_that_returns_null() throws Throwable {
+        UserImplementation returnNull = params -> null;
+
+        client.goLiveWith(returnNull);
+    }
+
+    @When("^I go live with an implementation that throws exception$")
+    public void I_go_live_with_an_implementation_that_throws_exception() throws Throwable {
+        UserImplementation throwException = param -> {
+            throw new IllegalStateException("faulty user code");
+        };
+
+        client.goLiveWith(throwException);
     }
 
     @Then("^the client should consume all requests$")
@@ -89,6 +105,18 @@ public class MyStepdefs {
         for (String expectedLine : expectedOutputs) {
             assertThat(output, containsString(expectedLine));
         }
+    }
+
+    @Then("^the client should not consume the request$")
+    public void the_client_should_not_consume_the_request() throws Throwable {
+        assertThat("The request queue has different size. The message has been consumed.",
+                requestQueue.getSize(), equalTo(asLong(1)));
+    }
+
+    @And("^the client should not publish any response$")
+    public void the_client_should_not_publish_any_response() throws Throwable {
+        assertThat("The response queue has different size. Messages have been published.",
+                responseQueue.getSize(), equalTo(asLong(0)));
     }
 
     //~~~ Utils
