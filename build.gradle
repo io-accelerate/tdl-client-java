@@ -76,6 +76,10 @@ test.finalizedBy(project.tasks.cobertura)
  * To push to Maven Central use Bintray sync features:
  *    - Created request for jcenter ( if missing )
  *    - Manually sync the two repos
+ *
+ * To publish new version use the Bintray UI:
+ *    - publish current artifacts
+ *    - sync with Maven Central
  */
 apply plugin: 'maven'
 
