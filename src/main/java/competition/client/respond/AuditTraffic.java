@@ -3,6 +3,7 @@ package competition.client.respond;
 import competition.client.abstractions.Request;
 import competition.client.abstractions.Response;
 
+import java.io.PrintStream;
 import java.util.Arrays;
 
 /**
@@ -10,8 +11,10 @@ import java.util.Arrays;
  */
 public class AuditTraffic implements ResponseStrategy {
     private final ResponseStrategy wrappedStrategy;
+    private final PrintStream auditStream;
 
-    public AuditTraffic(ResponseStrategy wrappedStrategy) {
+    public AuditTraffic(PrintStream auditStream, ResponseStrategy wrappedStrategy) {
+        this.auditStream = auditStream;
         this.wrappedStrategy = wrappedStrategy;
     }
 
@@ -19,7 +22,7 @@ public class AuditTraffic implements ResponseStrategy {
     public Response respondTo(Request request) {
         Response response = wrappedStrategy.respondTo(request);
 
-        System.out.println("id = " + request.getId() + ", " +
+        auditStream.println("id = " + request.getId() + ", " +
                 "req = " + Arrays.asList(request.getParams()) + ", " +
                 "resp = " + response.getResult());
 

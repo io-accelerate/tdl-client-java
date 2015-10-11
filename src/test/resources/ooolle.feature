@@ -16,9 +16,9 @@ Feature: #Enter feature name here
       | X2, 11   |
 
 
-#  Scenario: Display requests and response
-#    Given I receive the following requests:
-#      | X1, 0, 1  |
-#    When I go live with an implementation that adds to numbers
-#    Then the client should display to console:
-#      | id = X1, req = [0, 1], resp = 1  |
+  Scenario: Display requests and response
+    Given I receive the following requests:
+      | X1, 0, 1  |
+    When I go live with an implementation that adds to numbers
+    Then the client should display to console:
+      | id = X1, req = [0, 1], resp = 1  |

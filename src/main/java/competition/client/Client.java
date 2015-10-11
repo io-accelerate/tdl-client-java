@@ -31,11 +31,11 @@ public class Client {
     }
 
     public void goLiveWith(UserImplementation userImplementation) {
-        run(new RespondToAllRequests(DeserializeAndRespondToMessage.using(userImplementation)));
+        run(new RespondToAllRequests(DeserializeAndRespondToMessage.using(userImplementation, auditStream)));
     }
 
     public void trialRunWith(UserImplementation userImplementation) {
-        run(new PeekAtFirstRequest(DeserializeAndRespondToMessage.using(userImplementation)));
+        run(new PeekAtFirstRequest(DeserializeAndRespondToMessage.using(userImplementation, auditStream)));
     }
 
     private void run(HandlingStrategy strategy) {

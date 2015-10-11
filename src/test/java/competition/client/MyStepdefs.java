@@ -10,6 +10,7 @@ import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
 import org.junit.contrib.java.lang.system.SystemOutRule;
 import utils.jmx.broker.RemoteJmxQueue;
+import utils.stream.LogPrintStream;
 
 import java.util.List;
 
@@ -32,9 +33,12 @@ public class MyStepdefs {
     RemoteJmxQueue responseQueue;
     Client client;
 
+    //Testing utils
+    LogPrintStream logPrintStream;
 
     public MyStepdefs(SingletonTestBroker broker) {
         this.broker = broker;
+        this.logPrintStream = new LogPrintStream(System.out);
     }
 
     @Given("^I start with a clean broker$")
@@ -45,7 +49,9 @@ public class MyStepdefs {
 
         responseQueue = broker.addQueue(username +".resp");
         responseQueue.purge();
-        client = new Client(HOSTNAME, PORT, username);
+
+        logPrintStream.clearLog();
+        client = new Client(HOSTNAME, PORT, username, logPrintStream);
     }
 
     @Given("^I receive the following requests:$")
@@ -79,7 +85,7 @@ public class MyStepdefs {
 
     @Then("^the client should display to console:$")
     public void the_client_should_display_to_console(List<String> expectedOutputs) throws Throwable {
-        String output = "ole";
+        String output = logPrintStream.getLog();
         for (String expectedLine : expectedOutputs) {
             assertThat(output, containsString(expectedLine));
         }
