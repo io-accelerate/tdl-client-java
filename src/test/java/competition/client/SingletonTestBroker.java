@@ -14,7 +14,6 @@ public class SingletonTestBroker {
 
     private static RemoteJmxBroker BROKER_INSTANCE;
 
-
     public SingletonTestBroker() throws Exception {
         //All the instances are just a proxy for the same broker
         if (BROKER_INSTANCE == null) {
