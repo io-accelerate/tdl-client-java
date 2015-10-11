@@ -21,9 +21,9 @@ CURRENT_PATCH_VERSION=`get_property "currentPatchVersion"`
 CURRENT_VERSION="${CURRENT_MAJOR_MINOR_VERSION}.${CURRENT_PATCH_VERSION}"
 
 # Previous
-PREVIOUS_MAJOR_MINOR_VERSION=`get_property "previousReleaseVersion" | cut -d "." -f 1,2`
-PREVIOUS_PATCH_VERSION=`get_property "previousReleaseVersion" | cut -d "." -f 2`
-PREVIOUS_VERSION=`get_property "previousReleaseVersion"`
+PREVIOUS_MAJOR_MINOR_VERSION=`get_property "previousVersion" | cut -d "." -f 1,2`
+PREVIOUS_PATCH_VERSION=`get_property "previousVersion" | cut -d "." -f 2`
+PREVIOUS_VERSION=`get_property "previousVersion"`
 
 # Prompt for version confirmation
 read -p "Going to release version ${CURRENT_VERSION} (previous ${PREVIOUS_VERSION}). Proceed ? [y/n] "
@@ -53,9 +53,7 @@ NEXT_PATCH_VERSION=`next_patch_version`
 echo "Next version is: $NEXT_PATCH_VERSION"
 
 cat > "${VERSION_FILE}" <<-EOF
-# We are using semantic versioning
-# MAJOR.MINOR version comes from the version of the Spec
 previousVersion=$CURRENT_VERSION
-releaseVersion=$NEXT_PATCH_VERSION
+# the current MAJOR.MINOR version is dynamically computed from the version of the Spec
 currentPatchVersion=1
 EOF

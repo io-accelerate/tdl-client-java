@@ -14,7 +14,11 @@ buildscript {
 //~~~~ Settings for the source code
 sourceCompatibility = 1.8
 group = 'ro.ghionoiu'
-version = releaseVersion
+
+def specFolder = file("src/test/resources/tdl/client")
+def majorMinorVersion = ['sh', '-c', "git --git-dir ${specFolder}/.git describe --all | cut -d '/' -f 2 | tr -d 'v'"]
+        .execute().text.trim()
+version = "${majorMinorVersion}.${currentPatchVersion}"
 
 repositories {
     mavenCentral()
