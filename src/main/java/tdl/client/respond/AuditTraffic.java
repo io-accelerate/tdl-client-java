@@ -1,7 +1,7 @@
-package competition.client.respond;
+package tdl.client.respond;
 
-import competition.client.abstractions.Request;
-import competition.client.abstractions.Response;
+import tdl.client.abstractions.Request;
+import tdl.client.abstractions.Response;
 
 import java.io.PrintStream;
 import java.util.Arrays;

@@ -1,6 +1,6 @@
-package competition.examples;
+package tdl.examples;
 
-import competition.client.Client;
+import tdl.client.Client;
 
 /**
  * Created by julianghionoiu on 11/06/2015.

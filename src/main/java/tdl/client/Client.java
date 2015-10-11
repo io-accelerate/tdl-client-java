@@ -1,8 +1,8 @@
-package competition.client;
+package tdl.client;
 
-import competition.client.abstractions.UserImplementation;
-import competition.client.transport.RemoteBroker;
-import competition.client.transport.StringMessage;
+import tdl.client.abstractions.UserImplementation;
+import tdl.client.transport.RemoteBroker;
+import tdl.client.transport.StringMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -1,4 +1,4 @@
-package competition.client.transport;
+package tdl.client.transport;
 
 import org.apache.activemq.ActiveMQConnectionFactory;
 import org.slf4j.LoggerFactory;

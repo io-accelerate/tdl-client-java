@@ -54,7 +54,7 @@ apply plugin: 'com.github.kt3k.coveralls'
 
 cobertura {
     coverageFormats = ['html', 'xml']
-    coverageIncludes = ['.*competition.client.*']
+    coverageIncludes = ['.*tdl.client.*']
     coverageIgnores = ['.*org.slf4j.Logger.*']
 }
 test.finalizedBy(project.tasks.cobertura)

@@ -1,13 +1,13 @@
-package competition.client;
+package tdl.client;
 
-import competition.client.abstractions.Request;
-import competition.client.abstractions.Response;
-import competition.client.abstractions.UserImplementation;
-import competition.client.respond.AuditTraffic;
-import competition.client.respond.ObtainResponse;
-import competition.client.respond.ResponseStrategy;
-import competition.client.respond.ValidateResponse;
-import competition.client.serialization.CsvSerializationProvider;
+import tdl.client.abstractions.Request;
+import tdl.client.abstractions.Response;
+import tdl.client.abstractions.UserImplementation;
+import tdl.client.respond.AuditTraffic;
+import tdl.client.respond.ObtainResponse;
+import tdl.client.respond.ResponseStrategy;
+import tdl.client.respond.ValidateResponse;
+import tdl.client.serialization.CsvSerializationProvider;
 
 import java.io.PrintStream;
 

@@ -1,4 +1,4 @@
-package competition.client.abstractions;
+package tdl.client.abstractions;
 
 /**
  * Created by julianghionoiu on 20/06/2015.

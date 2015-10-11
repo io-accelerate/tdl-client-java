@@ -1,4 +1,4 @@
-package competition.client;
+package tdl.client;
 
 /**
  * Created by julianghionoiu on 22/07/2015.

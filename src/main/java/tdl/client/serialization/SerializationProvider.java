@@ -1,7 +1,7 @@
-package competition.client.serialization;
+package tdl.client.serialization;
 
-import competition.client.abstractions.Request;
-import competition.client.abstractions.Response;
+import tdl.client.abstractions.Request;
+import tdl.client.abstractions.Response;
 
 /**
  * Created by julianghionoiu on 20/06/2015.

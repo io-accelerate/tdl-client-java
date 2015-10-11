@@ -1,6 +1,6 @@
-package competition.client;
+package tdl.client;
 
-import competition.client.abstractions.UserImplementation;
+import tdl.client.abstractions.UserImplementation;
 import cucumber.api.Transform;
 import cucumber.api.Transformer;
 import cucumber.api.java.en.*;

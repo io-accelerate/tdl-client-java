@@ -1,9 +1,9 @@
-package competition.client.respond;
+package tdl.client.respond;
 
-import competition.client.DeserializeAndRespondToMessage;
-import competition.client.abstractions.Request;
-import competition.client.abstractions.Response;
-import competition.client.abstractions.UserImplementation;
+import tdl.client.DeserializeAndRespondToMessage;
+import tdl.client.abstractions.Request;
+import tdl.client.abstractions.Response;
+import tdl.client.abstractions.UserImplementation;
 import org.slf4j.LoggerFactory;
 
 /**

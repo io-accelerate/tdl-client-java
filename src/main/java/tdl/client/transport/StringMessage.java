@@ -1,4 +1,4 @@
-package competition.client.transport;
+package tdl.client.transport;
 
 import javax.jms.JMSException;
 import javax.jms.Message;

@@ -1,4 +1,4 @@
-package competition.client;
+package tdl.client;
 
 import utils.jmx.broker.RemoteJmxBroker;
 import utils.jmx.broker.RemoteJmxQueue;

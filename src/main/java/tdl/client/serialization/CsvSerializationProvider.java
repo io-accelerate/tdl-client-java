@@ -1,7 +1,7 @@
-package competition.client.serialization;
+package tdl.client.serialization;
 
-import competition.client.abstractions.Request;
-import competition.client.abstractions.Response;
+import tdl.client.abstractions.Request;
+import tdl.client.abstractions.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
