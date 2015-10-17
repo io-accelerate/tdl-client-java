@@ -1,5 +1,6 @@
 package tdl.client;
 
+import tdl.client.abstractions.ImplementationMap;
 import tdl.client.abstractions.UserImplementation;
 import tdl.client.transport.RemoteBroker;
 import tdl.client.transport.StringMessage;
@@ -8,6 +9,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.jms.JMSException;
 import java.io.PrintStream;
+import java.util.Map;
 
 /**
  * Created by julianghionoiu on 20/06/2015.
@@ -30,12 +32,12 @@ public class Client {
         this.auditStream = auditStream;
     }
 
-    public void goLiveWith(UserImplementation userImplementation) {
-        run(new RespondToAllRequests(DeserializeAndRespondToMessage.using(userImplementation, auditStream)));
+    public void goLiveWith(ImplementationMap implementationMap) {
+        run(new RespondToAllRequests(DeserializeAndRespondToMessage.using(implementationMap, auditStream)));
     }
 
-    public void trialRunWith(UserImplementation userImplementation) {
-        run(new PeekAtFirstRequest(DeserializeAndRespondToMessage.using(userImplementation, auditStream)));
+    public void trialRunWith(ImplementationMap implementationMap) {
+        run(new PeekAtFirstRequest(DeserializeAndRespondToMessage.using(implementationMap, auditStream)));
     }
 
     private void run(HandlingStrategy strategy) {

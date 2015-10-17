@@ -1,5 +1,7 @@
 package tdl.client;
 
+import cucumber.api.PendingException;
+import tdl.client.abstractions.ImplementationMap;
 import tdl.client.abstractions.UserImplementation;
 import cucumber.api.Transform;
 import cucumber.api.Transformer;
@@ -72,40 +74,49 @@ public class ClientSteps {
 
     //~~~~~ Implementations
 
-    private static final Map<String, UserImplementation> IMPLEMENTATION_MAP = new HashMap<>();
+    private static final Map<String, UserImplementation> TEST_IMPLEMENTATIONS = new HashMap<>();
 
     static {
-        IMPLEMENTATION_MAP.put("adds two numbers", params -> {
+        TEST_IMPLEMENTATIONS.put("adds two numbers", params -> {
             Integer x = Integer.parseInt(params[0]);
             Integer y = Integer.parseInt(params[1]);
             return x + y;
         });
-        IMPLEMENTATION_MAP.put("returns null", params -> null);
-        IMPLEMENTATION_MAP.put("throws exception", param -> {
+        TEST_IMPLEMENTATIONS.put("increment number", params -> {
+            Integer x = Integer.parseInt(params[0]);
+            return x + 1;
+        });
+        TEST_IMPLEMENTATIONS.put("returns null", params -> null);
+        TEST_IMPLEMENTATIONS.put("throws exception", param -> {
             throw new IllegalStateException("faulty user code");
         });
-        IMPLEMENTATION_MAP.put("is valid", params -> "ok");
+        TEST_IMPLEMENTATIONS.put("some logic", params -> "ok");
     }
 
-    public static class StringToImplementation extends Transformer<UserImplementation> {
-        @Override
-        public UserImplementation transform(String value) {
-            if (IMPLEMENTATION_MAP.containsKey(value)) {
-                return IMPLEMENTATION_MAP.get(value);
-            } else {
-                throw new IllegalArgumentException("Not a valid implementation reference: \"" + value+"\"");
-            }
+    private static UserImplementation asImplementation(String logic) {
+        if (TEST_IMPLEMENTATIONS.containsKey(logic)) {
+            return TEST_IMPLEMENTATIONS.get(logic);
+        } else {
+            throw new IllegalArgumentException("Not a valid implementation reference: \"" + logic+"\"");
         }
     }
 
-    @When("^I go live with an implementation that (.*)$")
-    public void go_live(@Transform(StringToImplementation.class) UserImplementation implementation) throws Throwable {
-        client.goLiveWith(implementation);
+    private static ImplementationMap asImplementationMap(Map<String, String> methodLogic) {
+        ImplementationMap implementationMap = new ImplementationMap();
+        methodLogic.forEach((method, logicDescription) ->
+                        implementationMap.register(method, asImplementation(logicDescription))
+        );
+        return implementationMap;
     }
 
-    @When("^I do a trial run with an implementation that (.*)$")
-    public void trial_run(@Transform(StringToImplementation.class) UserImplementation implementation) throws Throwable {
-        client.trialRunWith(implementation);
+    @When("^I go live with the following implementations:$")
+    public void go_live(Map<String, String> methodLogic) throws Throwable {
+        client.goLiveWith(asImplementationMap(methodLogic));
+    }
+
+    @When("^I do a trial run with the following implementations:$")
+    public void trial_run(Map<String, String> methodNames) throws Throwable {
+        client.trialRunWith(asImplementationMap(methodNames));
     }
 
     //~~~~~ Assertions

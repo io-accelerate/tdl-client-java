@@ -6,17 +6,20 @@ package tdl.client.abstractions;
 public class Request {
     private final String id;
     private final String[] params;
+    private String methodName;
 
-    public Request(String id, String[] params) {
+    public Request(String id, String methodName, String[] params) {
         this.id = id;
+        this.methodName = methodName;
         this.params = params;
-
-
-        System.console();
     }
 
     public String getId() {
         return id;
+    }
+
+    public String getMethodName() {
+        return methodName;
     }
 
     public String[] getParams() {

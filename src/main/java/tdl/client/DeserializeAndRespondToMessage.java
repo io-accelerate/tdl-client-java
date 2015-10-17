@@ -1,5 +1,6 @@
 package tdl.client;
 
+import tdl.client.abstractions.ImplementationMap;
 import tdl.client.abstractions.Request;
 import tdl.client.abstractions.Response;
 import tdl.client.abstractions.UserImplementation;
@@ -18,13 +19,13 @@ public class DeserializeAndRespondToMessage implements MessageHandler {
     private final CsvSerializationProvider serializationProvider;
     private final ResponseStrategy responseStrategy;
 
-    public DeserializeAndRespondToMessage(UserImplementation userImplementation, PrintStream auditStream) {
+    public DeserializeAndRespondToMessage(ImplementationMap implementationMap, PrintStream auditStream) {
         this.serializationProvider = new CsvSerializationProvider();
-        this.responseStrategy = new ValidateResponse(new AuditTraffic(auditStream, new ObtainResponse(userImplementation)));
+        this.responseStrategy = new ValidateResponse(new AuditTraffic(auditStream, new ObtainResponse(implementationMap)));
     }
 
-    public static DeserializeAndRespondToMessage using(UserImplementation userImplementation, PrintStream printStream) {
-        return new DeserializeAndRespondToMessage(userImplementation, printStream);
+    public static DeserializeAndRespondToMessage using(ImplementationMap implementationMap, PrintStream printStream) {
+        return new DeserializeAndRespondToMessage(implementationMap, printStream);
     }
 
     public String respondTo(String messageText) {

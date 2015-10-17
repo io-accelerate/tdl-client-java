@@ -5,6 +5,7 @@ import tdl.client.abstractions.Response;
 
 import java.io.PrintStream;
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * Created by julianghionoiu on 20/06/2015.
@@ -22,10 +23,22 @@ public class AuditTraffic implements ResponseStrategy {
     public Response respondTo(Request request) {
         Response response = wrappedStrategy.respondTo(request);
 
-        auditStream.println("id = " + request.getId() + ", " +
-                "req = " + Arrays.asList(request.getParams()) + ", " +
-                "resp = " + response.getResult());
+        auditStream.printf("id = %s, req = %s(%s), resp = %s%n",
+                request.getId(), request.getMethodName(), paramsToString(request), response.getResult());
 
         return response;
+    }
+
+    //~~~ Utils
+
+    private static String paramsToString(Request request) {
+        StringBuilder sb = new StringBuilder();
+        for (String param : request.getParams()) {
+            if (sb.length() > 0) {
+                sb.append(", ");
+            }
+            sb.append(param);
+        }
+        return sb.toString();
     }
 }

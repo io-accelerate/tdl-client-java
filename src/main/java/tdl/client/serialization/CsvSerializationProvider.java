@@ -15,14 +15,15 @@ public class CsvSerializationProvider implements SerializationProvider {
 
     @Override
     public Request deserialize(String messageText) {
-        String[] items = messageText.split(", ", 2);
+        String[] items = messageText.split(", ", 3);
         LOGGER.debug("Received items: " + Arrays.toString(items));
 
         String requestId = items[0];
-        String serializedParams = items[1];
+        String methodName = items[1];
+        String serializedParams = items[2];
         String[] params = serializedParams.split(", ");
 
-        return new Request(requestId, params);
+        return new Request(requestId, methodName, params);
     }
 
 
