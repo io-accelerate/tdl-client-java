@@ -152,9 +152,10 @@ task printPreviousVersion {
     }
 }
 
-task printVersion {
+task printVersionInformation {
     doLast {
-        println project.currentVersionObj.toString()
+        println "PREVIOUS_VERSION = "+project.previousVersionObj.toString()
+        println "CURRENT_VERSION = "+project.currentVersionObj.toString()
     }
 }
 
