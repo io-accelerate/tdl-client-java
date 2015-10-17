@@ -15,10 +15,60 @@ buildscript {
 sourceCompatibility = 1.8
 group = 'ro.ghionoiu'
 
+class Version {
+    int major
+    int minor
+    int patch
+
+    Version(int major, int minor, int patch) {
+        this.major = major
+        this.minor = minor
+        this.patch = patch
+    }
+
+    static Version fromString(versionString) {
+        def (String major, String minor, String patch) = versionString.tokenize( '.' )
+        new Version(major.toInteger(), minor.toInteger(), patch.toInteger())
+    }
+
+    boolean higherThan(Version otherVersion) {
+        if (this.major > otherVersion.major) {
+            return true
+        } else
+        if (this.minor > otherVersion.minor) {
+            return true
+        } else {
+            return this.patch > otherVersion.patch
+        }
+    }
+
+    Version increment() {
+        new Version(this.major, this.minor, this.patch +1)
+    }
+
+    String toString() {
+        major+"."+minor+"."+patch
+    }
+}
+
+// Compute version
 def specFolder = file("src/test/resources/tdl/client")
 def majorMinorVersion = ['sh', '-c', "git --git-dir ${specFolder}/.git describe --all | cut -d '/' -f 2 | tr -d 'v'"]
         .execute().text.trim()
-version = "${majorMinorVersion}.${currentPatchVersion}"
+
+
+ext.previousVersionObj = Version.fromString(previousVersion)
+def newSpecVersionObj = Version.fromString(majorMinorVersion+".0")
+if (newSpecVersionObj.higherThan(ext.previousVersionObj)) {
+    ext.currentVersionObj = newSpecVersionObj
+} else {
+    ext.currentVersionObj = ext.previousVersionObj.increment()
+}
+
+version = currentVersionObj.toString()
+
+
+//~~~~ Setup the dependecies
 
 repositories {
     mavenCentral()
@@ -94,6 +144,18 @@ task sourceJar(type: Jar) {
 task javadocJar(type: Jar, dependsOn: javadoc) {
     classifier = 'javadoc'
     from javadoc.destinationDir
+}
+
+task printPreviousVersion {
+    doLast {
+        println project.previousVersionObj.toString()
+    }
+}
+
+task printVersion {
+    doLast {
+        println project.currentVersionObj.toString()
+    }
 }
 
 // Add the sourceJars to non-extractor modules
