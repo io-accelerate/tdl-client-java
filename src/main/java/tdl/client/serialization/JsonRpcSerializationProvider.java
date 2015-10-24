@@ -4,6 +4,10 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import tdl.client.abstractions.Request;
 import tdl.client.abstractions.Response;
+import tdl.client.transport.StringMessage;
+
+import javax.jms.JMSException;
+import java.util.Optional;
 
 /**
  * Created by julianghionoiu on 24/10/2015.
@@ -18,9 +22,15 @@ public class JsonRpcSerializationProvider implements SerializationProvider {
     }
 
     @Override
-    public Request deserialize(String messageText) {
-        JsonRpcRequest jsonRpcRequest = gson.fromJson(messageText, JsonRpcRequest.class);
-        return jsonRpcRequest.asRequest();
+    public Optional<Request> deserialize(StringMessage messageText) throws JMSException {
+        Optional<Request> request = Optional.empty();
+
+        if (messageText.isValid()) {
+            JsonRpcRequest jsonRpcRequest = gson.fromJson(messageText.getContent(), JsonRpcRequest.class);
+            request = Optional.of(new Request(messageText, jsonRpcRequest));
+        }
+
+        return request;
     }
 
     @Override
@@ -34,35 +44,4 @@ public class JsonRpcSerializationProvider implements SerializationProvider {
 
     //~~~~ Gson classes
 
-    private static final class JsonRpcRequest {
-        private final String method;
-        private final String[] params;
-        private final String id;
-
-        public JsonRpcRequest(String method, String[] params, String id) {
-            this.method = method;
-            this.params = params;
-            this.id = id;
-        }
-
-        public Request asRequest() {
-            return new Request(id, method, params);
-        }
-    }
-
-    private static final class JsonRpcResponse {
-        private final Object result;
-        private final String error;
-        private final String id;
-
-        public JsonRpcResponse(Object result, String error, String id) {
-            this.result = result;
-            this.error = error;
-            this.id = id;
-        }
-
-        public static JsonRpcResponse from(Response response) {
-            return new JsonRpcResponse(response.getResult(), null, response.getId());
-        }
-    }
 }

@@ -1,8 +1,12 @@
 package tdl.client;
 
-import tdl.client.abstractions.ImplementationMap;
-import tdl.client.abstractions.UserImplementation;
+import tdl.client.abstractions.ProcessingRules;
 import cucumber.api.java.en.*;
+import tdl.client.abstractions.UserImplementation;
+import tdl.client.actions.ClientAction;
+import tdl.client.actions.PublishAndContinueAction;
+import tdl.client.actions.PublishAndStopAction;
+import tdl.client.actions.StopAction;
 import tdl.client.audit.StdoutAuditStream;
 import utils.jmx.broker.RemoteJmxQueue;
 import utils.logging.LogAuditStream;
@@ -72,49 +76,60 @@ public class ClientSteps {
 
     //~~~~~ Implementations
 
-    private static final Map<String, UserImplementation> TEST_IMPLEMENTATIONS = new HashMap<>();
-
-    static {
-        TEST_IMPLEMENTATIONS.put("adds two numbers", params -> {
+    private static final Map<String, UserImplementation> TEST_IMPLEMENTATIONS = new HashMap<String, UserImplementation >() {{
+        put("add two numbers", params -> {
             Integer x = Integer.parseInt(params[0]);
             Integer y = Integer.parseInt(params[1]);
             return x + y;
         });
-        TEST_IMPLEMENTATIONS.put("increment number", params -> {
+        put("increment number", params -> {
             Integer x = Integer.parseInt(params[0]);
             return x + 1;
         });
-        TEST_IMPLEMENTATIONS.put("returns null", params -> null);
-        TEST_IMPLEMENTATIONS.put("throws exception", param -> {
+        put("return null", params -> null);
+        put("throw exception", param -> {
             throw new IllegalStateException("faulty user code");
         });
-        TEST_IMPLEMENTATIONS.put("some logic", params -> "ok");
+        put("some logic", params -> "ok");
+    }};
+
+
+    private static final Map<String, ClientAction> CLIENT_ACTIONS = new HashMap<String, ClientAction >() {{
+        put("publish", new PublishAndContinueAction());
+        put("publish and stop", new PublishAndStopAction());
+        put("stop", new StopAction());
+    }};
+
+    public class ProcessingRuleRepresentation {
+        String method;
+        String call;
+        String action;
     }
 
-    private static UserImplementation asImplementation(String logic) {
-        if (TEST_IMPLEMENTATIONS.containsKey(logic)) {
-            return TEST_IMPLEMENTATIONS.get(logic);
+    private static UserImplementation asUserImplementation(String call) {
+        if (TEST_IMPLEMENTATIONS.containsKey(call)) {
+            return TEST_IMPLEMENTATIONS.get(call);
         } else {
-            throw new IllegalArgumentException("Not a valid implementation reference: \"" + logic+"\"");
+            throw new IllegalArgumentException("Not a valid implementation reference: \"" + call+"\"");
         }
     }
 
-    private static ImplementationMap asImplementationMap(Map<String, String> methodLogic) {
-        ImplementationMap implementationMap = new ImplementationMap();
-        methodLogic.forEach((method, logicDescription) ->
-                        implementationMap.register(method, asImplementation(logicDescription))
+    private static ClientAction asAction(String actionName) {
+        if (CLIENT_ACTIONS.containsKey(actionName)) {
+            return CLIENT_ACTIONS.get(actionName);
+        } else {
+            throw new IllegalArgumentException("Not a valid action reference: \"" + actionName+"\"");
+        }
+    }
+
+    @When("^I go live with the following processing rules:$")
+    public void go_live(List<ProcessingRuleRepresentation> listOfRules) throws Throwable {
+        ProcessingRules processingRules = new ProcessingRules();
+        listOfRules.forEach((ruleLine) ->
+                        processingRules.add(ruleLine.method, asUserImplementation(ruleLine.call), asAction(ruleLine.action))
         );
-        return implementationMap;
-    }
 
-    @When("^I go live with the following implementations:$")
-    public void go_live(Map<String, String> methodLogic) throws Throwable {
-        client.goLiveWith(asImplementationMap(methodLogic));
-    }
-
-    @When("^I do a trial run with the following implementations:$")
-    public void trial_run(Map<String, String> methodNames) throws Throwable {
-        client.trialRunWith(asImplementationMap(methodNames));
+        client.goLiveWith(processingRules);
     }
 
     //~~~~~ Assertions
@@ -122,6 +137,11 @@ public class ClientSteps {
     @Then("^the client should consume all requests$")
     public void request_queue_empty() throws Throwable {
         assertThat("Requests have not been consumed",requestQueue.getSize(), equalTo(asLong(0)));
+    }
+
+    @Then("^the client should consume first request$")
+    public void request_queue_less_than_one() throws Throwable {
+        assertThat("Wrong number of requests have been consumed",requestQueue.getSize(), equalTo(asLong(initialRequestCount-1)));
     }
 
     @And("^the client should publish the following responses:$")

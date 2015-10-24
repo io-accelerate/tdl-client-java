@@ -51,12 +51,24 @@ class Version {
     }
 }
 
-// Compute version
-def specFolder = file("src/test/resources/tdl/client")
-def majorMinorVersion = ['sh', '-c', "git --git-dir ${specFolder}/.git describe --all | cut -d '/' -f 2 | tr -d 'v'"]
-        .execute().text.trim()
+//~~~~~~ Compute version
+def specFolder = file("${projectDir}/src/test/resources/tdl/client")
+def git_describe_process = ['sh', '-c', "git --git-dir ${specFolder}/.git describe --all"]
+        .execute()
 
+// Get Spec version from Git
+def sout = new StringBuffer(), serr = new StringBuffer()
+git_describe_process.consumeProcessOutput(sout, serr)
+git_describe_process.waitForOrKill(1000)
 
+def majorMinorVersion = '0.0'
+if (git_describe_process.exitValue() == 0 ) {
+    majorMinorVersion = sout.toString().split('/v')[1]
+} else {
+    logger.warn('Failed to retrieve Spec version from git describe. Setting version to 0.0')
+}
+
+// Compute next version
 ext.previousVersionObj = Version.fromString(previousVersion)
 def newSpecVersionObj = Version.fromString(majorMinorVersion+".0")
 if (newSpecVersionObj.higherThan(ext.previousVersionObj)) {
@@ -68,7 +80,7 @@ if (newSpecVersionObj.higherThan(ext.previousVersionObj)) {
 version = currentVersionObj.toString()
 
 
-//~~~~ Setup the dependecies
+//~~~~ Setup the dependencies
 
 repositories {
     mavenCentral()
@@ -195,8 +207,8 @@ uploadArchives {
 
             licenses {
                 license {
-                    name 'GNU General Public License, Version 3.0'
-                    url 'http://www.gnu.org/licenses/gpl-3.0.txt'
+                    name 'Apache License, Version 2.0'
+                    url 'https://www.apache.org/licenses/LICENSE-2.0.txt'
                 }
             }
         }

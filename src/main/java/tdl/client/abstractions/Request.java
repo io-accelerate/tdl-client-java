@@ -1,28 +1,33 @@
 package tdl.client.abstractions;
 
+import tdl.client.serialization.JsonRpcRequest;
+import tdl.client.transport.StringMessage;
+
 /**
  * Created by julianghionoiu on 20/06/2015.
  */
 public class Request {
-    private final String id;
-    private final String[] params;
-    private String methodName;
+    private StringMessage originalMessage;
+    private JsonRpcRequest requestData;
 
-    public Request(String id, String methodName, String[] params) {
-        this.id = id;
-        this.methodName = methodName;
-        this.params = params;
+    public Request(StringMessage originalMessage, JsonRpcRequest requestData) {
+        this.originalMessage = originalMessage;
+        this.requestData = requestData;
+    }
+
+    public StringMessage getOriginalMessage() {
+        return originalMessage;
     }
 
     public String getId() {
-        return id;
+        return requestData.getId();
     }
 
     public String getMethodName() {
-        return methodName;
+        return requestData.getMethod();
     }
 
     public String[] getParams() {
-        return params;
+        return requestData.getParams();
     }
 }
