@@ -48,7 +48,7 @@ public class Client {
 
             LoggerFactory.getLogger(Client.class).info("Stopping client.");
         } catch (Exception e) {
-            LOGGER.error("Problem communicating with the broker", e);
+            LOGGER.error("There was a problem processing messages", e);
         }
     }
 

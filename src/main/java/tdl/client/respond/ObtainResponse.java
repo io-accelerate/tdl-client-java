@@ -27,12 +27,12 @@ public class ObtainResponse implements ResponseStrategy {
             result = userImplementation.process(request.getParams());
         } catch (Exception e) {
             LoggerFactory.getLogger(DeserializeAndRespondToMessage.class)
-                    .info("The user implementation has thrown exception.", e);
+                    .warn("The user implementation has thrown exception.", e);
         }
 
         if (result == null) {
             LoggerFactory.getLogger(DeserializeAndRespondToMessage.class)
-                    .info("User implementation has returned \"null\".");
+                    .warn("User implementation has returned \"null\".");
         }
 
         return new Response(request.getId(), result);

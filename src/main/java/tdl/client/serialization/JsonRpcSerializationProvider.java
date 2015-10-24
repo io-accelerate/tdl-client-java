@@ -25,7 +25,11 @@ public class JsonRpcSerializationProvider implements SerializationProvider {
 
     @Override
     public String serialize(Response response) {
-        return gson.toJson(JsonRpcResponse.from(response));
+        String serializedForm = null;
+        if ( response != null ){
+            serializedForm = gson.toJson(JsonRpcResponse.from(response));
+        }
+        return serializedForm;
     }
 
     //~~~~ Gson classes
