@@ -1,4 +1,6 @@
-package utils.stream;
+package utils.logging;
+
+import tdl.client.audit.AuditStream;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
@@ -9,13 +11,14 @@ import static java.lang.System.getProperty;
 /**
  * Created by julianghionoiu on 11/10/2015.
  */
-public class LogPrintStream extends PrintStream {
+public class LogAuditStream implements AuditStream {
     private static final ByteArrayOutputStream LOG
             = new ByteArrayOutputStream();
-    private final PrintStream originalStream;
+    private final PrintStream logStream;
+    private final AuditStream originalStream;
 
-    public LogPrintStream(PrintStream originalStream) {
-        super(LOG);
+    public LogAuditStream(AuditStream originalStream) {
+        logStream = new PrintStream(LOG);
         this.originalStream = originalStream;
         LOG.reset();
     }
@@ -25,7 +28,6 @@ public class LogPrintStream extends PrintStream {
     public void clearLog() {
         LOG.reset();
     }
-
 
     public String getLog() {
         String encoding = getProperty("file.encoding");
@@ -40,14 +42,19 @@ public class LogPrintStream extends PrintStream {
 
     @Override
     public void println() {
-        super.println();
+        logStream.println();
         originalStream.println();
     }
 
-
     @Override
     public void println(String s) {
-        super.println(s);
+        logStream.println(s);
         originalStream.println(s);
+    }
+
+    @Override
+    public void printf(String format, Object... args) {
+        logStream.printf(format, args);
+        originalStream.printf(format, args);
     }
 }

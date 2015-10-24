@@ -2,6 +2,8 @@ package tdl.client;
 
 import tdl.client.abstractions.ImplementationMap;
 import tdl.client.abstractions.UserImplementation;
+import tdl.client.audit.AuditStream;
+import tdl.client.audit.StdoutAuditStream;
 import tdl.client.transport.RemoteBroker;
 import tdl.client.transport.StringMessage;
 import org.slf4j.Logger;
@@ -19,13 +21,13 @@ public class Client {
     private final String hostname;
     private final int port;
     private final String username;
-    private final PrintStream auditStream;
+    private final AuditStream auditStream;
 
     public Client(String hostname, int port, String username) {
-        this(hostname, port, username, System.out);
+        this(hostname, port, username, new StdoutAuditStream());
     }
 
-    protected Client(String hostname, int port, String username, PrintStream auditStream) {
+    protected Client(String hostname, int port, String username, AuditStream auditStream) {
         this.hostname = hostname;
         this.port = port;
         this.username = username;

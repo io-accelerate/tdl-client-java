@@ -2,6 +2,7 @@ package tdl.client.respond;
 
 import tdl.client.abstractions.Request;
 import tdl.client.abstractions.Response;
+import tdl.client.audit.AuditStream;
 
 import java.io.PrintStream;
 import java.util.Arrays;
@@ -12,9 +13,9 @@ import java.util.List;
  */
 public class AuditTraffic implements ResponseStrategy {
     private final ResponseStrategy wrappedStrategy;
-    private final PrintStream auditStream;
+    private final AuditStream auditStream;
 
-    public AuditTraffic(PrintStream auditStream, ResponseStrategy wrappedStrategy) {
+    public AuditTraffic(AuditStream auditStream, ResponseStrategy wrappedStrategy) {
         this.auditStream = auditStream;
         this.wrappedStrategy = wrappedStrategy;
     }

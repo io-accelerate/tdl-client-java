@@ -1,13 +1,11 @@
 package tdl.client;
 
-import cucumber.api.PendingException;
 import tdl.client.abstractions.ImplementationMap;
 import tdl.client.abstractions.UserImplementation;
-import cucumber.api.Transform;
-import cucumber.api.Transformer;
 import cucumber.api.java.en.*;
+import tdl.client.audit.StdoutAuditStream;
 import utils.jmx.broker.RemoteJmxQueue;
-import utils.stream.LogPrintStream;
+import utils.logging.LogAuditStream;
 
 import java.util.HashMap;
 import java.util.List;
@@ -35,11 +33,11 @@ public class ClientSteps {
 
     //Testing utils
     int initialRequestCount;
-    LogPrintStream logPrintStream;
+    LogAuditStream logAuditStream;
 
     public ClientSteps(SingletonTestBroker broker) {
         this.broker = broker;
-        this.logPrintStream = new LogPrintStream(System.out);
+        this.logAuditStream = new LogAuditStream(new StdoutAuditStream());
         this.initialRequestCount = 0;
     }
 
@@ -54,8 +52,8 @@ public class ClientSteps {
         responseQueue = broker.addQueue(username +".resp");
         responseQueue.purge();
 
-        logPrintStream.clearLog();
-        client = new Client(HOSTNAME, PORT, username, logPrintStream);
+        logAuditStream.clearLog();
+        client = new Client(HOSTNAME, PORT, username, logAuditStream);
     }
 
     @Given("^the broker is not available$")
@@ -133,15 +131,16 @@ public class ClientSteps {
 
     @Then("^the client should display to console:$")
     public void the_client_should_display_to_console(List<String> expectedOutputs) throws Throwable {
-        String output = logPrintStream.getLog();
+        String output = logAuditStream.getLog();
         for (String expectedLine : expectedOutputs) {
             assertThat(output, containsString(expectedLine));
         }
+//        System.out.println(output);
     }
 
     @But("^the client should not display to console:$")
     public void the_client_should_not_display_to_console(List<String> rejectedOutputs) throws Throwable {
-        String output = logPrintStream.getLog();
+        String output = logAuditStream.getLog();
         for (String expectedLine : rejectedOutputs) {
             assertThat(output, not(containsString(expectedLine)));
         }
