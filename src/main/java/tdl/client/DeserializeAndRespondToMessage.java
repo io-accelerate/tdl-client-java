@@ -3,17 +3,13 @@ package tdl.client;
 import tdl.client.abstractions.ImplementationMap;
 import tdl.client.abstractions.Request;
 import tdl.client.abstractions.Response;
-import tdl.client.abstractions.UserImplementation;
 import tdl.client.audit.AuditStream;
 import tdl.client.respond.AuditTraffic;
 import tdl.client.respond.ObtainResponse;
 import tdl.client.respond.ResponseStrategy;
 import tdl.client.respond.ValidateResponse;
-import tdl.client.serialization.CsvSerializationProvider;
 import tdl.client.serialization.JsonRpcSerializationProvider;
 import tdl.client.serialization.SerializationProvider;
-
-import java.io.PrintStream;
 
 /**
  * Created by julianghionoiu on 20/06/2015.
