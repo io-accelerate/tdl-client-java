@@ -63,7 +63,7 @@ git_describe_process.waitForOrKill(1000)
 
 def majorMinorVersion = '0.0'
 if (git_describe_process.exitValue() == 0 ) {
-    majorMinorVersion = sout.toString().split('/v')[1]
+    majorMinorVersion = sout.toString().split('v')[1]
 } else {
     logger.warn('Failed to retrieve Spec version from git describe. Setting version to 0.0')
 }
