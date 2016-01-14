@@ -10,7 +10,7 @@ import java.util.Optional;
 /**
  * Created by julianghionoiu on 10/01/2016.
  */
-public class PublishAndContinueAction implements ClientAction {
+public class PublishAction implements ClientAction {
     public String getAuditText() {
         return "";
     }

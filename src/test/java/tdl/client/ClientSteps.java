@@ -4,7 +4,7 @@ import tdl.client.abstractions.ProcessingRules;
 import cucumber.api.java.en.*;
 import tdl.client.abstractions.UserImplementation;
 import tdl.client.actions.ClientAction;
-import tdl.client.actions.PublishAndContinueAction;
+import tdl.client.actions.PublishAction;
 import tdl.client.actions.PublishAndStopAction;
 import tdl.client.actions.StopAction;
 import tdl.client.audit.StdoutAuditStream;
@@ -95,7 +95,7 @@ public class ClientSteps {
 
 
     private static final Map<String, ClientAction> CLIENT_ACTIONS = new HashMap<String, ClientAction >() {{
-        put("publish", new PublishAndContinueAction());
+        put("publish", new PublishAction());
         put("publish and stop", new PublishAndStopAction());
         put("stop", new StopAction());
     }};

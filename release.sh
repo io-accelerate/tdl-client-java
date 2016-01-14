@@ -35,3 +35,6 @@ cat > "${VERSION_FILE}" <<-EOF
 previousVersion=$CURRENT_VERSION
 # the current MAJOR.MINOR.PATCH version is dynamically computed from the version of the Spec and previous patch
 EOF
+
+
+echo "After Codeship build finishes, go to bintray.com and publish the new version then sync to Maven Central."
