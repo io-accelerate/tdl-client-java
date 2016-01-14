@@ -5,12 +5,8 @@ package tdl.client.actions;
  */
 public class ClientActions {
 
-    public static ClientAction publishAndContinue() {
-        return new PublishAction();
-    }
-
     public static ClientAction publish() {
-        return publishAndContinue();
+        return new PublishAction();
     }
 
     public static ClientAction publishAndStop() {
