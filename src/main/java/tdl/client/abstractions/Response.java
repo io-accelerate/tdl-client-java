@@ -6,6 +6,7 @@ import tdl.client.audit.Auditable;
  * Created by julianghionoiu on 20/06/2015.
  */
 public class Response implements Auditable {
+    public static Response EMPTY = new Response("", "empty");
     private String id;
     private Object result;
 

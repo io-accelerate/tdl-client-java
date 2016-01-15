@@ -42,16 +42,14 @@ public class Client {
             //Design: Use a while loop instead of an ActiveMQ MessageListener to process the messages in order
             Optional<Request> request = remoteBroker.receive();
             while (request.isPresent()) {
-                ClientAction clientAction = applyProcessingRules(request.get(), processingRules, remoteBroker);
-                request = clientAction.getNextRequest(remoteBroker);
+                request = applyProcessingRules(request.get(), processingRules, remoteBroker);
             }
         } catch (Exception e) {
             LOGGER.error("There was a problem processing messages", e);
         }
     }
 
-
-    private ClientAction applyProcessingRules(
+    private Optional<Request> applyProcessingRules(
             Request request, ProcessingRules processingRules, RemoteBroker remoteBroker)
             throws JMSException {
         audit.startLine();
@@ -59,18 +57,19 @@ public class Client {
 
         //Obtain response from user
         ProcessingRule processingRule = processingRules.getRuleFor(request);
-        Optional<Response> response = getResponseFor(request, processingRule);
-        audit.log(response);
+        Optional<Response> optionalResponse = getResponseFor(request, processingRule);
+        audit.log(optionalResponse.orElse(Response.EMPTY));
 
-        //Act on the response
-        ClientAction clientAction = new StopAction();
-        if (response.isPresent()) {
-            clientAction = processingRule.getClientAction();
-            clientAction.afterResponse(remoteBroker, request, response.get());
-        }
+        //Obtain action
+        ClientAction clientAction = optionalResponse
+                .map(response -> processingRule.getClientAction())
+                .orElse(new StopAction());
+
+        //Act
+        clientAction.afterResponse(remoteBroker, request, optionalResponse.orElse(Response.EMPTY));
         audit.log(clientAction);
         audit.endLine();
-        return clientAction;
+        return clientAction.getNextRequest(remoteBroker);
     }
 
     private Optional<Response> getResponseFor(Request request, ProcessingRule processingRule) {
@@ -106,12 +105,7 @@ public class Client {
             if (!text.isEmpty() && line.length() > 0) {
                 line.append(", ");
             }
-            line.append("");
-        }
-
-        public void log(Optional<Response> response) {
-            Response responseObj = response.orElseGet(() -> new Response("", "empty"));
-            log(responseObj);
+            line.append(text);
         }
 
         public void endLine() {
