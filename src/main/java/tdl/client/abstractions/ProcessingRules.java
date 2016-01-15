@@ -22,9 +22,14 @@ public class ProcessingRules {
         rules.put(methodName, new ProcessingRule(userImplementation, clientAction));
     }
 
+    public ProcessingRuleBuilder on(String methodName) {
+        return new ProcessingRuleBuilder(this, methodName);
+    }
+
     public static class ProcessingRuleBuilder {
         private final ProcessingRules instance;
         private final String methodName;
+
         private UserImplementation userImplementation;
 
         public ProcessingRuleBuilder(ProcessingRules instance, String methodName) {
@@ -36,14 +41,9 @@ public class ProcessingRules {
             this.userImplementation = userImplementation;
             return this;
         }
-
         public void then(ClientAction clientAction) {
             instance.add(methodName, userImplementation, clientAction);
         }
-    }
-
-    public ProcessingRuleBuilder on(String methodName) {
-        return new ProcessingRuleBuilder(this, methodName);
     }
 
     //~~~ Accessors

@@ -9,12 +9,12 @@ public class ClientActions {
         return new PublishAction();
     }
 
-    public static ClientAction publishAndStop() {
-        return new PublishAndStopAction();
-    }
-
     public static ClientAction stop() {
         return new StopAction();
+    }
+
+    public static ClientAction publishAndStop() {
+        return new PublishAndStopAction();
     }
 
 }

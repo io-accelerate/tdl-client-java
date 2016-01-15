@@ -11,6 +11,8 @@ import static tdl.client.actions.ClientActions.*;
  */
 public class AddNumbers {
 
+    //~~~~~~~~~~~~~~ Setup ~~~~~~~~~~~~~~
+
     public static ClientAction publishIf(boolean ready) {
         if (ready) {
             return publish();
@@ -38,6 +40,8 @@ public class AddNumbers {
 
         client.goLiveWith(processingRules);
     }
+
+    //~~~~~~~ User implementations ~~~~~~~~~~~~~~
 
     private static Integer sum(String[] params) {
         Integer x = Integer.parseInt(params[0]);

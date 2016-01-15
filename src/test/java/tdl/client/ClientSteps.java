@@ -76,7 +76,7 @@ public class ClientSteps {
 
     //~~~~~ Implementations
 
-    private static final Map<String, UserImplementation> TEST_IMPLEMENTATIONS = new HashMap<String, UserImplementation >() {{
+    private static final Map<String, UserImplementation> USER_IMPLEMENTATIONS = new HashMap<String, UserImplementation >() {{
         put("add two numbers", params -> {
             Integer x = Integer.parseInt(params[0]);
             Integer y = Integer.parseInt(params[1]);
@@ -94,25 +94,19 @@ public class ClientSteps {
     }};
 
 
-    private static final Map<String, ClientAction> CLIENT_ACTIONS = new HashMap<String, ClientAction >() {{
-        put("publish", new PublishAction());
-        put("publish and stop", new PublishAndStopAction());
-        put("stop", new StopAction());
-    }};
-
-    public class ProcessingRuleRepresentation {
-        String method;
-        String call;
-        String action;
-    }
-
-    private static UserImplementation asUserImplementation(String call) {
-        if (TEST_IMPLEMENTATIONS.containsKey(call)) {
-            return TEST_IMPLEMENTATIONS.get(call);
+    private static UserImplementation asImplementation(String call) {
+        if (USER_IMPLEMENTATIONS.containsKey(call)) {
+            return USER_IMPLEMENTATIONS.get(call);
         } else {
             throw new IllegalArgumentException("Not a valid implementation reference: \"" + call+"\"");
         }
     }
+
+    private static final Map<String, ClientAction> CLIENT_ACTIONS = new HashMap<String, ClientAction >() {{
+        put("publish", new PublishAction());
+        put("stop", new StopAction());
+        put("publish and stop", new PublishAndStopAction());
+    }};
 
     private static ClientAction asAction(String actionName) {
         if (CLIENT_ACTIONS.containsKey(actionName)) {
@@ -122,11 +116,17 @@ public class ClientSteps {
         }
     }
 
+    public class ProcessingRuleRepresentation {
+        String method;
+        String call;
+        String action;
+    }
+
     @When("^I go live with the following processing rules:$")
     public void go_live(List<ProcessingRuleRepresentation> listOfRules) throws Throwable {
         ProcessingRules processingRules = new ProcessingRules();
         listOfRules.forEach((ruleLine) ->
-                        processingRules.add(ruleLine.method, asUserImplementation(ruleLine.call), asAction(ruleLine.action))
+                        processingRules.add(ruleLine.method, asImplementation(ruleLine.call), asAction(ruleLine.action))
         );
 
         client.goLiveWith(processingRules);
