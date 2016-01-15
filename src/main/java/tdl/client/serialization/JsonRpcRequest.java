@@ -14,12 +14,6 @@ public final class JsonRpcRequest {
         this.id = "";
     }
 
-    public JsonRpcRequest(String method, String[] params, String id) {
-        this.method = method;
-        this.params = params;
-        this.id = id;
-    }
-
     public String getMethod() {
         return method;
     }

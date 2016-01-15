@@ -3,10 +3,7 @@ package tdl.client;
 import tdl.client.abstractions.ProcessingRules;
 import cucumber.api.java.en.*;
 import tdl.client.abstractions.UserImplementation;
-import tdl.client.actions.ClientAction;
-import tdl.client.actions.PublishAction;
-import tdl.client.actions.PublishAndStopAction;
-import tdl.client.actions.StopAction;
+import tdl.client.actions.*;
 import tdl.client.audit.StdoutAuditStream;
 import utils.jmx.broker.RemoteJmxQueue;
 import utils.logging.LogAuditStream;
@@ -103,9 +100,9 @@ public class ClientSteps {
     }
 
     private static final Map<String, ClientAction> CLIENT_ACTIONS = new HashMap<String, ClientAction >() {{
-        put("publish", new PublishAction());
-        put("stop", new StopAction());
-        put("publish and stop", new PublishAndStopAction());
+        put("publish", ClientActions.publish());
+        put("stop", ClientActions.stop());
+        put("publish and stop", ClientActions.publishAndStop());
     }};
 
     private static ClientAction asAction(String actionName) {
@@ -126,7 +123,7 @@ public class ClientSteps {
     public void go_live(List<ProcessingRuleRepresentation> listOfRules) throws Throwable {
         ProcessingRules processingRules = new ProcessingRules();
         listOfRules.forEach((ruleLine) ->
-                        processingRules.add(ruleLine.method, asImplementation(ruleLine.call), asAction(ruleLine.action))
+                        processingRules.on(ruleLine.method).call(asImplementation(ruleLine.call)).then(asAction(ruleLine.action))
         );
 
         client.goLiveWith(processingRules);
