@@ -1,9 +1,11 @@
 package tdl.client.abstractions;
 
+import tdl.client.audit.Auditable;
+
 /**
  * Created by julianghionoiu on 20/06/2015.
  */
-public class Response {
+public class Response implements Auditable {
     private String id;
     private Object result;
 
@@ -19,4 +21,12 @@ public class Response {
     public Object getResult() {
         return result;
     }
+
+    //~~~ Pretty print
+
+    @Override
+    public String getAuditText() {
+        return String.format("resp = %s", getResult());
+    }
+
 }

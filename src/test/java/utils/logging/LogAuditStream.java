@@ -41,20 +41,8 @@ public class LogAuditStream implements AuditStream {
     //~~~ Forward println
 
     @Override
-    public void println() {
-        logStream.println();
-        originalStream.println();
-    }
-
-    @Override
     public void println(String s) {
         logStream.println(s);
         originalStream.println(s);
-    }
-
-    @Override
-    public void printf(String format, Object... args) {
-        logStream.printf(format, args);
-        originalStream.printf(format, args);
     }
 }

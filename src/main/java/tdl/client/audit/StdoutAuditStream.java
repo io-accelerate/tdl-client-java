@@ -14,17 +14,7 @@ public class StdoutAuditStream implements AuditStream {
     }
 
     @Override
-    public void println() {
-        printStream.println();
-    }
-
-    @Override
-    public void println(String text) {
-        printStream.println();
-    }
-
-    @Override
-    public void printf(String format, Object... args) {
-        printStream.printf(format, args);
+    public void println(String s) {
+        printStream.println(s);
     }
 }

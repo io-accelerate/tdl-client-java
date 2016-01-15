@@ -7,6 +7,7 @@ import tdl.client.abstractions.ProcessingRule;
 import tdl.client.actions.ClientAction;
 import tdl.client.actions.StopAction;
 import tdl.client.audit.AuditStream;
+import tdl.client.audit.Auditable;
 import tdl.client.audit.StdoutAuditStream;
 import tdl.client.transport.RemoteBroker;
 import org.slf4j.Logger;
@@ -53,6 +54,7 @@ public class Client {
     private ClientAction applyProcessingRules(
             Request request, ProcessingRules processingRules, RemoteBroker remoteBroker)
             throws JMSException {
+        audit.startLine();
         audit.log(request);
 
         //Obtain response from user
@@ -88,47 +90,35 @@ public class Client {
 
     private static class Audit {
         private final AuditStream auditStream;
+        private StringBuilder line;
 
         public Audit(AuditStream auditStream) {
             this.auditStream = auditStream;
+            startLine();
         }
 
-        public void start() {
-            //Do nothing
+        public void startLine() {
+            line = new StringBuilder();
+        }
+
+        public void log(Auditable auditable) {
+            String text = auditable.getAuditText();
+            if (!text.isEmpty() && line.length() > 0) {
+                line.append(", ");
+            }
+            line.append("");
         }
 
         public void log(Optional<Response> response) {
-            Object responseObj = "empty";
-            if (response.isPresent()) {
-                responseObj = response.get().getResult();
-            }
-
-            auditStream.printf(", resp = %s", responseObj);
-        }
-
-        public void log(Request request) {
-            auditStream.printf("id = %s, req = %s(%s)",
-                    request.getId(), request.getMethodName(), paramsToString(request));
-        }
-
-        public void log(ClientAction clientAction) {
-            auditStream.printf(" %s", clientAction.getAuditText());
+            Response responseObj = response.orElseGet(() -> new Response("", "empty"));
+            log(responseObj);
         }
 
         public void endLine() {
-            auditStream.printf("%n");
+            auditStream.println(line.toString());
         }
     }
 
-    private static String paramsToString(Request request) {
-        StringBuilder sb = new StringBuilder();
-        for (String param : request.getParams()) {
-            if (sb.length() > 0) {
-                sb.append(", ");
-            }
-            sb.append(param);
-        }
-        return sb.toString();
-    }
+
 
 }
