@@ -1,19 +1,16 @@
 package tdl.client;
 
-import tdl.client.abstractions.ProcessingRules;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import tdl.client.abstractions.Request;
-import tdl.client.abstractions.Response;
-import tdl.client.abstractions.ProcessingRule;
+import tdl.client.abstractions.response.Response;
 import tdl.client.actions.ClientAction;
-import tdl.client.actions.StopAction;
 import tdl.client.audit.AuditStream;
 import tdl.client.audit.Auditable;
 import tdl.client.audit.StdoutAuditStream;
+import tdl.client.transport.BrokerCommunicationException;
 import tdl.client.transport.RemoteBroker;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import javax.jms.JMSException;
 import java.util.Optional;
 
 /**
@@ -39,50 +36,36 @@ public class Client {
 
     public void goLiveWith(ProcessingRules processingRules) {
         try (RemoteBroker remoteBroker = new RemoteBroker(hostname, port, username)){
-            //Design: Use a while loop instead of an ActiveMQ MessageListener to process the messages in order
+            //Design: We use a while loop instead of an ActiveMQ MessageListener to process the messages in order
             Optional<Request> request = remoteBroker.receive();
             while (request.isPresent()) {
                 request = applyProcessingRules(request.get(), processingRules, remoteBroker);
             }
         } catch (Exception e) {
-            LOGGER.error("There was a problem processing messages", e);
+            String message = "There was a problem processing messages";
+            LOGGER.error(message, e);
+            audit.logException(message, e);
         }
     }
 
     private Optional<Request> applyProcessingRules(
             Request request, ProcessingRules processingRules, RemoteBroker remoteBroker)
-            throws JMSException {
+            throws BrokerCommunicationException {
         audit.startLine();
         audit.log(request);
 
         //Obtain response from user
-        ProcessingRule processingRule = processingRules.getRuleFor(request);
-        Optional<Response> optionalResponse = getResponseFor(request, processingRule);
-        audit.log(optionalResponse.orElse(Response.EMPTY));
+        Response response = processingRules.getResponseFor(request);
+        audit.log(response);
 
         //Obtain action
-        ClientAction clientAction = optionalResponse
-                .map(response -> processingRule.getClientAction())
-                .orElse(new StopAction());
+        ClientAction clientAction = response.getClientAction();
 
         //Act
-        clientAction.afterResponse(remoteBroker, request, optionalResponse.orElse(Response.EMPTY));
+        clientAction.afterResponse(remoteBroker, request, response);
         audit.log(clientAction);
         audit.endLine();
         return clientAction.getNextRequest(remoteBroker);
-    }
-
-    private Optional<Response> getResponseFor(Request request, ProcessingRule processingRule) {
-        Optional<Response> response;
-        try {
-            Object result = processingRule.getUserImplementation().process(request.getParams());
-            response = Optional.of(new Response(request.getId(), result));
-        } catch (Exception e) {
-            response = Optional.empty();
-            LoggerFactory.getLogger(Client.class)
-                    .warn("The user implementation has thrown exception.", e);
-        }
-        return response;
     }
 
     //~~~~ Utils
@@ -95,6 +78,8 @@ public class Client {
             this.auditStream = auditStream;
             startLine();
         }
+
+        //~~~ Normal output
 
         public void startLine() {
             line = new StringBuilder();
@@ -111,8 +96,14 @@ public class Client {
         public void endLine() {
             auditStream.println(line.toString());
         }
+
+        //~~~ Exception
+
+        public void logException(String message, Exception e) {
+            startLine();
+            line.append(message).append(": ").append(e.getMessage());
+            endLine();
+        }
     }
-
-
 
 }

@@ -1,29 +1,38 @@
-package tdl.client.abstractions;
+package tdl.client.abstractions.response;
 
-import tdl.client.audit.Auditable;
+import tdl.client.actions.ClientAction;
 
 /**
  * Created by julianghionoiu on 20/06/2015.
  */
-public class Response implements Auditable {
-    public static Response EMPTY = new Response("", "empty");
+public class ValidResponse implements Response {
     private String id;
     private Object result;
+    private ClientAction clientAction;
 
-    public Response(String id, Object result) {
+    public ValidResponse(String id, Object result, ClientAction clientAction) {
         this.id = id;
         this.result = result;
+        this.clientAction = clientAction;
     }
 
+    @Override
     public String getId() {
         return id;
     }
 
+    @Override
     public Object getResult() {
         return result;
     }
 
     //~~~ Pretty print
+
+
+    @Override
+    public ClientAction getClientAction() {
+        return clientAction;
+    }
 
     @Override
     public String getAuditText() {

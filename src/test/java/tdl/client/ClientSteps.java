@@ -1,6 +1,5 @@
 package tdl.client;
 
-import tdl.client.abstractions.ProcessingRules;
 import cucumber.api.java.en.*;
 import tdl.client.abstractions.UserImplementation;
 import tdl.client.actions.*;
@@ -59,7 +58,8 @@ public class ClientSteps {
 
     @Given("^the broker is not available$")
     public void client_with_wrong_broker() throws Throwable {
-        client = new Client(HOSTNAME+"1", PORT, "broker");
+        logAuditStream.clearLog();
+        client = new Client(HOSTNAME+"1", PORT, "broker", logAuditStream);
     }
 
     @Given("^I receive the following requests:$")
@@ -152,7 +152,7 @@ public class ClientSteps {
         for (String expectedLine : expectedOutputs) {
             assertThat(output, containsString(expectedLine));
         }
-//        System.out.println(output);
+        System.out.println(output);
     }
 
     @But("^the client should not display to console:$")

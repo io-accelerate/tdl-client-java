@@ -2,8 +2,9 @@ package tdl.client.transport;
 
 import org.apache.activemq.ActiveMQConnectionFactory;
 import org.slf4j.LoggerFactory;
+import tdl.client.serialization.DeserializationException;
 import tdl.client.abstractions.Request;
-import tdl.client.abstractions.Response;
+import tdl.client.abstractions.response.Response;
 import tdl.client.serialization.JsonRpcSerializationProvider;
 import tdl.client.serialization.SerializationProvider;
 
@@ -42,20 +43,28 @@ public class RemoteBroker implements AutoCloseable {
         serializationProvider = new JsonRpcSerializationProvider();
     }
 
-    public Optional<Request> receive() throws JMSException {
-        //Debt: We should have no timeout. This method could exit if we put a special close message in the queue
-        StringMessage messageText = new StringMessage(messageConsumer.receive(REQUEST_TIMEOUT));
-        return serializationProvider.deserialize(messageText);
+    public Optional<Request> receive() throws BrokerCommunicationException {
+        try {
+            //Debt: We should have no timeout. This method could exit if we put a special close message in the queue
+            StringMessage messageText = new StringMessage(messageConsumer.receive(REQUEST_TIMEOUT));
+            return serializationProvider.deserialize(messageText);
+        } catch (JMSException | DeserializationException e) {
+            throw new BrokerCommunicationException(e);
+        }
     }
 
-    public void respondTo(Request request, Response response) throws JMSException {
-        String serializedResponse = serializationProvider.serialize(response);
+    public void respondTo(Request request, Response response) throws BrokerCommunicationException {
+        try {
+            String serializedResponse = serializationProvider.serialize(response);
 
-        TextMessage txtMessage = session.createTextMessage();
-        txtMessage.setText(serializedResponse);
-        messageProducer.send(txtMessage);
+            TextMessage txtMessage = session.createTextMessage();
+            txtMessage.setText(serializedResponse);
+            messageProducer.send(txtMessage);
 
-        request.getOriginalMessage().acknowledge();
+            request.getOriginalMessage().acknowledge();
+        } catch (JMSException e) {
+            throw new BrokerCommunicationException(e);
+        }
     }
 
     @Override

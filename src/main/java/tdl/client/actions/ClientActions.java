@@ -3,18 +3,25 @@ package tdl.client.actions;
 /**
  * Created by julianghionoiu on 10/01/2016.
  */
-public class ClientActions {
+public final class ClientActions {
+    public static ClientAction PUBLISH = new PublishAction();
+    public static ClientAction STOP = new StopAction();
+    public static ClientAction PUBLISH_AND_STOP = new PublishAndStopAction();
+
+    private ClientActions() {
+        //Utility class constructor
+    }
 
     public static ClientAction publish() {
-        return new PublishAction();
+        return PUBLISH;
     }
 
     public static ClientAction stop() {
-        return new StopAction();
+        return STOP;
     }
 
     public static ClientAction publishAndStop() {
-        return new PublishAndStopAction();
+        return PUBLISH_AND_STOP;
     }
 
 }

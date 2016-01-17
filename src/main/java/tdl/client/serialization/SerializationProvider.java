@@ -1,10 +1,9 @@
 package tdl.client.serialization;
 
 import tdl.client.abstractions.Request;
-import tdl.client.abstractions.Response;
+import tdl.client.abstractions.response.Response;
 import tdl.client.transport.StringMessage;
 
-import javax.jms.JMSException;
 import java.util.Optional;
 
 /**
@@ -12,7 +11,7 @@ import java.util.Optional;
  */
 public interface SerializationProvider {
 
-    Optional<Request> deserialize(StringMessage messageText) throws JMSException;
+    Optional<Request> deserialize(StringMessage messageText) throws DeserializationException;
 
     String serialize(Response response);
 }

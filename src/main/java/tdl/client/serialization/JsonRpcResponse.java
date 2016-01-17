@@ -1,6 +1,6 @@
 package tdl.client.serialization;
 
-import tdl.client.abstractions.Response;
+import tdl.client.abstractions.response.Response;
 
 /**
  * Created by julianghionoiu on 10/01/2016.

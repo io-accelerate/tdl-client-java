@@ -1,7 +1,7 @@
 package tdl.examples;
 
 import tdl.client.Client;
-import tdl.client.abstractions.ProcessingRules;
+import tdl.client.ProcessingRules;
 import tdl.client.actions.ClientAction;
 
 import static tdl.client.actions.ClientActions.*;

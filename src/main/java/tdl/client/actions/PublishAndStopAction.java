@@ -1,7 +1,8 @@
 package tdl.client.actions;
 
 import tdl.client.abstractions.Request;
-import tdl.client.abstractions.Response;
+import tdl.client.abstractions.response.Response;
+import tdl.client.transport.BrokerCommunicationException;
 import tdl.client.transport.RemoteBroker;
 
 import javax.jms.JMSException;
@@ -17,11 +18,11 @@ public class PublishAndStopAction implements ClientAction {
 
     @Override
     public void afterResponse(RemoteBroker remoteBroker, Request request, Response response)
-            throws JMSException {
+            throws BrokerCommunicationException {
         remoteBroker.respondTo(request, with(response));
     }
 
-    public Optional<Request> getNextRequest(RemoteBroker t) throws JMSException {
+    public Optional<Request> getNextRequest(RemoteBroker t) throws BrokerCommunicationException {
         return Optional.empty();
     }
 }
