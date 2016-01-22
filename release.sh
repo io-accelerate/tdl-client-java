@@ -2,7 +2,6 @@
 
 SCRIPT_FOLDER="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 VERSION_FILE="${SCRIPT_FOLDER}/gradle.properties"
-SPEC_FOLDER="${SCRIPT_FOLDER}/src/test/resources/tdl/client/"
 TMP_VERSION_FILE="${SCRIPT_FOLDER}/build/versions.txt"
 
 
