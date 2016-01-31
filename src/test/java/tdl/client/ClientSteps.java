@@ -53,13 +53,23 @@ public class ClientSteps {
         responseQueue.purge();
 
         logAuditStream.clearLog();
-        client = new Client(HOSTNAME, PORT, username, logAuditStream);
+        client = new Client.Builder()
+                .setHostname(HOSTNAME)
+                .setPort(PORT)
+                .setUsername(username)
+                .setAuditStream(logAuditStream)
+                .create();
     }
 
     @Given("^the broker is not available$")
     public void client_with_wrong_broker() throws Throwable {
         logAuditStream.clearLog();
-        client = new Client(HOSTNAME+"1", PORT, "broker", logAuditStream);
+        client = new Client.Builder()
+                .setHostname(HOSTNAME + "1")
+                .setPort(PORT)
+                .setUsername("broker")
+                .setAuditStream(logAuditStream)
+                .create();
     }
 
     @Given("^I receive the following requests:$")

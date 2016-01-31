@@ -31,7 +31,12 @@ public class AddNumbers {
     }
 
     private static void startClient(final boolean ready) {
-        Client client = new Client("localhost", 21616, "test");
+        Client client = new Client.Builder()
+                .setHostname("localhost")
+                .setPort(21616)
+                .setUsername("test")
+                .create();
+
         ProcessingRules processingRules = new ProcessingRules() {{
             on("sum").call(AddNumbers::sum).then(publish());
             on("test").call(params -> "OK").then(publishIf(ready));

@@ -23,16 +23,44 @@ public class Client {
     private final String username;
     private final Audit audit;
 
-    public Client(String hostname, int port, String username) {
-        this(hostname, port, username, new StdoutAuditStream());
-    }
-
     protected Client(String hostname, int port, String username, AuditStream auditStream) {
         this.hostname = hostname;
         this.port = port;
         this.username = username;
         this.audit = new Audit(auditStream);
     }
+
+    public static class Builder {
+        private String hostname;
+        private int port;
+        private String username;
+        private AuditStream auditStream = new StdoutAuditStream();
+
+        public Builder setHostname(String hostname) {
+            this.hostname = hostname;
+            return this;
+        }
+
+        public Builder setPort(int port) {
+            this.port = port;
+            return this;
+        }
+
+        public Builder setUsername(String username) {
+            this.username = username;
+            return this;
+        }
+
+        public Builder setAuditStream(AuditStream auditStream) {
+            this.auditStream = auditStream;
+            return this;
+        }
+
+        public Client create() {
+            return new Client(hostname, port, username, auditStream);
+        }
+    }
+
 
     public void goLiveWith(ProcessingRules processingRules) {
         try (RemoteBroker remoteBroker = new RemoteBroker(hostname, port, username)){
