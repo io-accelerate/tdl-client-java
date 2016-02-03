@@ -9,37 +9,63 @@ public final class PresentationUtils {
         //Utility class
     }
 
-    public static String toDisplayableString(Object ... items) {
+    public static String toDisplayableString(Object[] items) {
         StringBuilder sb = new StringBuilder();
         for (Object item : items) {
             if (sb.length() > 0) {
                 sb.append(", ");
             }
 
-
-            String representation = ""+item;
-
-            if (representation.contains("\n")) {
-                String[] parts = representation.split("\n");
-                representation = parts[0];
-
-                int suppressedParts = parts.length - 1;
-                representation += " .. ( "+ suppressedParts +" more line";
-
-                if (suppressedParts > 1) {
-                    representation += "s";
-                }
-
-                representation += " )";
-            }
-
-            if (item instanceof Number) {
-                sb.append(representation);
-            } else {
-                sb.append("\"").append(representation).append("\"");
-            }
+            sb.append(toDisplayableString(item));
         }
         return sb.toString();
+    }
+
+    public static String toDisplayableString(Object item) {
+        String representation = asString(item);
+
+        if (isMultilineString(representation)) {
+            representation = suppressExtraLines(representation);
+        }
+
+        if (isNotNumber(item)) {
+            representation = addQuotes(representation);
+        }
+
+        return representation;
+    }
+
+    //~~~ Handle individual item
+
+    private static String asString(Object item) {
+        return ""+item;
+    }
+
+    private static boolean isMultilineString(String representation) {
+        return representation.contains("\n");
+    }
+
+    private static boolean isNotNumber(Object item) {
+        return ! (item instanceof Number);
+    }
+
+    private static String suppressExtraLines(String representation) {
+        String[] parts = representation.split("\n");
+        representation = parts[0];
+
+        int suppressedParts = parts.length - 1;
+        representation += " .. ( "+ suppressedParts +" more line";
+
+        if (suppressedParts > 1) {
+            representation += "s";
+        }
+
+        representation += " )";
+        return representation;
+    }
+
+    private static String addQuotes(String representation) {
+        return "\""+representation+"\"";
     }
 
 }
