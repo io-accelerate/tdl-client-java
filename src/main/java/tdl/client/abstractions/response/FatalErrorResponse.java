@@ -32,7 +32,7 @@ public class FatalErrorResponse implements Response {
 
     @Override
     public String getAuditText() {
-        return String.format("%s = %s",  getId(), getResult() );
+        return String.format("%s = \"%s\"",  getId(), getResult() );
     }
 
 }

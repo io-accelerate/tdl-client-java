@@ -1,6 +1,7 @@
 package tdl.client.abstractions;
 
 import tdl.client.audit.Auditable;
+import tdl.client.audit.PresentationUtils;
 import tdl.client.serialization.JsonRpcRequest;
 import tdl.client.transport.StringMessage;
 
@@ -38,17 +39,8 @@ public class Request implements Auditable {
     @Override
     public String getAuditText() {
         return String.format("id = %s, req = %s(%s)",
-                getId(), getMethodName(), paramsToString(getParams()));
+                getId(), getMethodName(), PresentationUtils.toDisplayableString(getParams()));
     }
 
-    private static String paramsToString(String[] params) {
-        StringBuilder sb = new StringBuilder();
-        for (String param : params) {
-            if (sb.length() > 0) {
-                sb.append(", ");
-            }
-            sb.append(param);
-        }
-        return sb.toString();
-    }
+
 }

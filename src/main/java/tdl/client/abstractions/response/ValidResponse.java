@@ -1,6 +1,7 @@
 package tdl.client.abstractions.response;
 
 import tdl.client.actions.ClientAction;
+import tdl.client.audit.PresentationUtils;
 
 /**
  * Created by julianghionoiu on 20/06/2015.
@@ -36,7 +37,7 @@ public class ValidResponse implements Response {
 
     @Override
     public String getAuditText() {
-        return String.format("resp = %s", getResult());
+        return String.format("resp = %s", PresentationUtils.toDisplayableString(result));
     }
 
 }

@@ -60,7 +60,7 @@ public class ProcessingRules {
         if (rules.containsKey(methodName)) {
             rule = rules.get(methodName);
         } else {
-            String message = String.format("method \"%s\" did not match any processing rule", methodName);
+            String message = String.format("method '%s' did not match any processing rule", methodName);
             return new FatalErrorResponse(message);
         }
 

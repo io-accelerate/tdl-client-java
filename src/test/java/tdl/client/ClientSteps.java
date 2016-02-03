@@ -97,6 +97,7 @@ public class ClientSteps {
         put("throw exception", param -> {
             throw new IllegalStateException("faulty user code");
         });
+        put("echo the request", params -> params[0]);
         put("some logic", params -> "ok");
     }};
 
