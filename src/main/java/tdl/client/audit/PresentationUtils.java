@@ -1,5 +1,7 @@
 package tdl.client.audit;
 
+import com.google.common.primitives.Floats;
+
 /**
  * Created by julianghionoiu on 03/02/2016.
  */
@@ -46,7 +48,20 @@ public final class PresentationUtils {
     }
 
     private static boolean isNotNumber(Object item) {
-        return ! (item instanceof Number);
+        return !isNumber(item);
+    }
+
+    private static boolean isNumber(Object item) {
+        boolean isNumber = false;
+        if (item instanceof Number) {
+            isNumber = true;
+        } else
+        if (item instanceof String) {
+            Float numberRepresentation = Floats.tryParse((String) item);
+            isNumber = numberRepresentation != null;
+        }
+
+        return isNumber;
     }
 
     private static String suppressExtraLines(String representation) {
