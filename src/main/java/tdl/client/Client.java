@@ -36,6 +36,10 @@ public class Client {
         private String username;
         private AuditStream auditStream = new StdoutAuditStream();
 
+        public Builder() {
+            port = 61616;
+        }
+
         public Builder setHostname(String hostname) {
             this.hostname = hostname;
             return this;
