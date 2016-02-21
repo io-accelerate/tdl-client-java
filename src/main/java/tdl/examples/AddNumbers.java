@@ -33,13 +33,13 @@ public class AddNumbers {
     private static void startClient(final boolean ready) {
         Client client = new Client.Builder()
                 .setHostname("localhost")
-                .setPort(21616)
-                .setUsername("test")
+                .setPort(61616)
+                .setUsername("julian")
                 .create();
 
         ProcessingRules processingRules = new ProcessingRules() {{
-            on("sum").call(AddNumbers::sum).then(publish());
-            on("test").call(params -> "OK").then(publishIf(ready));
+            on("display_description").call(params -> "OK").then(publish());
+            on("sums").call(AddNumbers::sum).then(publishIf(ready));
             on("end_round").call(AddNumbers::sum).then(publishAndStop());
         }};
 
