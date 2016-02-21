@@ -67,6 +67,7 @@ public class Client {
 
 
     public void goLiveWith(ProcessingRules processingRules) {
+        audit.logLine("Starting client");
         try (RemoteBroker remoteBroker = new RemoteBroker(hostname, port, username)){
             //Design: We use a while loop instead of an ActiveMQ MessageListener to process the messages in order
             Optional<Request> request = remoteBroker.receive();
@@ -78,6 +79,7 @@ public class Client {
             LOGGER.error(message, e);
             audit.logException(message, e);
         }
+        audit.logLine("Stopping client");
     }
 
     private Optional<Request> applyProcessingRules(
@@ -134,6 +136,12 @@ public class Client {
         public void logException(String message, Exception e) {
             startLine();
             line.append(message).append(": ").append(e.getMessage());
+            endLine();
+        }
+
+        public void logLine(String text) {
+            startLine();
+            this.line.append(text);
             endLine();
         }
     }

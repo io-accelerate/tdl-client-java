@@ -29,7 +29,7 @@ public class RemoteBroker implements AutoCloseable {
         ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(brokerURL);
         connection = connectionFactory.createConnection();
 
-        LoggerFactory.getLogger(RemoteBroker.class).info("Starting client");
+        LoggerFactory.getLogger(RemoteBroker.class).debug("Connecting to the remote broker");
         connection.start();
         session = connection.createSession(false, Session.CLIENT_ACKNOWLEDGE);
 
@@ -69,7 +69,7 @@ public class RemoteBroker implements AutoCloseable {
 
     @Override
     public void close() throws Exception {
-        LoggerFactory.getLogger(RemoteBroker.class).info("Stopping client");
+        LoggerFactory.getLogger(RemoteBroker.class).debug("Stopping the connection to the broker");
         session.close();
         connection.close();
     }
