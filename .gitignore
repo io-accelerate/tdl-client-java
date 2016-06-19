@@ -2,5 +2,6 @@
 build
 .gradle
 .pid.lock
+.DS_Store
 activemq-data
 secret.gradle
