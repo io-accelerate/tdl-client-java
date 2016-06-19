@@ -34,6 +34,7 @@ public class ClientSteps {
     //Testing utils
     int initialRequestCount;
     LogAuditStream logAuditStream;
+    public static final String UNIQUE_ID = "testuser@example.com";
 
     public ClientSteps(SingletonTestBroker broker) {
         this.broker = broker;
@@ -45,18 +46,17 @@ public class ClientSteps {
 
     @Given("^I start with a clean broker$")
     public void create_the_queues() throws Throwable {
-        String username = "testuser";
-        requestQueue = broker.addQueue(username +".req");
+        requestQueue = broker.addQueue(UNIQUE_ID +".req");
         requestQueue.purge();
 
-        responseQueue = broker.addQueue(username +".resp");
+        responseQueue = broker.addQueue(UNIQUE_ID +".resp");
         responseQueue.purge();
 
         logAuditStream.clearLog();
         client = new Client.Builder()
                 .setHostname(HOSTNAME)
                 .setPort(PORT)
-                .setUsername(username)
+                .setUniqueId(UNIQUE_ID)
                 .setAuditStream(logAuditStream)
                 .create();
     }
@@ -67,7 +67,7 @@ public class ClientSteps {
         client = new Client.Builder()
                 .setHostname(HOSTNAME + "1")
                 .setPort(PORT)
-                .setUsername("broker")
+                .setUniqueId(UNIQUE_ID)
                 .setAuditStream(logAuditStream)
                 .create();
     }

@@ -20,20 +20,20 @@ public class Client {
     private static final Logger LOGGER = LoggerFactory.getLogger(Client.class);
     private final String hostname;
     private final int port;
-    private final String username;
+    private final String uniqueId;
     private final Audit audit;
 
-    protected Client(String hostname, int port, String username, AuditStream auditStream) {
+    protected Client(String hostname, int port, String uniqueId, AuditStream auditStream) {
         this.hostname = hostname;
         this.port = port;
-        this.username = username;
+        this.uniqueId = uniqueId;
         this.audit = new Audit(auditStream);
     }
 
     public static class Builder {
         private String hostname;
         private int port;
-        private String username;
+        private String uniqueId;
         private AuditStream auditStream = new StdoutAuditStream();
 
         public Builder() {
@@ -50,8 +50,8 @@ public class Client {
             return this;
         }
 
-        public Builder setUsername(String username) {
-            this.username = username;
+        public Builder setUniqueId(String uniqueId) {
+            this.uniqueId = uniqueId;
             return this;
         }
 
@@ -61,14 +61,14 @@ public class Client {
         }
 
         public Client create() {
-            return new Client(hostname, port, username, auditStream);
+            return new Client(hostname, port, uniqueId, auditStream);
         }
     }
 
 
     public void goLiveWith(ProcessingRules processingRules) {
         audit.logLine("Starting client");
-        try (RemoteBroker remoteBroker = new RemoteBroker(hostname, port, username)){
+        try (RemoteBroker remoteBroker = new RemoteBroker(hostname, port, uniqueId)){
             //Design: We use a while loop instead of an ActiveMQ MessageListener to process the messages in order
             Optional<Request> request = remoteBroker.receive();
             while (request.isPresent()) {

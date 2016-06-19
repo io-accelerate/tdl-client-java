@@ -34,7 +34,7 @@ public class AddNumbers {
         Client client = new Client.Builder()
                 .setHostname("localhost")
                 .setPort(61616)
-                .setUsername("julian")
+                .setUniqueId("julian@example.com")
                 .create();
 
         ProcessingRules processingRules = new ProcessingRules() {{

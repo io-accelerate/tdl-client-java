@@ -24,7 +24,7 @@ public class RemoteBroker implements AutoCloseable {
 
     private SerializationProvider serializationProvider;
 
-    public RemoteBroker(String hostname, int port, String username) throws JMSException {
+    public RemoteBroker(String hostname, int port, String uniqueId) throws JMSException {
         String brokerURL = String.format("tcp://%s:%s", hostname, port);
         ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(brokerURL);
         connection = connectionFactory.createConnection();
@@ -33,10 +33,10 @@ public class RemoteBroker implements AutoCloseable {
         connection.start();
         session = connection.createSession(false, Session.CLIENT_ACKNOWLEDGE);
 
-        String requestQueue = username + ".req";
+        String requestQueue = uniqueId + ".req";
         messageConsumer = session.createConsumer(session.createQueue(requestQueue));
 
-        String responseQueue = username + ".resp";
+        String responseQueue = uniqueId + ".resp";
         messageProducer = session.createProducer(session.createQueue(responseQueue));
         messageProducer.setDeliveryMode(DeliveryMode.NON_PERSISTENT);
 
