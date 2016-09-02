@@ -6,4 +6,7 @@
 
 Java client to connect to the central kata server.
 
-
+How to release a new version:
+```bash
+./release.sh
+```
