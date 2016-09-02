@@ -10,3 +10,5 @@ How to release a new version:
 ```bash
 ./release.sh
 ```
+
+After Codeship build finishes, go to bintray.com and publish the new version then sync to Maven Central.
