@@ -73,7 +73,7 @@ if (git_describe_process.exitValue() == 0 ) {
 
 // Compute next version
 ext.previousVersionObj = Version.fromString(previousVersion)
-def newSpecVersionObj = Version.fromString(majorMinorVersion+".1")
+def newSpecVersionObj = Version.fromString(majorMinorVersion+".0")
 if (newSpecVersionObj.higherThan(ext.previousVersionObj)) {
     ext.currentVersionObj = newSpecVersionObj
 } else {
