@@ -16,9 +16,6 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
 
-/**
- * Created by julianghionoiu on 11/10/2015.
- */
 public class ClientSteps {
     private final SingletonTestBroker broker;
 
@@ -27,14 +24,14 @@ public class ClientSteps {
     private static final int PORT = 21616;
 
     // Variables set by the background tasks
-    RemoteJmxQueue requestQueue;
-    RemoteJmxQueue responseQueue;
-    Client client;
+    private RemoteJmxQueue requestQueue;
+    private RemoteJmxQueue responseQueue;
+    private Client client;
 
     //Testing utils
-    int initialRequestCount;
-    LogAuditStream logAuditStream;
-    public static final String UNIQUE_ID = "testuser@example.com";
+    private int initialRequestCount;
+    private LogAuditStream logAuditStream;
+    private static final String UNIQUE_ID = "testuser@example.com";
 
     public ClientSteps(SingletonTestBroker broker) {
         this.broker = broker;
@@ -57,6 +54,7 @@ public class ClientSteps {
                 .setHostname(HOSTNAME)
                 .setPort(PORT)
                 .setUniqueId(UNIQUE_ID)
+                .setTimeToWaitForRequests(100L)
                 .setAuditStream(logAuditStream)
                 .create();
     }

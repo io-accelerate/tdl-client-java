@@ -11,20 +11,18 @@ import tdl.client.serialization.SerializationProvider;
 import javax.jms.*;
 import java.util.Optional;
 
-/**
- * Created by julianghionoiu on 20/06/2015.
- */
 public class RemoteBroker implements AutoCloseable {
-    private static final long REQUEST_TIMEOUT = 1000L;
-
     private final Connection connection;
+
+
     private final Session session;
     private final MessageConsumer messageConsumer;
     private final MessageProducer messageProducer;
+    private final long timeToWaitForRequests;
 
     private SerializationProvider serializationProvider;
 
-    public RemoteBroker(String hostname, int port, String uniqueId) throws JMSException {
+    public RemoteBroker(String hostname, int port, String uniqueId, long timeToWaitForRequests) throws JMSException {
         String brokerURL = String.format("tcp://%s:%s", hostname, port);
         ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(brokerURL);
         connection = connectionFactory.createConnection();
@@ -40,13 +38,14 @@ public class RemoteBroker implements AutoCloseable {
         messageProducer = session.createProducer(session.createQueue(responseQueue));
         messageProducer.setDeliveryMode(DeliveryMode.NON_PERSISTENT);
 
+        this.timeToWaitForRequests = timeToWaitForRequests;
         serializationProvider = new JsonRpcSerializationProvider();
     }
 
     public Optional<Request> receive() throws BrokerCommunicationException {
         try {
             //Debt: We should have no timeout. This method could exit if we put a special close message in the queue
-            StringMessage messageText = new StringMessage(messageConsumer.receive(REQUEST_TIMEOUT));
+            StringMessage messageText = new StringMessage(messageConsumer.receive(timeToWaitForRequests));
             return serializationProvider.deserialize(messageText);
         } catch (JMSException | DeserializationException e) {
             throw new BrokerCommunicationException(e);
