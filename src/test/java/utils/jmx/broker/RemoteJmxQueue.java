@@ -2,20 +2,25 @@ package utils.jmx.broker;
 
 import com.google.gson.JsonElement;
 
-import javax.management.MBeanServerConnection;
 import java.util.*;
 
 /**
  * Created by julianghionoiu on 13/06/2015.
  */
 public class RemoteJmxQueue {
+    private final String name;
     private final JolokiaSession jolokiaSession;
     private final String queueBean;
 
     public RemoteJmxQueue(JolokiaSession jolokiaSession, String brokerName, String queueName) {
+        this.name = queueName;
         this.jolokiaSession = jolokiaSession;
         this.queueBean = String.format("org.apache.activemq:type=Broker,brokerName=%s,destinationType=Queue,destinationName=%s",
                 brokerName, queueName);
+    }
+
+    public String getName() {
+        return name;
     }
 
     //~~~~ Queue operations

@@ -19,14 +19,14 @@ public class Client {
     private final int port;
     private final String uniqueId;
     private final Audit audit;
-    private long timeToWaitForRequests;
+    private int requestTimeoutMillis;
 
-    Client(String hostname, int port, String uniqueId, long timeToWaitForRequests,
+    Client(String hostname, int port, String uniqueId, int requestTimeoutMillis,
            AuditStream auditStream) {
         this.hostname = hostname;
         this.port = port;
         this.uniqueId = uniqueId;
-        this.timeToWaitForRequests = timeToWaitForRequests;
+        this.requestTimeoutMillis = requestTimeoutMillis;
         this.audit = new Audit(auditStream);
     }
 
@@ -34,12 +34,12 @@ public class Client {
         private String hostname;
         private int port;
         private String uniqueId;
-        private long timeToWaitForRequests;
+        private int requestTimeoutMillis;
         private AuditStream auditStream = new StdoutAuditStream();
 
         public Builder() {
             port = 61616;
-            timeToWaitForRequests = 1000L;
+            requestTimeoutMillis = 200;
         }
 
         public Builder setHostname(String hostname) {
@@ -58,8 +58,8 @@ public class Client {
         }
 
         @SuppressWarnings("WeakerAccess")
-        public Builder setTimeToWaitForRequests(@SuppressWarnings("SameParameterValue") long timeToWaitForRequests) {
-            this.timeToWaitForRequests = timeToWaitForRequests;
+        public Builder setRequestTimeoutMillis(@SuppressWarnings("SameParameterValue") int requestTimeoutMillis) {
+            this.requestTimeoutMillis = requestTimeoutMillis;
             return this;
         }
 
@@ -70,14 +70,17 @@ public class Client {
         }
 
         public Client create() {
-            return new Client(hostname, port, uniqueId, timeToWaitForRequests, auditStream);
+            return new Client(hostname, port, uniqueId, requestTimeoutMillis, auditStream);
         }
     }
 
+    int getRequestTimeoutMillis() {
+        return requestTimeoutMillis;
+    }
 
     public void goLiveWith(ProcessingRules processingRules) {
         audit.logLine("Starting client");
-        try (RemoteBroker remoteBroker = new RemoteBroker(hostname, port, uniqueId, timeToWaitForRequests)){
+        try (RemoteBroker remoteBroker = new RemoteBroker(hostname, port, uniqueId, requestTimeoutMillis)){
             //Design: We use a while loop instead of an ActiveMQ MessageListener to process the messages in order
             audit.logLine("Waiting for requests");
             Optional<Request> request = remoteBroker.receive();

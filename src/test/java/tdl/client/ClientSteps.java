@@ -31,7 +31,6 @@ public class ClientSteps {
     //Testing utils
     private int initialRequestCount;
     private LogAuditStream logAuditStream;
-    private static final String UNIQUE_ID = "testuser@example.com";
 
     public ClientSteps(SingletonTestBroker broker) {
         this.broker = broker;
@@ -41,20 +40,19 @@ public class ClientSteps {
 
     //~~~~~ Setup
 
-    @Given("^I start with a clean broker$")
-    public void create_the_queues() throws Throwable {
-        requestQueue = broker.addQueue(UNIQUE_ID +".req");
+    @Given("^I start with a clean broker and a client for user \"([^\"]*)\"$")
+    public void create_the_queues(String username) throws Throwable {
+        requestQueue = broker.addQueue(username +".req");
         requestQueue.purge();
 
-        responseQueue = broker.addQueue(UNIQUE_ID +".resp");
+        responseQueue = broker.addQueue(username +".resp");
         responseQueue.purge();
 
         logAuditStream.clearLog();
         client = new Client.Builder()
                 .setHostname(HOSTNAME)
                 .setPort(PORT)
-                .setUniqueId(UNIQUE_ID)
-                .setTimeToWaitForRequests(100L)
+                .setUniqueId(username)
                 .setAuditStream(logAuditStream)
                 .create();
     }
@@ -65,11 +63,28 @@ public class ClientSteps {
         client = new Client.Builder()
                 .setHostname(HOSTNAME + "1")
                 .setPort(PORT)
-                .setUniqueId(UNIQUE_ID)
+                .setUniqueId("X")
                 .setAuditStream(logAuditStream)
                 .create();
     }
 
+    @Then("^the time to wait for requests is (\\d+)ms$")
+    public void check_time(int expectedTimeout) throws Throwable {
+        assertThat("The client request timeout has a different value.",
+                client.getRequestTimeoutMillis(), equalTo(expectedTimeout));
+    }
+
+    @Then("^the request queue is \"([^\"]*)\"$")
+    public void check_request_queue(String expectedValue) throws Throwable {
+        assertThat("Request queue has a different value.",
+                requestQueue.getName(), equalTo(expectedValue));
+    }
+
+    @Then("^the response queue is \"([^\"]*)\"$")
+    public void check_response_queue(String expectedValue) throws Throwable {
+        assertThat("Response queue has a different value.",
+                responseQueue.getName(), equalTo(expectedValue));
+    }
 
     class RequestRepresentation {
         String payload;
@@ -102,6 +117,14 @@ public class ClientSteps {
         });
         put("echo the request", params -> params[0]);
         put("some logic", params -> "ok");
+        put("work for 200ms", params -> {
+            try {
+                Thread.sleep(200);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            return "OK";
+        });
     }};
 
 
