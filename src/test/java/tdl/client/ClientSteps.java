@@ -2,7 +2,8 @@ package tdl.client;
 
 import cucumber.api.java.en.*;
 import tdl.client.abstractions.UserImplementation;
-import tdl.client.actions.*;
+import tdl.client.actions.ClientAction;
+import tdl.client.actions.ClientActions;
 import tdl.client.audit.StdoutAuditStream;
 import utils.jmx.broker.RemoteJmxQueue;
 import utils.logging.LogAuditStream;
@@ -10,10 +11,9 @@ import utils.logging.LogAuditStream;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertThat;
 
 public class ClientSteps {
@@ -70,10 +70,15 @@ public class ClientSteps {
                 .create();
     }
 
+
+    class RequestRepresentation {
+        String payload;
+    }
+
     @Given("^I receive the following requests:$")
-    public void initialize_request_queue(List<String> requests) throws Throwable {
-        for (String request : requests) {
-            requestQueue.sendTextMessage(request);
+    public void initialize_request_queue(List<RequestRepresentation> requests) throws Throwable {
+        for (RequestRepresentation request : requests) {
+            requestQueue.sendTextMessage(request.payload);
         }
         initialRequestCount = requests.size();
     }
@@ -150,16 +155,27 @@ public class ClientSteps {
         assertThat("Wrong number of requests have been consumed",requestQueue.getSize(), equalTo(asLong(initialRequestCount-1)));
     }
 
+    class ResponseRepresentation {
+        String payload;
+    }
+
     @And("^the client should publish the following responses:$")
-    public void response_queue_contains_expected(List<String> expectedResponses) throws Throwable {
-        assertThat("The responses are not correct",responseQueue.getMessageContents(), equalTo(expectedResponses));
+    public void response_queue_contains_expected(List<ResponseRepresentation> expectedResponses) throws Throwable {
+        List<String> expectedContents = expectedResponses.stream()
+                .map(responseRepresentation -> responseRepresentation.payload)
+                .collect(Collectors.toList());
+        assertThat("The responses are not correct",responseQueue.getMessageContents(), equalTo(expectedContents));
+    }
+
+    class OutputRepresentation {
+        String output;
     }
 
     @Then("^the client should display to console:$")
-    public void the_client_should_display_to_console(List<String> expectedOutputs) throws Throwable {
+    public void the_client_should_display_to_console(List<OutputRepresentation> expectedOutputs) throws Throwable {
         String output = logAuditStream.getLog();
-        for (String expectedLine : expectedOutputs) {
-            assertThat(output, containsString(expectedLine));
+        for (OutputRepresentation expectedLine : expectedOutputs) {
+            assertThat(output, containsString(expectedLine.output));
         }
         System.out.println(output);
     }
