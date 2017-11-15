@@ -61,7 +61,7 @@ public class ClientSteps {
     public void client_with_wrong_broker() throws Throwable {
         logAuditStream.clearLog();
         client = new Client.Builder()
-                .setHostname(HOSTNAME + "1")
+                .setHostname("111")
                 .setPort(PORT)
                 .setUniqueId("X")
                 .setAuditStream(logAuditStream)
