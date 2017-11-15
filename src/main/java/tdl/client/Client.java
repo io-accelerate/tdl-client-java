@@ -39,7 +39,7 @@ public class Client {
 
         public Builder() {
             port = 61616;
-            requestTimeoutMillis = 200;
+            requestTimeoutMillis = 500;
         }
 
         public Builder setHostname(String hostname) {

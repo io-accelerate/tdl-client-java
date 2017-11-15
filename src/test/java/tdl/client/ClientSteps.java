@@ -117,9 +117,9 @@ public class ClientSteps {
         });
         put("echo the request", params -> params[0]);
         put("some logic", params -> "ok");
-        put("work for 200ms", params -> {
+        put("work for 500ms", params -> {
             try {
-                Thread.sleep(200);
+                Thread.sleep(500);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
