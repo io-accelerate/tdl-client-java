@@ -1,5 +1,6 @@
 package tdl.client;
 
+import cucumber.api.PendingException;
 import cucumber.api.java.en.*;
 import tdl.client.abstractions.UserImplementation;
 import tdl.client.actions.ClientAction;
@@ -30,12 +31,14 @@ public class ClientSteps {
 
     //Testing utils
     private int initialRequestCount;
+    private long processingTimeMillis;
     private LogAuditStream logAuditStream;
 
     public ClientSteps(SingletonTestBroker broker) {
         this.broker = broker;
         this.logAuditStream = new LogAuditStream(new StdoutAuditStream());
         this.initialRequestCount = 0;
+        this.processingTimeMillis = 0;
     }
 
     //~~~~~ Setup
@@ -87,9 +90,10 @@ public class ClientSteps {
     }
 
     class RequestRepresentation {
-        String payload;
-    }
 
+        String payload;
+
+    }
     @Given("^I receive the following requests:$")
     public void initialize_request_queue(List<RequestRepresentation> requests) throws Throwable {
         for (RequestRepresentation request : requests) {
@@ -97,6 +101,17 @@ public class ClientSteps {
         }
         initialRequestCount = requests.size();
     }
+    @Given("^I receive (\\d+) identical requests like:$")
+    public void sent_loads_of_requests(int number, List<RequestRepresentation> requests) throws Throwable {
+        for (int i = 0; i < number; i++) {
+            for (RequestRepresentation request : requests) {
+                requestQueue.sendTextMessage(request.payload);
+            }
+        }
+        initialRequestCount = requests.size() * number;
+    }
+
+
 
 
     //~~~~~ Implementations
@@ -117,9 +132,9 @@ public class ClientSteps {
         });
         put("echo the request", params -> params[0]);
         put("some logic", params -> "ok");
-        put("work for 500ms", params -> {
+        put("work for 600ms", params -> {
             try {
-                Thread.sleep(500);
+                Thread.sleep(600);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -163,7 +178,10 @@ public class ClientSteps {
                         processingRules.on(ruleLine.method).call(asImplementation(ruleLine.call)).then(asAction(ruleLine.action))
         );
 
+        long timestampBefore = System.nanoTime();
         client.goLiveWith(processingRules);
+        long timestampAfter = System.nanoTime();
+        processingTimeMillis = (timestampAfter - timestampBefore) / 1000000;
     }
 
     //~~~~~ Assertions
@@ -226,6 +244,11 @@ public class ClientSteps {
     @Then("^I should get no exception$")
     public void I_should_get_no_exception() throws Throwable {
         //No exception
+    }
+
+    @And("^the processing time should be lower than (\\d+)ms$")
+    public void processingTimeShouldBeLowerThanMs(long threshold) throws Throwable {
+        assertThat(processingTimeMillis, lessThan(threshold));
     }
 
     //~~~ Utils
