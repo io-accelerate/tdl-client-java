@@ -221,3 +221,24 @@ uploadArchives {
         }
     }
 }
+
+
+// run downloaded wiremock standalone jar
+
+configurations {
+    wiremock
+}
+
+dependencies {
+    wiremock "com.github.tomakehurst:wiremock-standalone:2.12.0"
+}
+
+task runWiremock(type: JavaExec) {
+    main="-jar";
+    args = [
+            configurations.wiremock.files[0].toString(),
+            "--port",
+            "8222"
+    ]
+    workingDir = configurations.wiremock.files[0].getParent()
+}
