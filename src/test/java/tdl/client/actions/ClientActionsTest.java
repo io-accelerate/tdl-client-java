@@ -1,7 +1,6 @@
 package tdl.client.actions;
 
 import org.junit.Test;
-import tdl.client.ClientSteps;
 
 import static net.trajano.commons.testing.UtilityClassTestUtil.assertUtilityClassWellDefined;
 

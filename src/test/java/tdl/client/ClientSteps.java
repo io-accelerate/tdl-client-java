@@ -1,6 +1,5 @@
 package tdl.client;
 
-import cucumber.api.PendingException;
 import cucumber.api.java.en.*;
 import tdl.client.abstractions.UserImplementation;
 import tdl.client.actions.ClientAction;
