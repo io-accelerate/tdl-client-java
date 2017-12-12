@@ -16,7 +16,6 @@ import static org.junit.Assert.assertThat;
 
 
 public class Steps {
-    private static final String anyUnicodeRegex = "(?:\\P{M}\\p{M}*)+";
     private boolean deployCallbackHit = false;
 
     // Given
