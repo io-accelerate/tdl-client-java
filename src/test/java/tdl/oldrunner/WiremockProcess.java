@@ -25,7 +25,7 @@ public class WiremockProcess {
     }
 
     private static void createStubMappingForEndpointWithBody(String endpoint, String body, String methodType) throws UnirestException {
-        // check if process running, otherwise fail.
+        // Obvs - change public fields to methods
         RequestData requestData = new RequestData();
         requestData.request = new RequestData.Request();
         requestData.request.method = methodType;
@@ -33,6 +33,8 @@ public class WiremockProcess {
         requestData.response = new RequestData.Response();
         requestData.response.status = 200;
         requestData.response.body = body;
+        requestData.request.headers = new RequestData.Request.Headers();
+        requestData.request.headers.accept = "text/not-coloured";
 
         final Gson gson = new GsonBuilder().registerTypeAdapter(RequestData.class, new RequestDataSerialiser()).create();
         String json = gson.toJson(requestData);
@@ -51,6 +53,10 @@ public class WiremockProcess {
         RequestData.Request request = new RequestData.Request();
         request.method = methodType;
         request.urlPattern = String.format("/%s/%s", endpoint, anyUnicodeRegex);
+        request.headers = new RequestData.Request.Headers();
+
+        // accept any header for now
+        request.headers.accept = "";
 
         final Gson gson = new GsonBuilder().registerTypeAdapter(RequestData.Request.class, new RequestSerialiser()).create();
         String json = gson.toJson(request);
@@ -71,6 +77,11 @@ public class WiremockProcess {
         public static class Request {
             String urlPattern;
             String method;
+            Headers headers;
+
+            public static class Headers {
+                String accept;
+            }
         }
 
         public static class Response {
@@ -83,9 +94,8 @@ public class WiremockProcess {
 
         @Override
         public JsonElement serialize(final RequestData requestData, final Type typeOfSrc, final JsonSerializationContext context) {
-            final JsonObject requestJsonObj = new JsonObject();
-            requestJsonObj.addProperty("urlPattern", requestData.request.urlPattern);
-            requestJsonObj.addProperty("method", requestData.request.method);
+            RequestSerialiser requestSerialiser = new RequestSerialiser();
+            final JsonElement requestJsonObj = requestSerialiser.serialize(requestData.request, typeOfSrc, context);
 
             final JsonObject responseJsonObj = new JsonObject();
             responseJsonObj.addProperty("status", requestData.response.status);
@@ -106,6 +116,13 @@ public class WiremockProcess {
             final JsonObject requestJsonObj = new JsonObject();
             requestJsonObj.addProperty("urlPattern", request.urlPattern);
             requestJsonObj.addProperty("method", request.method);
+
+            final JsonObject headerJsonObj = new JsonObject();
+            final JsonObject acceptJsonObj = new JsonObject();
+            acceptJsonObj.addProperty("contains", request.headers.accept);
+            headerJsonObj.add("Accept", acceptJsonObj);
+            requestJsonObj.add("headers", headerJsonObj);
+
             return requestJsonObj;
         }
     }
