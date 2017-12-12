@@ -1,6 +1,7 @@
 package tdl.oldrunner;
 
 import com.mashape.unirest.http.exceptions.UnirestException;
+import cucumber.api.java.en.And;
 import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
@@ -9,17 +10,21 @@ import tdl.client.oldrunner.HttpClient;
 
 import java.util.List;
 
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 
 
 public class Steps {
     private static final String anyUnicodeRegex = "(?:\\P{M}\\p{M}*)+";
+    private boolean deployCallbackHit = false;
 
     // Given
 
     @Given("I start with a clean server")
-    public void resetMappings() throws UnirestException {
+    public void teardown() throws UnirestException {
         WiremockProcess.reset();
+        deployCallbackHit = false;
     }
 
     @Given("server is running with basic setup")
@@ -45,14 +50,7 @@ public class Steps {
     @When("^user enters input \"([^\"]*)\"$")
     public void userEntersInputForAChallenge(String input) throws HttpClient.ServerErrorException, HttpClient.OtherCommunicationException, HttpClient.ClientErrorException {
         CombinedClient combinedClient = setupCombinedClient();
-
-        combinedClient.executeUserAction(input, new Runnable() {
-            @Override
-            public void run() {
-                // TODO set boolean flag to see if runnable hit, or parse printed output?
-                System.out.println("hit");
-            }
-        }, null);
+        combinedClient.executeUserAction(input, () -> deployCallbackHit = true, null);
     }
 
     class EndpointRepresentation {
@@ -74,6 +72,14 @@ public class Steps {
         CombinedClient combinedClient = setupCombinedClient();
         boolean canContinue = combinedClient.checkStatusOfChallenge();
         assertFalse("User is able to continue the journey, despite the fact they should be finished.", canContinue);
+    }
+
+    // And
+
+    @And("the deploy callback should be hit")
+    public void deployCallbackHit() {
+        String failMessage = "Deploy callback was not hit";
+        assertThat(failMessage, deployCallbackHit, equalTo(true));
     }
 
     // Helper functions
