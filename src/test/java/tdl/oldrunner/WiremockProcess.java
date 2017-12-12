@@ -54,9 +54,7 @@ public class WiremockProcess {
         request.method = methodType;
         request.urlPattern = String.format("/%s/%s", endpoint, anyUnicodeRegex);
         request.headers = new RequestData.Request.Headers();
-
-        // accept any header for now
-        request.headers.accept = "";
+        request.headers.accept = "text/not-coloured";
 
         final Gson gson = new GsonBuilder().registerTypeAdapter(RequestData.Request.class, new RequestSerialiser()).create();
         String json = gson.toJson(request);
