@@ -1,5 +1,6 @@
 package tdl.oldrunner;
 
+import com.github.tomakehurst.wiremock.matching.UrlPattern;
 import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
@@ -27,36 +28,14 @@ public class Steps {
 
     @Given("server is running with basic setup")
     public void setupServerWithBasicSetup() {
-        stubFor(get(urlMatching("/journeyProgress/" + anyUnicodeRegex))
-                .withHeader("Accept", equalTo("text/not-coloured"))
-                .withHeader("Accept-Charset", equalTo("UTF-8"))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withBody("<response>Some content</response>")));
-        stubFor(get(urlMatching("/availableActions/" + anyUnicodeRegex))
-                .withHeader("Accept", equalTo("text/not-coloured"))
-                .withHeader("Accept-Charset", equalTo("UTF-8"))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withHeader("Content-Type", "text/not-coloured")
-                        .withBody("some response")));
+        createMappingForEndpointWithBody("journeyProgress", "Some content");
+        createMappingForEndpointWithBody("availableActions", "Some content");
     }
 
     @Given("server has no available actions")
     public void setupServerWithNoAvailableActions() {
-        stubFor(get(urlMatching("/journeyProgress/" + anyUnicodeRegex))
-                .withHeader("Accept", equalTo("text/not-coloured"))
-                .withHeader("Accept-Charset", equalTo("UTF-8"))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withBody("<response>Some content</response>")));
-        stubFor(get(urlMatching("/availableActions/" + anyUnicodeRegex))
-                .withHeader("Accept", equalTo("text/not-coloured"))
-                .withHeader("Accept-Charset", equalTo("UTF-8"))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withHeader("Content-Type", "text/not-coloured")
-                        .withBody("No actions available.")));
+        createMappingForEndpointWithBody("journeyProgress", "Some content");
+        mapEndpointWithNoActionsAvailable();
     }
 
     @When("I check the status of a challenge")
@@ -73,10 +52,23 @@ public class Steps {
     }
 
     @Then("the client should query the following endpoints:$")
-    public void checkIfEndpointsWereHit(List<EndpointRepresentation> expectedEndpoints) {
-        for (EndpointRepresentation expectedEndpoint : expectedEndpoints) {
-            // check wiremock that this endpoint was hit.
-            System.out.println("endpoint hit");
+    public void checkIfEndpointsWereHit(List<EndpointRepresentation> hitEndpoints) {
+        for (EndpointRepresentation hitEndpoint : hitEndpoints) {
+            switch (hitEndpoint.endpoint) {
+                case "journeyProgress":
+                case "availableActions":
+                    verify(getRequestedFor(getUrlMatchingEndpoint(hitEndpoint.endpoint)));
+                    break;
+                case "start":
+                case "deploy":
+                case "pause":
+                case "continue":
+                    verify(postRequestedFor(getUrlMatchingEndpoint(hitEndpoint.endpoint)));
+                    break;
+                default:
+                    // fail
+                    throw new RuntimeException("None of the requests matched");
+            }
         }
     }
 
@@ -88,6 +80,26 @@ public class Steps {
         CombinedClient combinedClient = new CombinedClient(journeyId, useColours, "localhost", username, System.out::println);
         boolean canContinue = combinedClient.checkStatusOfChallenge();
         // check return value of checkStatusOfChallenge is false.
-        assertFalse(canContinue);
+        assertFalse("User is able to continue the journey, despite the fact they should be finished.", canContinue);
     }
+
+
+    // Helper functions
+    private void createMappingForEndpointWithBody(String endpoint, String body) {
+        stubFor(get(getUrlMatchingEndpoint(endpoint))
+                .withHeader("Accept", equalTo("text/not-coloured"))
+                .withHeader("Accept-Charset", equalTo("UTF-8"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withBody(body)));
+    }
+
+    private UrlPattern getUrlMatchingEndpoint(String endpoint) {
+        return urlMatching("/" + endpoint + "/" + anyUnicodeRegex);
+    }
+
+    private void mapEndpointWithNoActionsAvailable() {
+        createMappingForEndpointWithBody("availableActions", "No actions available.");
+    }
+
 }
