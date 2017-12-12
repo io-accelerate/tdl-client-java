@@ -1,6 +1,6 @@
 package tdl.oldrunner;
 
-import com.github.tomakehurst.wiremock.matching.UrlPattern;
+import com.mashape.unirest.http.exceptions.UnirestException;
 import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
@@ -9,32 +9,26 @@ import tdl.client.oldrunner.HttpClient;
 
 import java.util.List;
 
-import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static org.junit.Assert.assertFalse;
 
 
 public class Steps {
     private static final String anyUnicodeRegex = "(?:\\P{M}\\p{M}*)+";
-    private SingletonTestServer server;
-
-    public Steps(SingletonTestServer server) {
-        this.server = server;
-    }
 
     @Given("I start with a clean server")
-    public void resetMappings() {
-        this.server.resetMappings();
+    public void resetMappings() throws UnirestException {
+        WiremockProcess.reset();
     }
 
     @Given("server is running with basic setup")
-    public void setupServerWithBasicSetup() {
-        createGetMappingForEndpointWithBody("journeyProgress", "Some content");
-        createGetMappingForEndpointWithBody("availableActions", "Some content");
+    public void setupServerWithBasicSetup() throws UnirestException {
+        WiremockProcess.createGetStubMappingForEndpointWithBody("journeyProgress", "Some content");
+        WiremockProcess.createGetStubMappingForEndpointWithBody("availableActions", "Some content");
     }
 
     @Given("server has no available actions")
-    public void setupServerWithNoAvailableActions() {
-        createGetMappingForEndpointWithBody("journeyProgress", "Some content");
+    public void setupServerWithNoAvailableActions() throws UnirestException {
+        WiremockProcess.createGetStubMappingForEndpointWithBody("journeyProgress", "Some content");
         mapEndpointWithNoActionsAvailable();
     }
 
@@ -52,7 +46,7 @@ public class Steps {
     }
 
     @Then("the client should query the following endpoints:$")
-    public void checkIfEndpointsWereHit(List<EndpointRepresentation> hitEndpoints) {
+    public void checkIfEndpointsWereHit(List<EndpointRepresentation> hitEndpoints) throws UnirestException {
         for (EndpointRepresentation hitEndpoint : hitEndpoints) {
             verifyEndpointWasHit(hitEndpoint.endpoint);
         }
@@ -71,38 +65,26 @@ public class Steps {
 
     // Helper functions
 
-    private void mapEndpointWithNoActionsAvailable() {
-        createGetMappingForEndpointWithBody("availableActions", "No actions available.");
-    }
-    private void createGetMappingForEndpointWithBody(String endpoint, String body) {
-        stubFor(get(urlMatchingEndpoint(endpoint))
-                .withHeader("Accept", equalTo("text/not-coloured"))
-                .withHeader("Accept-Charset", equalTo("UTF-8"))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withBody(body)));
+    private void mapEndpointWithNoActionsAvailable() throws UnirestException {
+        WiremockProcess.createGetStubMappingForEndpointWithBody("availableActions", "No actions available.");
     }
 
-    private void verifyEndpointWasHit(String endpoint) {
+    private void verifyEndpointWasHit(String endpoint) throws UnirestException {
         switch (endpoint) {
             case "journeyProgress":
             case "availableActions":
             case "roundDescription":
-                verify(getRequestedFor(urlMatchingEndpoint(endpoint)));
+                WiremockProcess.verifyGetEndpointWasHit(endpoint);
                 break;
             case "start":
             case "deploy":
             case "pause":
             case "continue":
-                verify(postRequestedFor(urlMatchingEndpoint(endpoint)));
+                WiremockProcess.verifyPostEndpointWasHit(endpoint);
                 break;
             default:
                 // fail
                 throw new RuntimeException("None of the requests matched");
         }
-    }
-
-    private UrlPattern urlMatchingEndpoint(String endpoint) {
-        return urlMatching("/" + endpoint + "/" + anyUnicodeRegex);
     }
 }
