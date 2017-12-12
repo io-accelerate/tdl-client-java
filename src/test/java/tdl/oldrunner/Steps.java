@@ -28,13 +28,13 @@ public class Steps {
 
     @Given("server is running with basic setup")
     public void setupServerWithBasicSetup() {
-        createMappingForEndpointWithBody("journeyProgress", "Some content");
-        createMappingForEndpointWithBody("availableActions", "Some content");
+        createGetMappingForEndpointWithBody("journeyProgress", "Some content");
+        createGetMappingForEndpointWithBody("availableActions", "Some content");
     }
 
     @Given("server has no available actions")
     public void setupServerWithNoAvailableActions() {
-        createMappingForEndpointWithBody("journeyProgress", "Some content");
+        createGetMappingForEndpointWithBody("journeyProgress", "Some content");
         mapEndpointWithNoActionsAvailable();
     }
 
@@ -54,21 +54,7 @@ public class Steps {
     @Then("the client should query the following endpoints:$")
     public void checkIfEndpointsWereHit(List<EndpointRepresentation> hitEndpoints) {
         for (EndpointRepresentation hitEndpoint : hitEndpoints) {
-            switch (hitEndpoint.endpoint) {
-                case "journeyProgress":
-                case "availableActions":
-                    verify(getRequestedFor(getUrlMatchingEndpoint(hitEndpoint.endpoint)));
-                    break;
-                case "start":
-                case "deploy":
-                case "pause":
-                case "continue":
-                    verify(postRequestedFor(getUrlMatchingEndpoint(hitEndpoint.endpoint)));
-                    break;
-                default:
-                    // fail
-                    throw new RuntimeException("None of the requests matched");
-            }
+            verifyEndpointWasHit(hitEndpoint.endpoint);
         }
     }
 
@@ -79,14 +65,17 @@ public class Steps {
         String username = "tdl-test-cnodejs01";
         CombinedClient combinedClient = new CombinedClient(journeyId, useColours, "localhost", username, System.out::println);
         boolean canContinue = combinedClient.checkStatusOfChallenge();
-        // check return value of checkStatusOfChallenge is false.
         assertFalse("User is able to continue the journey, despite the fact they should be finished.", canContinue);
     }
 
 
     // Helper functions
-    private void createMappingForEndpointWithBody(String endpoint, String body) {
-        stubFor(get(getUrlMatchingEndpoint(endpoint))
+
+    private void mapEndpointWithNoActionsAvailable() {
+        createGetMappingForEndpointWithBody("availableActions", "No actions available.");
+    }
+    private void createGetMappingForEndpointWithBody(String endpoint, String body) {
+        stubFor(get(urlMatchingEndpoint(endpoint))
                 .withHeader("Accept", equalTo("text/not-coloured"))
                 .withHeader("Accept-Charset", equalTo("UTF-8"))
                 .willReturn(aResponse()
@@ -94,12 +83,26 @@ public class Steps {
                         .withBody(body)));
     }
 
-    private UrlPattern getUrlMatchingEndpoint(String endpoint) {
+    private void verifyEndpointWasHit(String endpoint) {
+        switch (endpoint) {
+            case "journeyProgress":
+            case "availableActions":
+            case "roundDescription":
+                verify(getRequestedFor(urlMatchingEndpoint(endpoint)));
+                break;
+            case "start":
+            case "deploy":
+            case "pause":
+            case "continue":
+                verify(postRequestedFor(urlMatchingEndpoint(endpoint)));
+                break;
+            default:
+                // fail
+                throw new RuntimeException("None of the requests matched");
+        }
+    }
+
+    private UrlPattern urlMatchingEndpoint(String endpoint) {
         return urlMatching("/" + endpoint + "/" + anyUnicodeRegex);
     }
-
-    private void mapEndpointWithNoActionsAvailable() {
-        createMappingForEndpointWithBody("availableActions", "No actions available.");
-    }
-
 }

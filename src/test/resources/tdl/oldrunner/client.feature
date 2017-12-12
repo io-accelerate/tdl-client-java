@@ -3,10 +3,6 @@ Feature: Should query and read information from server
   Background:
     Given I start with a clean server
 
-#  After do
-#    Then teardown server
-#  end
-
   Scenario: Should show journey progress and available actions when querying for information
     # Might want to move the server setup to the Background task
     Given server is running with basic setup
