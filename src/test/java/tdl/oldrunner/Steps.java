@@ -1,7 +1,5 @@
 package tdl.oldrunner;
 
-import com.github.tomakehurst.wiremock.WireMockServer;
-import com.github.tomakehurst.wiremock.client.WireMock;
 import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
@@ -11,29 +9,20 @@ import tdl.client.oldrunner.HttpClient;
 import java.util.List;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
-import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static org.junit.Assert.assertFalse;
 
 
 public class Steps {
-    //~~ Old runner
-    private WireMockServer wireMockServer;
     private static final String anyUnicodeRegex = "(?:\\P{M}\\p{M}*)+";
+    private SingletonTestServer server;
 
-    public Steps() {
-        WireMock.configureFor("localhost", 8222);
-        wireMockServer = new WireMockServer(wireMockConfig().port(8222));
-        wireMockServer.start();
+    public Steps(SingletonTestServer server) {
+        this.server = server;
     }
 
     @Given("I start with a clean server")
     public void resetMappings() {
-        wireMockServer.resetMappings();
-    }
-
-    @Then("teardown server")
-    public void resetMappings1() {
-        wireMockServer.shutdown();
+        this.server.resetMappings();
     }
 
     @Given("server is running with basic setup")
@@ -67,7 +56,7 @@ public class Steps {
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "text/not-coloured")
-                        .withBody("No actions available")));
+                        .withBody("No actions available.")));
     }
 
     @When("I check the status of a challenge")
