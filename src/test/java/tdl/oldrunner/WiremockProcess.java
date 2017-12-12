@@ -12,16 +12,23 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
 public class WiremockProcess {
-    // assume the wiremock process is running on these
     private static final String HOSTNAME = "localhost";
     private static final int PORT = 8222;
     private static final String anyUnicodeRegex = "(?:\\P{M}\\p{M}*)+";
 
     public static void createGetStubMappingForEndpointWithBody(String endpoint, String body) throws UnirestException {
+        createStubMappingForEndpointWithBody(endpoint, body, "GET");
+    }
+
+    public static void createPostStubMappingForEndpointWithBody(String endpoint, String body) throws UnirestException {
+        createStubMappingForEndpointWithBody(endpoint, body, "POST");
+    }
+
+    private static void createStubMappingForEndpointWithBody(String endpoint, String body, String methodType) throws UnirestException {
         // check if process running, otherwise fail.
         RequestData requestData = new RequestData();
         requestData.request = new RequestData.Request();
-        requestData.request.method = "GET";
+        requestData.request.method = methodType;
         requestData.request.urlPattern = String.format("/%s/%s", endpoint, anyUnicodeRegex);
         requestData.response = new RequestData.Response();
         requestData.response.status = 200;
@@ -46,10 +53,10 @@ public class WiremockProcess {
         return countRequestsWithEndpoint(endpoint, "POST");
     }
 
-    private static int countRequestsWithEndpoint(String endpoint, String get) throws UnirestException {
+    private static int countRequestsWithEndpoint(String endpoint, String methodType) throws UnirestException {
         String url = String.format("http://%s:%d/%s", HOSTNAME, PORT, "__admin/requests/count");
         RequestData.Request request = new RequestData.Request();
-        request.method = get;
+        request.method = methodType;
         request.urlPattern = String.format("/%s/%s", endpoint, anyUnicodeRegex);
 
         final Gson gson = new GsonBuilder().registerTypeAdapter(RequestData.Request.class, new RequestSerialiser()).create();
@@ -60,7 +67,7 @@ public class WiremockProcess {
     }
 
     public static void verifyPostEndpointWasHit(String endpoint) throws UnirestException {
-        assertThat(1, equalTo(countRequestsWithPostEndpoint(endpoint)));
+        assertThat("Endpoint \"" + endpoint + "\" should have been hit exactly once.", 1, equalTo(countRequestsWithPostEndpoint(endpoint)));
     }
 
     public static void reset() throws UnirestException {
