@@ -8,9 +8,9 @@ Feature: Should query and read information from server
     Given server is running with basic setup
     When user checks the status of a challenge
     Then the client should query the following endpoints:
-      | endpoint         |
-      | journeyProgress  |
-      | availableActions |
+      | endpoint         | methodType |
+      | journeyProgress  | GET        |
+      | availableActions | GET        |
 
   Scenario: Should show no available actions
     Given server has no available actions
@@ -27,6 +27,6 @@ Feature: Should query and read information from server
     Given server is running with basic setup
     When user enters input "start"
     Then the client should query the following endpoints:
-      | endpoint         |
-      | action/start     |
-      | roundDescription |
+      | endpoint         | methodType |
+      | action/start     | POST       |
+      | roundDescription | GET        |

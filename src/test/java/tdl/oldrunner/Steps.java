@@ -49,7 +49,7 @@ public class Steps {
         combinedClient.executeUserAction(input, new Runnable() {
             @Override
             public void run() {
-                // boolean flag to see if runnable
+                // TODO set boolean flag to see if runnable hit, or parse printed output?
                 System.out.println("hit");
             }
         }, null);
@@ -57,6 +57,7 @@ public class Steps {
 
     class EndpointRepresentation {
         String endpoint;
+        String methodType;
     }
 
     // Then
@@ -64,7 +65,7 @@ public class Steps {
     @Then("the client should query the following endpoints:$")
     public void checkIfEndpointsWereHit(List<EndpointRepresentation> hitEndpoints) throws UnirestException {
         for (EndpointRepresentation hitEndpoint : hitEndpoints) {
-            verifyEndpointWasHit(hitEndpoint.endpoint);
+            WiremockProcess.verifyEndpointWasHit(hitEndpoint.endpoint, hitEndpoint.methodType);
         }
     }
 
@@ -101,22 +102,4 @@ public class Steps {
         return new CombinedClient(journeyId, useColours, "localhost", username, System.out::println);
     }
 
-    private void verifyEndpointWasHit(String endpoint) throws UnirestException {
-        switch (endpoint) {
-            case "journeyProgress":
-            case "availableActions":
-            case "roundDescription":
-                WiremockProcess.verifyGetEndpointWasHit(endpoint);
-                break;
-            case "action/start":
-            case "action/deploy":
-            case "action/pause":
-            case "action/continue":
-                WiremockProcess.verifyPostEndpointWasHit(endpoint);
-                break;
-            default:
-                // fail
-                throw new RuntimeException("None of the requests matched");
-        }
-    }
 }

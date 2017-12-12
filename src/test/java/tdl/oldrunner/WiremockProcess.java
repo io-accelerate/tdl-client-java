@@ -41,16 +41,9 @@ public class WiremockProcess {
         Unirest.post(url).body(json).asJson();
     }
 
-    static void verifyGetEndpointWasHit(String endpoint) throws UnirestException {
-        assertThat(countRequestsWithGetEndpoint(endpoint), equalTo(1));
-    }
-
-    static int countRequestsWithGetEndpoint(String endpoint) throws UnirestException {
-        return countRequestsWithEndpoint(endpoint, "GET");
-    }
-
-    static int countRequestsWithPostEndpoint(String endpoint) throws UnirestException {
-        return countRequestsWithEndpoint(endpoint, "POST");
+    static void verifyEndpointWasHit(String endpoint, String methodType) throws UnirestException {
+        String failMessage = "Endpoint \"" + endpoint + "\" should have been hit exactly once, with methodType \"" + methodType + "\"";
+        assertThat(failMessage, countRequestsWithEndpoint(endpoint, methodType), equalTo(1));
     }
 
     private static int countRequestsWithEndpoint(String endpoint, String methodType) throws UnirestException {
@@ -64,10 +57,6 @@ public class WiremockProcess {
 
         HttpResponse<JsonNode> response = Unirest.post(url).body(json).asJson();
         return response.getBody().getObject().getInt("count");
-    }
-
-    public static void verifyPostEndpointWasHit(String endpoint) throws UnirestException {
-        assertThat("Endpoint \"" + endpoint + "\" should have been hit exactly once.", 1, equalTo(countRequestsWithPostEndpoint(endpoint)));
     }
 
     public static void reset() throws UnirestException {
