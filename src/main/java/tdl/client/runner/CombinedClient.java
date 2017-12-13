@@ -1,4 +1,4 @@
-package tdl.client.oldrunner;
+package tdl.client.runner;
 
 import tdl.client.Client;
 import tdl.client.ProcessingRules;
@@ -10,18 +10,17 @@ import java.util.function.Consumer;
 
 import static tdl.client.actions.ClientActions.publish;
 
-
 public class CombinedClient {
     private HttpClient httpClient;
     private String hostname;
     private String username;
     private Consumer<String> printer;
 
-    public CombinedClient(String journeyId, boolean useColours, String hostname, String username, Consumer<String> printer) {
+    public CombinedClient(String journeyId, boolean useColours, String hostname, int port, String username, Consumer<String> printer) {
         this.hostname = hostname;
         this.username = username;
         this.printer = printer;
-        httpClient = new HttpClient(hostname, journeyId, useColours);
+        httpClient = new HttpClient(hostname, port, journeyId, useColours);
     }
 
     public boolean checkStatusOfChallenge() throws HttpClient.ServerErrorException, HttpClient.OtherCommunicationException, HttpClient.ClientErrorException {

@@ -5,8 +5,8 @@ import cucumber.api.java.en.And;
 import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
-import tdl.client.oldrunner.CombinedClient;
-import tdl.client.oldrunner.HttpClient;
+import tdl.client.runner.CombinedClient;
+import tdl.client.runner.HttpClient;
 
 import java.util.List;
 
@@ -102,9 +102,8 @@ public class Steps {
 
     private CombinedClient setupCombinedClient() {
         String journeyId = "dGRsLXRlc3QtY25vZGVqczAxfFNVTSxITE8sQ0hLfFE=";
-        boolean useColours = false;
         String username = "tdl-test-cnodejs01";
-        return new CombinedClient(journeyId, useColours, "localhost", username, System.out::println);
+        return new CombinedClient(journeyId, false, "localhost", 8222, username, System.out::println);
     }
 
 }

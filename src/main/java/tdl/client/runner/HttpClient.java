@@ -1,4 +1,4 @@
-package tdl.client.oldrunner;
+package tdl.client.runner;
 
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.Unirest;
@@ -12,13 +12,14 @@ import java.net.URLEncoder;
 
 public class HttpClient {
     private final Logger LOG = LoggerFactory.getLogger(HttpClient.class);
-    private String url;
+    private String hostname;
     private String journeyId;
-    private int port = 8222;
+    private int port;
     private String acceptHeader;
 
-    HttpClient(String url, String journeyId, boolean useColours) {
-        this.url = url;
+    HttpClient(String hostname, int port, String journeyId, boolean useColours) {
+        this.hostname = hostname;
+        this.port = port;
         this.journeyId = journeyId;
         this.acceptHeader = useColours ? "text/coloured" : "text/not-coloured";
     }
@@ -40,7 +41,7 @@ public class HttpClient {
     private String get(String name) throws OtherCommunicationException, ServerErrorException, ClientErrorException {
         try {
             String encodedPath = URLEncoder.encode(this.journeyId, "UTF-8");
-            String url = String.format("http://%s:%d/%s/%s", this.url, port, name, encodedPath);
+            String url = String.format("http://%s:%d/%s/%s", this.hostname, port, name, encodedPath);
             HttpResponse<String> response = Unirest.get(url)
                     .header("Accept", this.acceptHeader)
                     .header("Accept-Charset", "UTF-8")
@@ -58,7 +59,7 @@ public class HttpClient {
             ClientErrorException, ServerErrorException, OtherCommunicationException {
         try {
             String encodedPath = URLEncoder.encode(this.journeyId, "UTF-8");
-            String url = String.format("http://%s:%d/action/%s/%s", this.url, port, action, encodedPath);
+            String url = String.format("http://%s:%d/action/%s/%s", this.hostname, port, action, encodedPath);
             HttpResponse<String> response =  Unirest.post(url)
                     .header("Accept", this.acceptHeader)
                     .header("Accept-Charset", "UTF-8")

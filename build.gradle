@@ -206,7 +206,7 @@ uploadArchives {
 
             scm {
                 connection 'scm:git:git@github.com:julianghionoiu/tdl-client-java.git'
-                developerConnection 'scm:git:gpythoit@github.com:julianghionoiu/tdl-client-java.git'
+                developerConnection 'scm:git:git@github.com:julianghionoiu/tdl-client-java.git'
                 url 'git@github.com:julianghionoiu/tdl-client-java.git'
             }
 
