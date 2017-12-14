@@ -9,20 +9,19 @@ import tdl.client.abstractions.Request;
 import tdl.client.abstractions.UserImplementation;
 import tdl.client.abstractions.response.Response;
 import tdl.client.actions.ClientAction;
-import tdl.client.runner.ClientRunner;
 import tdl.client.runner.HttpClient;
 import tdl.client.transport.BrokerCommunicationException;
 import tdl.client.transport.RemoteBroker;
 
 import java.io.*;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 
@@ -35,13 +34,10 @@ public class Steps {
     private boolean helloHit = false;
     private boolean fizzBuzzHit = false;
     private boolean checkoutHit = false;
-    private PrintStream printStream;
-    private BufferedReader bufferedReader;
     private final ByteArrayOutputStream outContent = new ByteArrayOutputStream();
-    private final ByteArrayOutputStream errContent = new ByteArrayOutputStream();
-    private Thread clientRunnerThread;
     private String recordingSystemCallbackText;
     private String[] userCommandLineArgs;
+    private ConsoleDriver driver;
 
     // Given
 
@@ -77,11 +73,31 @@ public class Steps {
         wiremockProcess.adjustStubMappingResponse(endpoint, returnValue);
     }
 
+    @And("the challenges folder is empty")
+    public void deleteContentsOfChallengesFolder() throws IOException {
+        Path path =  Paths.get("challenges");
+        deleteFolderContents(path.toFile());
+        new File("challenges/XR.txt").createNewFile();
+    }
+
+    void deleteFolderContents(File folder) {
+        File[] files = folder.listFiles();
+        if(files!=null) { //some JVMs return null for empty dirs
+            for(File f: files) {
+                if(f.isDirectory()) {
+                    deleteFolderContents(f);
+                } else {
+                    f.delete();
+                }
+            }
+        }
+    }
+
+
     // When
 
     @When("user starts client")
     public void userStartsChallenge() throws UnirestException {
-        printStream = new PrintStream(outContent);
         wiremockProcess.configureServer();
         String journeyId = "dGRsLXRlc3QtY25vZGVqczAxfFNVTSxITE8sQ0hLfFE=";
         String username = "tdl-test-cnodejs01";
@@ -144,9 +160,7 @@ public class Steps {
             }
         };
 
-        // start in a background thread, check if thread finished for exit.
-
-        ClientRunner clientRunner = ClientRunner.forUsername(username)
+        driver = ConsoleDriver.forUsername(username)
                 .withServerHostname(hostname)
                 .withPort(port)
                 .withJourneyId(journeyId)
@@ -154,57 +168,64 @@ public class Steps {
                 .withDeployCallback(() -> deployCallbackHit = true)
                 .withDeployAction(clientAction)
                 .withRecordingSystemOk(true)
-                .withBufferedReader(bufferedReader)
-                .withOutputStream(printStream)
                 .withNotifyRecordSystemCallback(notifyRecordSystemCallback)
+                .withCommandLineArgs(userCommandLineArgs)
                 .withSolutionFor("sum", p -> sum)
                 .withSolutionFor("hello", p -> hello)
                 .withSolutionFor("fizz_buzz", p -> fizzBuzz)
                 .withSolutionFor("checkout", p -> checkout);
 
-        clientRunnerThread = new Thread(() -> clientRunner.start(userCommandLineArgs));
-        clientRunnerThread.start();
+        try {
+            driver.startApp(1000000);
+        } catch (InteractionException e) {
+            e.printStackTrace();
+        }
     }
 
     @When("user types action \"([^\"]*)\"$")
     @And("types action \"([^\"]*)\"$")
     public void userEntersInput(String input) throws HttpClient.ServerErrorException, HttpClient.OtherCommunicationException, HttpClient.ClientErrorException {
-        bufferedReader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(input.getBytes())));
+        driver.writeLine(input);
     }
 
     // Then
 
-    @Then("the client should ask the user for input and wait")
+    @Then("the client should wait for input")
     public void checkUserWaitsForInput() {
-        assertTrue("Thread exited, client must have stopped", clientRunnerThread.isAlive());
-        // TODO check output?
+        throw new RuntimeException("not implemented");
     }
 
     @Then("^the user should see:$")
-    public void parseInput(String expectedOutput) {
-        assertEquals(expectedOutput, outContent.toString());
+    public void parseInput(String expectedOutput) throws IOException, InteractionException {
+        String[] lines = expectedOutput.split("\n");
+        for (String line: lines) {
+            if (!line.contains("\"\"\"")){
+                driver.readLinesUntilLine(line.trim());
+            }
+        }
     }
 
     @And("the client should exit")
-    public void exitClient() {
-        assertFalse("Client is still running", clientRunnerThread.isAlive());
+    public void exitClient() throws InteractionException {
+        driver.waitForAppToStop();
     }
 
-    @Then("the file \"([^\"]*)\" should contain \"([^\"]*)\"$")
+    @Then("the file \"([^\"]*)\" should contain$")
     public void checkFileContainsDescription(String file, String text) throws IOException {
         BufferedReader inputReader = new BufferedReader(new FileReader(file));
         StringBuilder content = new StringBuilder();
         String line;
         while ((line = inputReader.readLine()) != null){
             content.append(line);
+            content.append("\n");
         }
         String c = content.toString();
-        assertThat("contents of the file is not what is expected", text, equalTo(c));
+        assertThat("Contents of the file is not what is expected", c, equalTo(text));
     }
 
     @And("the recording system should be notified with \"([^\"]*)\"$")
     public void checkRecordingSystemNotified(String text) {
-        assertThat("Recording system not notified", text, equalTo(recordingSystemCallbackText));
+        assertThat("Recording system not notified", recordingSystemCallbackText, equalTo(text));
     }
 
     @Then("the queue client should be run with the provided implementations")
@@ -218,8 +239,7 @@ public class Steps {
 
     @Then("the client should not ask the user for input")
     public void checkClientDoesNotAskForInput() {
-        assertFalse("Client is still running", clientRunnerThread.isAlive());
-        // TODO check output?
+        throw new RuntimeException("not implemented");
     }
 
 }

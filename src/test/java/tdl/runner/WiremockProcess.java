@@ -25,13 +25,14 @@ class WiremockProcess {
         this.port = port;
     }
 
-    void createStubMapping(String endpoint, String body, int returnCode, String methodType) {
+    void createStubMapping(String verb, String endpoint, int returnCode, String body) {
         // Obvs - change public fields to methods
 
         RequestData data = new RequestData();
         data.request = new RequestData.Request();
-        data.request.method = methodType;
-        data.request.urlPattern = getUrlPattern(endpoint);
+        data.request.verb = verb;
+        String urlPattern = getUrlPattern(endpoint);
+        data.request.urlPattern = urlPattern;
         data.response = new RequestData.Response();
         data.response.status = returnCode;
         data.response.body = body;
@@ -76,7 +77,7 @@ class WiremockProcess {
     private int countRequestsWithEndpoint(String endpoint, String methodType) throws UnirestException {
         String url = String.format("http://%s:%d/%s", hostname, port, "__admin/requests/count");
         RequestData.Request request = new RequestData.Request();
-        request.method = methodType;
+        request.verb = methodType;
         request.urlPattern = getUrlPattern(endpoint);
         request.headers = new RequestData.Request.Headers();
         request.headers.accept = "text/not-coloured";
@@ -99,7 +100,7 @@ class WiremockProcess {
 
         static class Request {
             String urlPattern;
-            String method;
+            String verb;
             Headers headers;
 
             static class Headers {
@@ -138,7 +139,7 @@ class WiremockProcess {
         public JsonElement serialize(final RequestData.Request request, final Type typeOfSrc, final JsonSerializationContext context) {
             final JsonObject requestJsonObj = new JsonObject();
             requestJsonObj.addProperty("urlPattern", request.urlPattern);
-            requestJsonObj.addProperty("method", request.method);
+            requestJsonObj.addProperty("method", request.verb);
 
             final JsonObject headerJsonObj = new JsonObject();
             final JsonObject acceptJsonObj = new JsonObject();

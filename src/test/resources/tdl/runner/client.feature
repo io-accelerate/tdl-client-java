@@ -3,12 +3,13 @@ Feature: Should query and read information from server
   Background:
     Given There is a challenge server running on "localhost" port 8222
     And It exposes the following endpoints
-      | verb       | endpoint             | returnStatus | returnBody                             |
-      | GET        | journeyProgress      | 200          | "Journey progress coming from server"  |
-      | GET        | availableActions     | 200          | "Available actions coming from server" |
-      | GET        | roundDescription     | 200          | "RoundID\nRound Description"           |
-      | POST       | action/*             | 200          | "Successful action feedback"           |
+      | verb       | endpoint             | returnStatus | returnBody                           |
+      | GET        | journeyProgress      | 200          | Journey progress coming from server  |
+      | GET        | availableActions     | 200          | Available actions coming from server |
+      | GET        | roundDescription     | 200          | RoundID\nRound Description           |
+      | POST       | action/([a-zA-Z]+)   | 200          | Successful action feedback           |
     And expects requests to have the Accept header set to "text/coloured"
+    And the challenges folder is empty
 
   # Business critical scenarios
 
@@ -19,7 +20,7 @@ Feature: Should query and read information from server
       Journey progress coming from server
       Available actions coming from server
       """
-    Then the client should ask the user for input and wait
+    Then the client should wait for input
     When user types action "anySuccessful"
     Then the user should see:
       """
@@ -30,7 +31,12 @@ Feature: Should query and read information from server
   Scenario: Refresh round description on successful action
     When user starts client
     And types action "anySuccessful"
-    Then the file "challenges/RoundID.txt" should contain "Round Description"
+    Then the file "challenges/RoundID.txt" should contain
+    """
+    RoundID
+    Round Description
+
+    """
     And the recording system should be notified with "RoundID/new"
 
   Scenario: Deploy code to production and display feedback
@@ -49,5 +55,5 @@ Feature: Should query and read information from server
     Given server endpoint "availableActions" returns "No available actions"
     When user starts client
     Then the client should not ask the user for input
-
-  Scenario: Should exit if recording not available
+#
+#  Scenario: Should exit if recording not available
