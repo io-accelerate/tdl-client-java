@@ -7,6 +7,7 @@ import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
 
 import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -16,7 +17,7 @@ import static org.hamcrest.Matchers.equalTo;
 class WiremockProcess {
     private final String hostname;
     private final int port;
-    private List<RequestData> configData;
+    private List<RequestData> configData = new ArrayList<>();
     private static final String anyUnicodeRegex = "(?:\\P{M}\\p{M}*)+";
 
     WiremockProcess(String hostname, int port) {

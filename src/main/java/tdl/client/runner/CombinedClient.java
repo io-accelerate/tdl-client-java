@@ -2,33 +2,28 @@ package tdl.client.runner;
 
 import tdl.client.Client;
 import tdl.client.ProcessingRules;
-import tdl.client.abstractions.UserImplementation;
-import tdl.client.actions.ClientAction;
+import java.io.PrintStream;
 
-import java.util.Map;
-import java.util.function.Consumer;
-
-import static tdl.client.actions.ClientActions.publish;
 
 public class CombinedClient {
     private HttpClient httpClient;
     private String hostname;
     private String username;
-    private Consumer<String> printer;
+    private PrintStream writer;
 
-    public CombinedClient(String journeyId, boolean useColours, String hostname, int port, String username, Consumer<String> printer) {
+    public CombinedClient(String journeyId, boolean useColours, String hostname, int port, String username, PrintStream writer) {
         this.hostname = hostname;
         this.username = username;
-        this.printer = printer;
+        this.writer = writer;
         httpClient = new HttpClient(hostname, port, journeyId, useColours);
     }
 
     public boolean checkStatusOfChallenge() throws HttpClient.ServerErrorException, HttpClient.OtherCommunicationException, HttpClient.ClientErrorException {
         String journeyProgress = httpClient.getJourneyProgress();
-        printer.accept(journeyProgress);
+        writer.println(journeyProgress);
 
         String availableActions = httpClient.getAvailableActions();
-        printer.accept(availableActions);
+        writer.println(availableActions);
 
         return !availableActions.contains("No actions available.");
     }
@@ -52,25 +47,7 @@ public class CombinedClient {
 
     private String executeAction(String userInput) throws HttpClient.ServerErrorException, HttpClient.OtherCommunicationException, HttpClient.ClientErrorException {
         String actionFeedback = httpClient.sendAction(userInput);
-        printer.accept(actionFeedback);
+        writer.println(actionFeedback);
         return httpClient.getRoundDescription();
     }
-
-    public ProcessingRules createDeployProcessingRules(UserImplementation saveDescriptionUserImplementation, ClientAction deployAction, Map<String, UserImplementation> solutions) {
-        ProcessingRules deployProcessingRules = new ProcessingRules();
-
-        // Debt - do we need this anymore?
-        deployProcessingRules
-                .on("display_description")
-                .call(saveDescriptionUserImplementation)
-                .then(publish());
-
-        solutions.forEach((methodName, userImplementation) -> deployProcessingRules
-                .on(methodName)
-                .call(userImplementation)
-                .then(deployAction));
-
-        return deployProcessingRules;
-    }
 }
-

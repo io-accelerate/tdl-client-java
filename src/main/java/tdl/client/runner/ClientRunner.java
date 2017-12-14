@@ -6,10 +6,12 @@ import tdl.client.ProcessingRules;
 import tdl.client.abstractions.UserImplementation;
 import tdl.client.actions.ClientAction;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.PrintStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 import static tdl.client.actions.ClientActions.publish;
 
@@ -21,14 +23,13 @@ public class ClientRunner {
     private String journeyId;
     private boolean useColours;
     private Runnable deployCallback;
-    private Function<String[], String> getUserInput;
     private boolean recordingSystemOk;
     private final String username;
     private final Map<String, UserImplementation> solutions;
     private ClientAction deployAction;
-    private UserImplementation saveDescriptionImplementation;
-    private Consumer<String> saveDescriptionRoundManagement;
-    private Consumer<String> printer;
+    private BufferedReader reader;
+    private Consumer<String> notifyRecordSystemCallback;
+    private PrintStream writer;
 
     public static ClientRunner forUsername(@SuppressWarnings("SameParameterValue") String username) {
         return new ClientRunner(username);
@@ -64,18 +65,18 @@ public class ClientRunner {
         return this;
     }
 
-    public ClientRunner withUserInput(Function<String[], String> getUserInput) {
-        this.getUserInput = getUserInput;
-        return this;
-    }
-
-    public ClientRunner withPrinter(Consumer<String> printer) {
-        this.printer = printer;
-        return this;
-    }
-
     public ClientRunner withDeployAction(ClientAction deployAction) {
         this.deployAction = deployAction;
+        return this;
+    }
+
+    public ClientRunner withBufferedReader(BufferedReader reader) {
+        this.reader = reader;
+        return this;
+    }
+
+    public ClientRunner withOutputStream(PrintStream out) {
+        this.writer = out;
         return this;
     }
 
@@ -84,13 +85,8 @@ public class ClientRunner {
         return this;
     }
 
-    public ClientRunner withSaveDescriptionImplementation(UserImplementation saveDescriptionUserImplementation) {
-        this.saveDescriptionImplementation = saveDescriptionUserImplementation;
-        return this;
-    }
-
-    public ClientRunner withSaveDescriptionRoundManagement(Consumer<String> saveDescriptionRoundManagement) {
-        this.saveDescriptionRoundManagement = saveDescriptionRoundManagement;
+    public ClientRunner withNotifyRecordSystemCallback(Consumer<String> notifyRecordSystemCallback) {
+        this.notifyRecordSystemCallback = notifyRecordSystemCallback;
         return this;
     }
 
@@ -103,45 +99,45 @@ public class ClientRunner {
 
     public void start(String[] args) {
         if (!this.recordingSystemOk) {
-            printer.accept("Please run `record_screen_and_upload` before continuing.");
+            writer.println("Please run `record_screen_and_upload` before continuing.");
             return;
         }
-        printer.accept("Connecting to " + hostname);
+        writer.println("Connecting to " + hostname);
         runApp(args);
     }
 
     private void runApp(String[] args) {
-        CombinedClient combinedClient = new CombinedClient(journeyId, useColours, hostname, port, username, printer);
+        CombinedClient combinedClient = new CombinedClient(journeyId, useColours, hostname, port, username, writer);
 
         try {
             boolean shouldContinue = combinedClient.checkStatusOfChallenge();
             if (shouldContinue) {
-                String userInput = getUserInput.apply(args);
-                ProcessingRules deployProcessingRules = createDeployProcessingRules(saveDescriptionImplementation, deployAction, solutions);
+                String userInput = getUserInput(args);
+                ProcessingRules deployProcessingRules = createDeployProcessingRules(deployAction, solutions);
                 String roundDescription = combinedClient.executeUserAction(
                         userInput,
                         deployCallback,
                         deployProcessingRules
                 );
-                saveDescriptionRoundManagement.accept(roundDescription);
+                RoundManagement.saveDescription(roundDescription, notifyRecordSystemCallback, writer);
             }
-        } catch (HttpClient.ServerErrorException e) {
+        }  catch (HttpClient.ServerErrorException e) {
             LOG.error("Server experienced an error. Try again.", e);
         } catch (HttpClient.OtherCommunicationException e) {
             LOG.error("Client threw an unexpected error.", e);
         } catch (HttpClient.ClientErrorException e) {
             LOG.error("The client sent something the server didn't expect.");
-            printer.accept(e.getResponseMessage());
+            writer.println(e.getResponseMessage());
         }
     }
 
-    private ProcessingRules createDeployProcessingRules(UserImplementation saveDescriptionUserImplementation, ClientAction deployAction, Map<String, UserImplementation> solutions) {
+    private ProcessingRules createDeployProcessingRules(ClientAction deployAction, Map<String, UserImplementation> solutions) {
         ProcessingRules deployProcessingRules = new ProcessingRules();
 
         // Debt - do we need this anymore?
         deployProcessingRules
                 .on("display_description")
-                .call(saveDescriptionUserImplementation)
+                .call(p -> RoundManagement.saveDescription(p[0], p[1], writer))
                 .then(publish());
 
         solutions.forEach((methodName, userImplementation) -> deployProcessingRules
@@ -150,5 +146,18 @@ public class ClientRunner {
                 .then(deployAction));
 
         return deployProcessingRules;
+    }
+
+    private String getUserInput(String[] args) {
+        return args.length > 0 ? args[0] : readInputFromConsole();
+    }
+
+    private String readInputFromConsole() {
+        try {
+            return reader.readLine();
+        } catch (IOException e) {
+            LOG.error("Could not read user input.", e);
+            return "error";
+        }
     }
 }

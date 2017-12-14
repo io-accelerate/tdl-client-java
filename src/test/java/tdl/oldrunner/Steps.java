@@ -103,7 +103,7 @@ public class Steps {
     private CombinedClient setupCombinedClient() {
         String journeyId = "dGRsLXRlc3QtY25vZGVqczAxfFNVTSxITE8sQ0hLfFE=";
         String username = "tdl-test-cnodejs01";
-        return new CombinedClient(journeyId, false, "localhost", 8222, username, System.out::println);
+        return new CombinedClient(journeyId, false, "localhost", 8222, username, System.out);
     }
 
 }

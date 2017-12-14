@@ -14,9 +14,16 @@ import tdl.client.runner.HttpClient;
 import tdl.client.transport.BrokerCommunicationException;
 import tdl.client.transport.RemoteBroker;
 
-import java.io.PrintStream;
+import java.io.*;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.IsEqual.equalTo;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 
 public class Steps {
@@ -28,11 +35,17 @@ public class Steps {
     private boolean helloHit = false;
     private boolean fizzBuzzHit = false;
     private boolean checkoutHit = false;
-    private PrintStream printStream = System.out;
+    private PrintStream printStream;
+    private BufferedReader bufferedReader;
+    private final ByteArrayOutputStream outContent = new ByteArrayOutputStream();
+    private final ByteArrayOutputStream errContent = new ByteArrayOutputStream();
+    private Thread clientRunnerThread;
+    private String recordingSystemCallbackText;
+    private String[] userCommandLineArgs;
 
     // Given
 
-    @Given("There is a challenge server running on \"([^\"]*)\" port \\d+$")
+    @Given("There is a challenge server running on \"([^\"]*)\" port (\\d+)$")
     public void setupServerWithSetup(String hostname, int port) throws UnirestException {
         this.hostname = hostname;
         this.port = port;
@@ -48,11 +61,13 @@ public class Steps {
     }
 
     @And("It exposes the following endpoints$")
-    public void configureEndpoint(ServerConfig config) throws UnirestException {
-        wiremockProcess.createStubMapping(config.verb, config.endpoint, config.returnStatus, config.returnBody);
+    public void configureEndpoint(List<ServerConfig> configs) throws UnirestException {
+        for (ServerConfig config: configs) {
+            wiremockProcess.createStubMapping(config.verb, config.endpoint, config.returnStatus, config.returnBody);
+        }
     }
 
-    @And("And expects requests to have the Accept header set to \"text/coloured\"")
+    @And("expects requests to have the Accept header set to \"([^\"]*)\"")
     public void configureAcceptHeader(String header) throws UnirestException {
         wiremockProcess.addHeaderToStubs(header);
     }
@@ -66,10 +81,12 @@ public class Steps {
 
     @When("user starts client")
     public void userStartsChallenge() throws UnirestException {
+        printStream = new PrintStream(outContent);
         wiremockProcess.configureServer();
         String journeyId = "dGRsLXRlc3QtY25vZGVqczAxfFNVTSxITE8sQ0hLfFE=";
         String username = "tdl-test-cnodejs01";
-        String[] args = new String[]{};
+        userCommandLineArgs = new String[]{};
+
         ClientAction clientAction = new ClientAction() {
             @Override
             public void afterResponse(RemoteBroker remoteBroker, Request request, Response response) throws BrokerCommunicationException {
@@ -120,92 +137,89 @@ public class Steps {
                 return null;
             }
         };
-        Consumer<String> saveDescriptionRoundManagement = new Consumer<String>() {
+        Consumer<String> notifyRecordSystemCallback = new Consumer<String>() {
             @Override
             public void accept(String s) {
-                // do nothing
-            }
-        };
-        Consumer<String> printer = new Consumer<String>() {
-            @Override
-            public void accept(String s) {
-                // TODO read rather than print
-                printStream.println(s);
+                recordingSystemCallbackText = s;
             }
         };
 
-        ClientRunner.forUsername(username)
+        // start in a background thread, check if thread finished for exit.
+
+        ClientRunner clientRunner = ClientRunner.forUsername(username)
                 .withServerHostname(hostname)
                 .withPort(port)
                 .withJourneyId(journeyId)
                 .withColours(true)
                 .withDeployCallback(() -> deployCallbackHit = true)
-                .withUserInput(Steps::getUserInput)
                 .withDeployAction(clientAction)
-                .withPrinter(printer)
-                .withSaveDescriptionImplementation(userImplementation)
                 .withRecordingSystemOk(true)
-                .withSaveDescriptionRoundManagement(saveDescriptionRoundManagement)
+                .withBufferedReader(bufferedReader)
+                .withOutputStream(printStream)
+                .withNotifyRecordSystemCallback(notifyRecordSystemCallback)
                 .withSolutionFor("sum", p -> sum)
                 .withSolutionFor("hello", p -> hello)
                 .withSolutionFor("fizz_buzz", p -> fizzBuzz)
-                .withSolutionFor("checkout", p -> checkout)
-                .start(args);
+                .withSolutionFor("checkout", p -> checkout);
+
+        clientRunnerThread = new Thread(() -> clientRunner.start(userCommandLineArgs));
+        clientRunnerThread.start();
     }
 
-    public static String getUserInput(String[] args) {
-        return args.length > 0 ? args[0] : readInputFromConsole();
-    }
-
-    private static String readInputFromConsole() {
-        // TODO instead of system.in, use a different stream so we can enter input retrospectively
-        throw new RuntimeException("not implemented!");
-    }
-
-    @When("^user types action \"([^\"]*)\"$")
-    public void userEntersInputForAChallenge(String input) throws HttpClient.ServerErrorException, HttpClient.OtherCommunicationException, HttpClient.ClientErrorException {
-        // TODO: enter input
-        throw new RuntimeException("not implemented!");
+    @When("user types action \"([^\"]*)\"$")
+    @And("types action \"([^\"]*)\"$")
+    public void userEntersInput(String input) throws HttpClient.ServerErrorException, HttpClient.OtherCommunicationException, HttpClient.ClientErrorException {
+        bufferedReader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(input.getBytes())));
     }
 
     // Then
 
-    @Then("the user should see:\"\"\"([^\"]*)\"\"\"$")
-    public void parseInput(String input) {
-        System.out.println("input = " + input);
-        // TODO: keep track of input printed by the console
-        throw new RuntimeException("not implemented");
+    @Then("the client should ask the user for input and wait")
+    public void checkUserWaitsForInput() {
+        assertTrue("Thread exited, client must have stopped", clientRunnerThread.isAlive());
+        // TODO check output?
     }
 
-    @Then("Then the client should ask the user for input and wait")
-    public void checkPromptWaitForInput() {
-        throw new RuntimeException("not implemented");
+    @Then("^the user should see:$")
+    public void parseInput(String expectedOutput) {
+        assertEquals(expectedOutput, outContent.toString());
     }
 
     @And("the client should exit")
     public void exitClient() {
-        throw new RuntimeException("not implemented");
+        assertFalse("Client is still running", clientRunnerThread.isAlive());
     }
 
     @Then("the file \"([^\"]*)\" should contain \"([^\"]*)\"$")
-    public void checkFileContainsDescription(String file, String text) {
-        throw new RuntimeException("not implemented");
+    public void checkFileContainsDescription(String file, String text) throws IOException {
+        BufferedReader inputReader = new BufferedReader(new FileReader(file));
+        StringBuilder content = new StringBuilder();
+        String line;
+        while ((line = inputReader.readLine()) != null){
+            content.append(line);
+        }
+        String c = content.toString();
+        assertThat("contents of the file is not what is expected", text, equalTo(c));
     }
 
     @And("the recording system should be notified with \"([^\"]*)\"$")
     public void checkRecordingSystemNotified(String text) {
-        throw new RuntimeException("not implemented");
+        assertThat("Recording system not notified", text, equalTo(recordingSystemCallbackText));
     }
 
     @Then("the queue client should be run with the provided implementations")
     public void checkQueueClientRunningImplementation() {
-        // unsure about this
-        throw new RuntimeException("not implemented");
+        // how to detect the provided implementation?
+        assertTrue("Checkout implementation wasn't hit", checkoutHit);
+        assertTrue("FizzBuzz implementation wasn't hit", fizzBuzzHit);
+        assertTrue("Hello implementation wasn't hit", helloHit);
+        assertTrue("Sum implementation wasn't hit", sumHit);
     }
 
     @Then("the client should not ask the user for input")
     public void checkClientDoesNotAskForInput() {
-        throw new RuntimeException("not implemented");
+        assertFalse("Client is still running", clientRunnerThread.isAlive());
+        // TODO check output?
     }
 
 }
