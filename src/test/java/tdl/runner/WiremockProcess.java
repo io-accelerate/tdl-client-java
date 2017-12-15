@@ -1,8 +1,6 @@
 package tdl.runner;
 
 import com.google.gson.*;
-import com.mashape.unirest.http.HttpResponse;
-import com.mashape.unirest.http.JsonNode;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
 
@@ -11,8 +9,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
 
 class WiremockProcess {
     private final String hostname;
@@ -67,26 +63,6 @@ class WiremockProcess {
             String url = String.format("http://%s:%d/%s", hostname, port, "__admin/mappings/new");
             Unirest.post(url).body(json).asJson();
         }
-    }
-
-    void verifyEndpointWasHit(String endpoint, String methodType) throws UnirestException {
-        String failMessage = "Endpoint \"" + endpoint + "\" should have been hit exactly once, with methodType \"" + methodType + "\"";
-        assertThat(failMessage, countRequestsWithEndpoint(endpoint, methodType), equalTo(1));
-    }
-
-    private int countRequestsWithEndpoint(String endpoint, String methodType) throws UnirestException {
-        String url = String.format("http://%s:%d/%s", hostname, port, "__admin/requests/count");
-        RequestData.Request request = new RequestData.Request();
-        request.verb = methodType;
-        request.urlPattern = getUrlPattern(endpoint);
-        request.headers = new RequestData.Request.Headers();
-        request.headers.accept = "text/not-coloured";
-
-        final Gson gson = new GsonBuilder().registerTypeAdapter(RequestData.Request.class, new RequestSerialiser()).create();
-        String json = gson.toJson(request);
-
-        HttpResponse<JsonNode> response = Unirest.post(url).body(json).asJson();
-        return response.getBody().getObject().getInt("count");
     }
 
     void reset() throws UnirestException {

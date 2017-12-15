@@ -7,13 +7,14 @@ import java.io.PrintStream;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.function.Consumer;
+
+import static tdl.client.runner.RunnerAction.getNewRoundDescription;
 
 class RoundManagement {
     private static final Path CHALLENGES_FOLDER = Paths.get("challenges");
     private static final Path LAST_FETCHED_ROUND_PATH = CHALLENGES_FOLDER.resolve("XR.txt");
 
-    static void saveDescription(String rawDescription, Consumer<String> callback, PrintStream writer) {
+    static void saveDescription(String rawDescription, PrintStream writer) {
         // DEBT - the first line of the response is the ID for the round, the rest of the responseMessage is the description
         int newlineIndex = rawDescription.indexOf('\n');
         if (newlineIndex <= 0) return;
@@ -21,7 +22,7 @@ class RoundManagement {
         String roundId = rawDescription.substring(0, newlineIndex);
         String lastFetchedRound = getLastFetchedRound();
         if (!roundId.equals(lastFetchedRound)) {
-            callback.accept(roundId);
+            RecordingSystem.notifyEvent(roundId, getNewRoundDescription.getShortName(), writer);
         }
         saveDescription(roundId, rawDescription, writer);
     }
@@ -34,7 +35,6 @@ class RoundManagement {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        // should this be changed to a printer?
         writer.println("Challenge description saved to file: " + descriptionPath + ".");
 
         //Save round label
@@ -47,7 +47,7 @@ class RoundManagement {
         return "OK";
     }
 
-    private static String getLastFetchedRound() {
+    static String getLastFetchedRound() {
         try {
             return Files.readFirstLine(LAST_FETCHED_ROUND_PATH.toFile(), Charset.defaultCharset());
         } catch (IOException e) {

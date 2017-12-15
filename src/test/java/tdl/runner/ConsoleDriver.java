@@ -1,7 +1,6 @@
 package tdl.runner;
 
-import tdl.client.abstractions.UserImplementation;
-import tdl.client.actions.ClientAction;
+import tdl.client.runner.ImplementationRunner;
 
 import java.io.IOException;
 import java.util.function.Consumer;
@@ -45,33 +44,13 @@ public class ConsoleDriver {
         return this;
     }
 
-    ConsoleDriver withDeployCallback(Runnable deployCallback) {
-        appThread.withDeployCallback(deployCallback);
-        return this;
-    }
-
-    ConsoleDriver withDeployAction(ClientAction deployAction) {
-        appThread.withDeployAction(deployAction);
-        return this;
-    }
-
-    ConsoleDriver withRecordingSystemOk(boolean recordingSystemOk) {
-        appThread.withRecordingSystemOk(recordingSystemOk);
-        return this;
-    }
-
-    ConsoleDriver withNotifyRecordSystemCallback(Consumer<String> notifyRecordSystemCallback) {
-        appThread.withNotifyRecordSystemCallback(notifyRecordSystemCallback);
-        return this;
-    }
-
-    ConsoleDriver withSolutionFor(String methodName, UserImplementation solution) {
-        appThread.withSolutionFor(methodName, solution);
-        return this;
-    }
-
     ConsoleDriver withCommandLineArgs(String[] commandLineArgs) {
         appThread.withCommandLineArgs(commandLineArgs);
+        return this;
+    }
+
+    ConsoleDriver withImplementationRunner(ImplementationRunner implementationRunner) {
+        appThread.withImplementationRunner(implementationRunner);
         return this;
     }
 

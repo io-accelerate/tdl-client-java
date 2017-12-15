@@ -5,19 +5,14 @@ import cucumber.api.java.en.And;
 import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
-import tdl.client.abstractions.Request;
 import tdl.client.abstractions.UserImplementation;
-import tdl.client.abstractions.response.Response;
-import tdl.client.actions.ClientAction;
 import tdl.client.runner.HttpClient;
-import tdl.client.transport.BrokerCommunicationException;
-import tdl.client.transport.RemoteBroker;
+import tdl.client.runner.ImplementationRunner;
 
 import java.io.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
-import java.util.Optional;
 import java.util.function.Consumer;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -27,7 +22,8 @@ import static org.junit.Assert.assertTrue;
 
 public class Steps {
     private boolean deployCallbackHit = false;
-    private WiremockProcess wiremockProcess;
+    private WiremockProcess challengeServerStub;
+    private WiremockProcess recordingServerStub;
     private String hostname;
     private int port;
     private boolean sumHit = false;
@@ -45,8 +41,14 @@ public class Steps {
     public void setupServerWithSetup(String hostname, int port) throws UnirestException {
         this.hostname = hostname;
         this.port = port;
-        wiremockProcess = new WiremockProcess(hostname, port);
-        wiremockProcess.reset();
+        challengeServerStub = new WiremockProcess(hostname, port);
+        challengeServerStub.reset();
+    }
+
+    @And("There is a recording server running on \"([^\"]*)\" port (\\d+)$")
+    public void setupRecordingServerWithSetup(String hostname, int port) throws UnirestException {
+        recordingServerStub = new WiremockProcess(hostname, port);
+        recordingServerStub.reset();
     }
 
     class ServerConfig {
@@ -56,21 +58,28 @@ public class Steps {
         String returnBody;
     }
 
-    @And("It exposes the following endpoints$")
-    public void configureEndpoint(List<ServerConfig> configs) throws UnirestException {
+    @And("the challenge server exposes the following endpoints$")
+    public void configureChallengeServerEndpoint(List<ServerConfig> configs) {
         for (ServerConfig config: configs) {
-            wiremockProcess.createStubMapping(config.verb, config.endpoint, config.returnStatus, config.returnBody);
+            challengeServerStub.createStubMapping(config.verb, config.endpoint, config.returnStatus, config.returnBody);
+        }
+    }
+
+    @And("the recording server exposes the following endpoints$")
+    public void configureRecordingServerEndpoint(List<ServerConfig> configs) {
+        for (ServerConfig config: configs) {
+            recordingServerStub.createStubMapping(config.verb, config.endpoint, config.returnStatus, config.returnBody);
         }
     }
 
     @And("expects requests to have the Accept header set to \"([^\"]*)\"")
     public void configureAcceptHeader(String header) throws UnirestException {
-        wiremockProcess.addHeaderToStubs(header);
+        challengeServerStub.addHeaderToStubs(header);
     }
 
     @Given("server endpoint \"([^\"]*)\" returns \"([^\"]*)\"")
     public void setupServerEndpointResponse(String endpoint, String returnValue) {
-        wiremockProcess.adjustStubMappingResponse(endpoint, returnValue);
+        challengeServerStub.adjustStubMappingResponse(endpoint, returnValue);
     }
 
     @And("the challenges folder is empty")
@@ -98,33 +107,11 @@ public class Steps {
 
     @When("user starts client")
     public void userStartsChallenge() throws UnirestException {
-        wiremockProcess.configureServer();
+        challengeServerStub.configureServer();
         String journeyId = "dGRsLXRlc3QtY25vZGVqczAxfFNVTSxITE8sQ0hLfFE=";
         String username = "tdl-test-cnodejs01";
         userCommandLineArgs = new String[]{};
 
-        ClientAction clientAction = new ClientAction() {
-            @Override
-            public void afterResponse(RemoteBroker remoteBroker, Request request, Response response) throws BrokerCommunicationException {
-
-            }
-
-            @Override
-            public Optional<Request> getNextRequest(RemoteBroker t) throws BrokerCommunicationException {
-                return Optional.empty();
-            }
-
-            @Override
-            public String getAuditText() {
-                return null;
-            }
-        };
-        UserImplementation userImplementation = new UserImplementation() {
-            @Override
-            public Object process(String... params) {
-                return null;
-            }
-        };
         UserImplementation sum = new UserImplementation() {
             @Override
             public Object process(String... params) {
@@ -159,24 +146,23 @@ public class Steps {
                 recordingSystemCallbackText = s;
             }
         };
+        ImplementationRunner implementationRunner = ImplementationRunner.forUsername(username)
+                .withHostname(hostname)
+                .withSolutionFor("sum", p -> sum)
+                .withSolutionFor("hello", p -> hello)
+                .withSolutionFor("fizz_buzz", p -> fizzBuzz)
+                .withSolutionFor("checkout", p -> checkout);
 
         driver = ConsoleDriver.forUsername(username)
                 .withServerHostname(hostname)
                 .withPort(port)
                 .withJourneyId(journeyId)
                 .withColours(true)
-                .withDeployCallback(() -> deployCallbackHit = true)
-                .withDeployAction(clientAction)
-                .withRecordingSystemOk(true)
-                .withNotifyRecordSystemCallback(notifyRecordSystemCallback)
                 .withCommandLineArgs(userCommandLineArgs)
-                .withSolutionFor("sum", p -> sum)
-                .withSolutionFor("hello", p -> hello)
-                .withSolutionFor("fizz_buzz", p -> fizzBuzz)
-                .withSolutionFor("checkout", p -> checkout);
+                .withImplementationRunner(implementationRunner);
 
         try {
-            driver.startApp(1000000);
+            driver.startApp(1000);
         } catch (InteractionException e) {
             e.printStackTrace();
         }
@@ -192,10 +178,11 @@ public class Steps {
 
     @Then("the client should wait for input")
     public void checkUserWaitsForInput() {
-        throw new RuntimeException("not implemented");
+        // for now, leave this
     }
 
     @Then("^the user should see:$")
+    @And("the recording system should be notified with \"([^\"]*)\"$")
     public void parseInput(String expectedOutput) throws IOException, InteractionException {
         String[] lines = expectedOutput.split("\n");
         for (String line: lines) {
@@ -205,13 +192,19 @@ public class Steps {
         }
     }
 
+//    @And("the recording system should be notified with \"([^\"]*)\"$")
+//    public void checkRecordingSystemNotified(String text) throws InteractionException {
+//        assertThat("Recording system not notified", recordingSystemCallbackText, equalTo(text));
+//    }
+
     @And("the client should exit")
     public void exitClient() throws InteractionException {
         driver.waitForAppToStop();
     }
 
     @Then("the file \"([^\"]*)\" should contain$")
-    public void checkFileContainsDescription(String file, String text) throws IOException {
+    public void checkFileContainsDescription(String file, String text) throws IOException, InteractionException {
+        driver.waitForAppToStop();
         BufferedReader inputReader = new BufferedReader(new FileReader(file));
         StringBuilder content = new StringBuilder();
         String line;
@@ -223,13 +216,8 @@ public class Steps {
         assertThat("Contents of the file is not what is expected", c, equalTo(text));
     }
 
-    @And("the recording system should be notified with \"([^\"]*)\"$")
-    public void checkRecordingSystemNotified(String text) {
-        assertThat("Recording system not notified", recordingSystemCallbackText, equalTo(text));
-    }
-
     @Then("the queue client should be run with the provided implementations")
-    public void checkQueueClientRunningImplementation() {
+    public void checkQueueClientRunningImplementation() throws InteractionException {
         // how to detect the provided implementation?
         assertTrue("Checkout implementation wasn't hit", checkoutHit);
         assertTrue("FizzBuzz implementation wasn't hit", fizzBuzzHit);
@@ -238,8 +226,8 @@ public class Steps {
     }
 
     @Then("the client should not ask the user for input")
-    public void checkClientDoesNotAskForInput() {
-        throw new RuntimeException("not implemented");
+    public void checkClientDoesNotAskForInput() throws InteractionException {
+        driver.waitForAppToStop();
     }
 
 }

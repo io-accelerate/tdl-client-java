@@ -1,8 +1,7 @@
 package tdl.runner;
 
-import tdl.client.abstractions.UserImplementation;
-import tdl.client.actions.ClientAction;
-import tdl.client.runner.ClientRunner;
+import tdl.client.runner.ChallengeSession;
+import tdl.client.runner.ImplementationRunner;
 
 import java.io.*;
 import java.util.*;
@@ -17,43 +16,27 @@ public class AppThread extends Thread {
     private final PipedInputStream threadToClient;
     private final PipedOutputStream appToThread;
 
-    private ClientRunner clientRunner;
+    private ChallengeSession challengeSession;
     private String[] commandLineArgs;
 
     void withServerHostname(@SuppressWarnings("SameParameterValue") String hostname) {
-        clientRunner.withServerHostname(hostname);
+        challengeSession.withServerHostname(hostname);
     }
 
     void withPort(int port) {
-        clientRunner.withPort(port);
+        challengeSession.withPort(port);
     }
 
     void withJourneyId(String journeyId) {
-        clientRunner.withJourneyId(journeyId);
+        challengeSession.withJourneyId(journeyId);
     }
 
     void withColours(boolean useColours) {
-        clientRunner.withColours(useColours);
+        challengeSession.withColours(useColours);
     }
 
-    void withDeployCallback(Runnable deployCallback) {
-        clientRunner.withDeployCallback(deployCallback);
-    }
-
-    void withDeployAction(ClientAction deployAction) {
-        clientRunner.withDeployAction(deployAction);
-    }
-
-    void withRecordingSystemOk(boolean recordingSystemOk) {
-        clientRunner.withRecordingSystemOk(recordingSystemOk);
-    }
-
-    void withNotifyRecordSystemCallback(Consumer<String> notifyRecordSystemCallback) {
-        clientRunner.withNotifyRecordSystemCallback(notifyRecordSystemCallback);
-    }
-
-    void withSolutionFor(String methodName, UserImplementation solution) {
-        clientRunner.withSolutionFor(methodName, solution);
+    void withImplementationRunner(ImplementationRunner implementationRunner) {
+        challengeSession.withImplementationRunner(implementationRunner);
     }
 
     void withCommandLineArgs(String[] commandLineArgs) {
@@ -61,8 +44,8 @@ public class AppThread extends Thread {
     }
 
     private AppThread(String username) {
-        super("ClientRunner Thread");
-        clientRunner = ClientRunner.forUsername(username);
+        super("ChallengeSession Thread");
+        challengeSession = ChallengeSession.forUsername(username);
 
         try {
             // client writes -> thread <- app reads
@@ -87,9 +70,9 @@ public class AppThread extends Thread {
             BufferedReader reader = new BufferedReader(new InputStreamReader(threadToApp));
             System.out.println("Starting app with: " + Arrays.toString(commandLineArgs));
             // start in a background thread, check if thread finished for exit.
-            clientRunner.withOutputStream(out);
-            clientRunner.withBufferedReader(reader);
-            clientRunner.start(commandLineArgs);
+            challengeSession.withOutputStream(out);
+            challengeSession.withBufferedReader(reader);
+            challengeSession.start(commandLineArgs);
 
         } catch (Exception e) {
             System.err.println("Top level exception in CommandLineApp: ");
@@ -134,7 +117,5 @@ public class AppThread extends Thread {
         };
         timer.schedule(task, gracePeriod);
     }
-
-
 }
 

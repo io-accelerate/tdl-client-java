@@ -1,21 +1,18 @@
 package tdl.client.runner;
 
-import tdl.client.Client;
 import tdl.client.ProcessingRules;
 import java.io.PrintStream;
 
 
 public class CombinedClient {
     private HttpClient httpClient;
-    private String hostname;
-    private String username;
     private PrintStream writer;
+    private ImplementationRunner implementationRunner;
 
-    public CombinedClient(String journeyId, boolean useColours, String hostname, int port, String username, PrintStream writer) {
-        this.hostname = hostname;
-        this.username = username;
+    public CombinedClient(String journeyId, boolean useColours, String hostname, int port, PrintStream writer, ImplementationRunner implementationRunner) {
         this.writer = writer;
         httpClient = new HttpClient(hostname, port, journeyId, useColours);
+        this.implementationRunner = implementationRunner;
     }
 
     public boolean checkStatusOfChallenge() throws HttpClient.ServerErrorException, HttpClient.OtherCommunicationException, HttpClient.ClientErrorException {
@@ -28,21 +25,12 @@ public class CombinedClient {
         return !availableActions.contains("No actions available.");
     }
 
-    public String executeUserAction(String userInput, Runnable deployCallback, ProcessingRules processingRules) throws HttpClient.ServerErrorException, HttpClient.OtherCommunicationException, HttpClient.ClientErrorException {
+    public String executeUserAction(String userInput) throws HttpClient.ServerErrorException, HttpClient.OtherCommunicationException, HttpClient.ClientErrorException {
         if (userInput.equals("deploy")) {
-            deployToQueue(deployCallback, processingRules);
+            ProcessingRules deployProcessingRules = implementationRunner.createDeployProcessingRules();
+            implementationRunner.deployToQueue(deployProcessingRules);
         }
         return executeAction(userInput);
-    }
-
-    private void deployToQueue(Runnable deployCallback, ProcessingRules processingRules) {
-        Client client = new Client.Builder()
-                .setHostname(hostname)
-                .setUniqueId(username)
-                .create();
-
-        client.goLiveWith(processingRules);
-        deployCallback.run();
     }
 
     private String executeAction(String userInput) throws HttpClient.ServerErrorException, HttpClient.OtherCommunicationException, HttpClient.ClientErrorException {
