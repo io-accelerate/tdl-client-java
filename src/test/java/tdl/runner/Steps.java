@@ -6,14 +6,14 @@ import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
 import tdl.client.abstractions.UserImplementation;
-import tdl.client.runner.HttpClient;
+import tdl.client.runner.ChallengeSession;
+import tdl.client.runner.IConsoleOut;
 import tdl.client.runner.ImplementationRunner;
 
 import java.io.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
-import java.util.function.Consumer;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
@@ -21,7 +21,6 @@ import static org.junit.Assert.assertTrue;
 
 
 public class Steps {
-    private boolean deployCallbackHit = false;
     private WiremockProcess challengeServerStub;
     private WiremockProcess recordingServerStub;
     private String hostname;
@@ -30,10 +29,11 @@ public class Steps {
     private boolean helloHit = false;
     private boolean fizzBuzzHit = false;
     private boolean checkoutHit = false;
-    private final ByteArrayOutputStream outContent = new ByteArrayOutputStream();
-    private String recordingSystemCallbackText;
     private String[] userCommandLineArgs;
     private ConsoleDriver driver;
+    private BufferedReader reader;
+    private PrintStream writer;
+    private IConsoleOut consoleOut;
 
     // Given
 
@@ -105,12 +105,12 @@ public class Steps {
 
     // When
 
-    @When("user starts client")
-    public void userStartsChallenge() throws UnirestException {
+    @When("user starts client with action \"([^\"]*)\"$")
+    public void userStartsChallenge(String action) throws UnirestException {
         challengeServerStub.configureServer();
         String journeyId = "dGRsLXRlc3QtY25vZGVqczAxfFNVTSxITE8sQ0hLfFE=";
         String username = "tdl-test-cnodejs01";
-        userCommandLineArgs = new String[]{};
+        userCommandLineArgs = new String[]{action};
 
         UserImplementation sum = new UserImplementation() {
             @Override
@@ -140,62 +140,47 @@ public class Steps {
                 return null;
             }
         };
-        Consumer<String> notifyRecordSystemCallback = new Consumer<String>() {
-            @Override
-            public void accept(String s) {
-                recordingSystemCallbackText = s;
-            }
-        };
+        consoleOut = new TestConsoleOut();
         ImplementationRunner implementationRunner = ImplementationRunner.forUsername(username)
                 .withHostname(hostname)
+                .withConsoleOut(consoleOut)
                 .withSolutionFor("sum", p -> sum)
                 .withSolutionFor("hello", p -> hello)
                 .withSolutionFor("fizz_buzz", p -> fizzBuzz)
                 .withSolutionFor("checkout", p -> checkout);
 
-        driver = ConsoleDriver.forUsername(username)
+        writer = new PrintStream(new BufferedOutputStream(System.out));
+        reader = new BufferedReader(new InputStreamReader(System.in));
+        ChallengeSession session = ChallengeSession.forUsername(username)
                 .withServerHostname(hostname)
                 .withPort(port)
                 .withJourneyId(journeyId)
                 .withColours(true)
-                .withCommandLineArgs(userCommandLineArgs)
+                .withBufferedReader(reader)
+                .withConsoleOut(consoleOut)
                 .withImplementationRunner(implementationRunner);
 
-        try {
-            driver.startApp(1000);
-        } catch (InteractionException e) {
-            e.printStackTrace();
-        }
-    }
-
-    @When("user types action \"([^\"]*)\"$")
-    @And("types action \"([^\"]*)\"$")
-    public void userEntersInput(String input) throws HttpClient.ServerErrorException, HttpClient.OtherCommunicationException, HttpClient.ClientErrorException {
-        driver.writeLine(input);
+        session.start(userCommandLineArgs);
     }
 
     // Then
 
-    @Then("the client should wait for input")
-    public void checkUserWaitsForInput() {
-        // for now, leave this
-    }
-
     @Then("^the user should see:$")
-    @And("the recording system should be notified with \"([^\"]*)\"$")
     public void parseInput(String expectedOutput) throws IOException, InteractionException {
         String[] lines = expectedOutput.split("\n");
-        for (String line: lines) {
-            if (!line.contains("\"\"\"")){
-                driver.readLinesUntilLine(line.trim());
-            }
-        }
+
+        // compare to
+        String total = ((TestConsoleOut)consoleOut).getTotal();
+        System.out.println(total);
     }
 
-//    @And("the recording system should be notified with \"([^\"]*)\"$")
-//    public void checkRecordingSystemNotified(String text) throws InteractionException {
-//        assertThat("Recording system not notified", recordingSystemCallbackText, equalTo(text));
-//    }
+    @And("the recording system should be notified with \"([^\"]*)\"$")
+    public void parseInput2(String expectedOutput) throws IOException, InteractionException {
+        String[] lines = expectedOutput.split("\n");
+        for (String line: lines) {
+            driver.readLinesUntilLine(line.trim());
+        }
+    }
 
     @And("the client should exit")
     public void exitClient() throws InteractionException {

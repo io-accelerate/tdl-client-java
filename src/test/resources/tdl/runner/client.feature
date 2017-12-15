@@ -19,36 +19,31 @@ Feature: Should query and read information from server
   # Business critical scenarios
 
   Scenario: The server interaction
-    When user starts client
+    When user starts client with action "anySuccessful"
     Then the user should see:
       """
       Journey progress coming from server
       Available actions coming from server
       """
-    Then the client should wait for input
-    When user types action "anySuccessful"
-    Then the user should see:
+    And the user should see:
       """
       Successful action feedback
       """
-    And the client should exit
 
   Scenario: Refresh round description on successful action
-    When user starts client
-    And types action "anySuccessful"
-    Then the client should exit
-    Then the file "challenges/RoundID.txt" should contain
+    When user starts client with action "anySuccessful"
+    Then the recording system should be notified with "RoundID/new"
+    And the client should exit
+    And the file "challenges/RoundID.txt" should contain
     """
     RoundID
     Round Description
 
     """
-    And the recording system should be notified with "RoundID/new"
 
   Scenario: Deploy code to production and display feedback
     When user starts client
     And types action "deploy"
-    Then the client should exit
     Then the queue client should be run with the provided implementations
     And the user should see:
       """
@@ -56,11 +51,5 @@ Feature: Should query and read information from server
       """
     And the recording system should be notified with "RoundID/deploy"
 
-  # Negative paths
-
-  Scenario: Should exit when no available actions
-    Given server endpoint "availableActions" returns "No available actions"
-    When user starts client
-    Then the client should not ask the user for input
 #
 #  Scenario: Should exit if recording not available

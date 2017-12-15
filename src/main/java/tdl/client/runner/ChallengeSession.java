@@ -5,8 +5,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.PrintStream;
-import java.util.function.Consumer;
 
 
 public class ChallengeSession {
@@ -17,8 +15,8 @@ public class ChallengeSession {
     private boolean useColours;
     private final String username;
     private BufferedReader reader;
-    private PrintStream writer;
     private ImplementationRunner implementationRunner;
+    private IConsoleOut consoleOut;
 
     public static ChallengeSession forUsername(@SuppressWarnings("SameParameterValue") String username) {
         return new ChallengeSession(username);
@@ -53,8 +51,8 @@ public class ChallengeSession {
         return this;
     }
 
-    public ChallengeSession withOutputStream(PrintStream out) {
-        this.writer = out;
+    public ChallengeSession withConsoleOut(IConsoleOut consoleOut) {
+        this.consoleOut = consoleOut;
         return this;
     }
 
@@ -66,24 +64,23 @@ public class ChallengeSession {
     //~~~~~~~~ The entry point ~~~~~~~~~
 
     public void start(String[] args) {
-        implementationRunner.withWriter(writer);
         if (!RecordingSystem.isRecordingSystemOk()) {
-            writer.println("Please run `record_screen_and_upload` before continuing.");
+            consoleOut.println("Please run `record_screen_and_upload` before continuing.");
             return;
         }
-        writer.println("Connecting to " + hostname);
+        consoleOut.println("Connecting to " + hostname);
         runApp(args);
     }
 
     private void runApp(String[] args) {
-        CombinedClient combinedClient = new CombinedClient(journeyId, useColours, hostname, port, writer, implementationRunner);
+        CombinedClient combinedClient = new CombinedClient(journeyId, useColours, hostname, port, consoleOut, implementationRunner);
 
         try {
             boolean shouldContinue = combinedClient.checkStatusOfChallenge();
             if (shouldContinue) {
                 String userInput = getUserInput(args);
                 String roundDescription = combinedClient.executeUserAction(userInput);
-                RoundManagement.saveDescription(roundDescription, writer);
+                RoundManagement.saveDescription(roundDescription, consoleOut);
             }
         }  catch (HttpClient.ServerErrorException e) {
             LOG.error("Server experienced an error. Try again.", e);
@@ -91,7 +88,7 @@ public class ChallengeSession {
             LOG.error("Client threw an unexpected error.", e);
         } catch (HttpClient.ClientErrorException e) {
             LOG.error("The client sent something the server didn't expect.");
-            writer.println(e.getResponseMessage());
+            consoleOut.println(e.getResponseMessage());
         }
     }
 

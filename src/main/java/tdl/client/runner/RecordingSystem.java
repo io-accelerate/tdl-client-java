@@ -40,8 +40,8 @@ public class RecordingSystem {
         return false;
     }
 
-    static void notifyEvent(String lastFetchedRound, String shortName, PrintStream printStream) {
-        printStream.printf("Notify round \"%s\", event \"%s\"%n\n", lastFetchedRound, shortName);
+    static void notifyEvent(String lastFetchedRound, String shortName, IConsoleOut consoleOut) {
+        consoleOut.printf("Notify round \"%s\", event \"%s\"%n\n", lastFetchedRound, shortName);
 
         if (!isRecordingRequired()) {
             return;
@@ -64,8 +64,8 @@ public class RecordingSystem {
         }
     }
 
-    static void deployNotifyEvent(String lastFetchedRound, PrintStream writer) {
-        notifyEvent(lastFetchedRound, deployToProduction.getShortName(), writer);
+    static void deployNotifyEvent(String lastFetchedRound, IConsoleOut consoleOut) {
+        notifyEvent(lastFetchedRound, deployToProduction.getShortName(), consoleOut);
     }
 }
 

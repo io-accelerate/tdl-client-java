@@ -4,7 +4,6 @@ import tdl.client.Client;
 import tdl.client.ProcessingRules;
 import tdl.client.abstractions.UserImplementation;
 
-import java.io.PrintStream;
 import java.util.HashMap;
 import java.util.Map;
 import static tdl.client.actions.ClientActions.publish;
@@ -13,7 +12,7 @@ public class ImplementationRunner {
     private final Map<String, UserImplementation> solutions;
     private final String username;
     private String hostname;
-    private PrintStream writer;
+    private IConsoleOut consoleOut;
 
     private ImplementationRunner(String username) {
         this.username = username;
@@ -29,13 +28,13 @@ public class ImplementationRunner {
         return this;
     }
 
-    public ImplementationRunner withWriter(PrintStream writer) {
-        this.writer = writer;
+    public ImplementationRunner withSolutionFor(String methodName, UserImplementation solution) {
+        solutions.put(methodName, solution);
         return this;
     }
 
-    public ImplementationRunner withSolutionFor(String methodName, UserImplementation solution) {
-        solutions.put(methodName, solution);
+    public ImplementationRunner withConsoleOut(IConsoleOut consoleOut) {
+        this.consoleOut = consoleOut;
         return this;
     }
 
@@ -45,7 +44,7 @@ public class ImplementationRunner {
         // Debt - do we need this anymore?
         deployProcessingRules
                 .on("display_description")
-                .call(p -> RoundManagement.saveDescription(p[0], p[1], writer))
+                .call(p -> RoundManagement.saveDescription(p[0], p[1], consoleOut))
                 .then(publish());
 
         solutions.forEach((methodName, userImplementation) -> deployProcessingRules
@@ -63,6 +62,6 @@ public class ImplementationRunner {
                 .create();
 
         client.goLiveWith(processingRules);
-        RecordingSystem.deployNotifyEvent(RoundManagement.getLastFetchedRound(), writer);
+        RecordingSystem.deployNotifyEvent(RoundManagement.getLastFetchedRound(), consoleOut);
     }
 }

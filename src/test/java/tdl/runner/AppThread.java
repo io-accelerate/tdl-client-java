@@ -1,11 +1,11 @@
 package tdl.runner;
 
 import tdl.client.runner.ChallengeSession;
+import tdl.client.runner.IConsoleOut;
 import tdl.client.runner.ImplementationRunner;
 
 import java.io.*;
 import java.util.*;
-import java.util.function.Consumer;
 
 public class AppThread extends Thread {
     //To app
@@ -15,9 +15,12 @@ public class AppThread extends Thread {
     //From app
     private final PipedInputStream threadToClient;
     private final PipedOutputStream appToThread;
+    private final BufferedReader reader;
 
     private ChallengeSession challengeSession;
     private String[] commandLineArgs;
+
+    private PrintStream writer;
 
     void withServerHostname(@SuppressWarnings("SameParameterValue") String hostname) {
         challengeSession.withServerHostname(hostname);
@@ -55,6 +58,9 @@ public class AppThread extends Thread {
             // client reads -> thread <- app writes
             this.threadToClient = new PipedInputStream();
             this.appToThread = new PipedOutputStream(threadToClient);
+
+            this.writer = new PrintStream(appToThread);
+            this.reader = new BufferedReader(new InputStreamReader(threadToApp));
         } catch ( IOException e ){
             throw new IllegalStateException("Failed to create streams");
         }
@@ -66,11 +72,8 @@ public class AppThread extends Thread {
 
     public void run() {
         try {
-            PrintStream out = new PrintStream(appToThread);
-            BufferedReader reader = new BufferedReader(new InputStreamReader(threadToApp));
             System.out.println("Starting app with: " + Arrays.toString(commandLineArgs));
-            // start in a background thread, check if thread finished for exit.
-            challengeSession.withOutputStream(out);
+//            challengeSession.withConsoleOut(writer);
             challengeSession.withBufferedReader(reader);
             challengeSession.start(commandLineArgs);
 
@@ -78,6 +81,10 @@ public class AppThread extends Thread {
             System.err.println("Top level exception in CommandLineApp: ");
             e.printStackTrace();
         }
+    }
+
+    BufferedReader getReader() {
+        return reader;
     }
 
     InputStream getInputStream() {
