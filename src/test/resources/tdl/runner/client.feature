@@ -48,10 +48,16 @@ Feature: Should allow the user to interact with the challenge server
   Scenario: Deploy code to production and display feedback
     Given the action input comes from a provider returning "deploy"
     When user starts client
-    Then the implementation runner should be run with the provided implementations
+#    Then the implementation runner should be run with the provided implementations
     And the server interaction should look like:
       """
+      Connecting to localhost
+      Journey progress coming from server
+      Available actions coming from server
+      Selected action is: deploy
       Successful action feedback
+      Challenge description saved to file: challenges/RoundID.txt.
+
       """
     And the recording system should be notified with "RoundID/deploy"
 
@@ -61,5 +67,5 @@ Feature: Should allow the user to interact with the challenge server
     Given server endpoint "availableActions" returns "No actions available."
     When user starts client
     Then the client should not ask the user for input
-#
+
 #  Scenario: Should exit if recording not available

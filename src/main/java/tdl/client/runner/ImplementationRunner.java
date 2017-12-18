@@ -52,7 +52,8 @@ public class ImplementationRunner {
 
         ProcessingRules processingRules = createDeployProcessingRules();
         client.goLiveWith(processingRules);
-        RecordingSystem.deployNotifyEvent(recordingSystemOn, RoundManagement.getLastFetchedRound());
+        String lastFetchedRound = RoundManagement.getLastFetchedRound();
+        RecordingSystem.deployNotifyEvent(recordingSystemOn, lastFetchedRound);
     }
 
     private ProcessingRules createDeployProcessingRules() {

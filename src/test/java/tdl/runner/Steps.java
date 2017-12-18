@@ -89,7 +89,7 @@ public class Steps {
     public void deleteContentsOfChallengesFolder() throws IOException {
         Path path =  Paths.get("challenges");
         deleteFolderContents(path.toFile());
-        new File("challenges/XR.txt").createNewFile();
+//        new File("challenges/XR.txt").createNewFile();
     }
 
     void deleteFolderContents(File folder) {
