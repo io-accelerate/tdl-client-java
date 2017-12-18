@@ -13,6 +13,8 @@ public class ImplementationRunner {
     private final String username;
     private String hostname;
     private IConsoleOut consoleOut;
+    private RecordingSystem recordingSystem;
+    private boolean recordingSystemOn;
 
     private ImplementationRunner(String username) {
         this.username = username;
@@ -38,7 +40,22 @@ public class ImplementationRunner {
         return this;
     }
 
-    ProcessingRules createDeployProcessingRules() {
+    void setRecordingSystem(boolean recordingSystemOn) {
+        this.recordingSystemOn = recordingSystemOn;
+    }
+
+    void deployToQueue() {
+        Client client = new Client.Builder()
+                .setHostname(hostname)
+                .setUniqueId(username)
+                .create();
+
+        ProcessingRules processingRules = createDeployProcessingRules();
+        client.goLiveWith(processingRules);
+        RecordingSystem.deployNotifyEvent(recordingSystemOn, RoundManagement.getLastFetchedRound());
+    }
+
+    private ProcessingRules createDeployProcessingRules() {
         ProcessingRules deployProcessingRules = new ProcessingRules();
 
         // Debt - do we need this anymore?
@@ -53,15 +70,5 @@ public class ImplementationRunner {
                 .then(publish()));
 
         return deployProcessingRules;
-    }
-
-    void deployToQueue(ProcessingRules processingRules) {
-        Client client = new Client.Builder()
-                .setHostname(hostname)
-                .setUniqueId(username)
-                .create();
-
-        client.goLiveWith(processingRules);
-        RecordingSystem.deployNotifyEvent(RoundManagement.getLastFetchedRound(), consoleOut);
     }
 }

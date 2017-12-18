@@ -27,8 +27,20 @@ class WiremockProcess {
         RequestData data = new RequestData();
         data.request = new RequestData.Request();
         data.request.verb = verb;
-        String urlPattern = getUrlPattern(endpoint);
-        data.request.urlPattern = urlPattern;
+        data.request.url = "/" + endpoint;
+        data.response = new RequestData.Response();
+        data.response.status = returnCode;
+        data.response.body = body;
+        configData.add(data);
+    }
+
+    void createStubMappingWithUnicodeRegex(String verb, String endpoint, int returnCode, String body) {
+        // Obvs - change public fields to methods
+
+        RequestData data = new RequestData();
+        data.request = new RequestData.Request();
+        data.request.verb = verb;
+        data.request.urlPattern = getUrlPattern(endpoint);
         data.response = new RequestData.Response();
         data.response.status = returnCode;
         data.response.body = body;
@@ -76,8 +88,10 @@ class WiremockProcess {
 
         static class Request {
             String urlPattern;
+            String url;
             String verb;
             Headers headers;
+            String body;
 
             static class Headers {
                 String accept;
@@ -98,8 +112,12 @@ class WiremockProcess {
             final JsonElement requestJsonObj = requestSerialiser.serialize(requestData.request, typeOfSrc, context);
 
             final JsonObject responseJsonObj = new JsonObject();
+
+            if (requestData.response.body != null) {
+                responseJsonObj.addProperty("body", requestData.response.body);
+            }
+
             responseJsonObj.addProperty("status", requestData.response.status);
-            responseJsonObj.addProperty("body", requestData.response.body);
 
             final JsonObject completeJson = new JsonObject();
             completeJson.add("response", responseJsonObj);
@@ -114,14 +132,26 @@ class WiremockProcess {
         @Override
         public JsonElement serialize(final RequestData.Request request, final Type typeOfSrc, final JsonSerializationContext context) {
             final JsonObject requestJsonObj = new JsonObject();
-            requestJsonObj.addProperty("urlPattern", request.urlPattern);
-            requestJsonObj.addProperty("method", request.verb);
+            if (request.urlPattern != null) {
+                requestJsonObj.addProperty("urlPattern", request.urlPattern);
+            }
+            if (request.url != null) {
+                requestJsonObj.addProperty("url", request.url);
+            }
+            if (request.verb != null) {
+                requestJsonObj.addProperty("method", request.verb);
+            }
+            if (request.body != null) {
+                requestJsonObj.addProperty("body", request.body);
+            }
 
-            final JsonObject headerJsonObj = new JsonObject();
-            final JsonObject acceptJsonObj = new JsonObject();
-            acceptJsonObj.addProperty("contains", request.headers.accept);
-            headerJsonObj.add("Accept", acceptJsonObj);
-            requestJsonObj.add("headers", headerJsonObj);
+            if (request.headers != null) {
+                final JsonObject headerJsonObj = new JsonObject();
+                final JsonObject acceptJsonObj = new JsonObject();
+                acceptJsonObj.addProperty("contains", request.headers.accept);
+                headerJsonObj.add("Accept", acceptJsonObj);
+                requestJsonObj.add("headers", headerJsonObj);
+            }
 
             return requestJsonObj;
         }

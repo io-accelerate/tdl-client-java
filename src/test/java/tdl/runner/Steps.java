@@ -16,20 +16,23 @@ import java.nio.file.Paths;
 import java.util.List;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertTrue;
 
 
 public class Steps {
     private WiremockProcess challengeServerStub;
-    private WiremockProcess recordingServerStub;
-    private String hostname;
+    private RecordingServerStub recordingServerStub;
+    private String challengeHostname;
+    private String recordingHostname;
     private int port;
     private boolean sumHit = false;
     private boolean helloHit = false;
     private boolean fizzBuzzHit = false;
     private boolean checkoutHit = false;
-    private String[] userCommandLineArgs;
+    private String[] userCommandLineArgs = new String[]{""};
     private BufferedReader reader;
     private PrintStream writer;
     private IConsoleOut consoleOut;
@@ -38,7 +41,7 @@ public class Steps {
 
     @Given("There is a challenge server running on \"([^\"]*)\" port (\\d+)$")
     public void setupServerWithSetup(String hostname, int port) throws UnirestException {
-        this.hostname = hostname;
+        this.challengeHostname = hostname;
         this.port = port;
         challengeServerStub = new WiremockProcess(hostname, port);
         challengeServerStub.reset();
@@ -46,7 +49,8 @@ public class Steps {
 
     @And("There is a recording server running on \"([^\"]*)\" port (\\d+)$")
     public void setupRecordingServerWithSetup(String hostname, int port) throws UnirestException {
-        recordingServerStub = new WiremockProcess(hostname, port);
+        this.recordingHostname = hostname;
+        recordingServerStub = new RecordingServerStub(hostname, port);
         recordingServerStub.reset();
     }
 
@@ -60,7 +64,7 @@ public class Steps {
     @And("the challenge server exposes the following endpoints$")
     public void configureChallengeServerEndpoint(List<ServerConfig> configs) {
         for (ServerConfig config: configs) {
-            challengeServerStub.createStubMapping(config.verb, config.endpoint, config.returnStatus, config.returnBody);
+            challengeServerStub.createStubMappingWithUnicodeRegex(config.verb, config.endpoint, config.returnStatus, config.returnBody);
         }
     }
 
@@ -111,6 +115,7 @@ public class Steps {
     @When("user starts client")
     public void userStartsChallenge() throws UnirestException {
         challengeServerStub.configureServer();
+        recordingServerStub.configureServer();
         String journeyId = "dGRsLXRlc3QtY25vZGVqczAxfFNVTSxITE8sQ0hLfFE=";
         String username = "tdl-test-cnodejs01";
 
@@ -144,7 +149,7 @@ public class Steps {
         };
         consoleOut = new TestConsoleOut();
         ImplementationRunner implementationRunner = ImplementationRunner.forUsername(username)
-                .withHostname(hostname)
+                .withHostname(recordingHostname)
                 .withConsoleOut(consoleOut)
                 .withSolutionFor("sum", sum)
                 .withSolutionFor("hello", hello)
@@ -154,12 +159,13 @@ public class Steps {
         writer = new PrintStream(new BufferedOutputStream(System.out));
         reader = new BufferedReader(new InputStreamReader(System.in));
         ChallengeSession session = ChallengeSession.forUsername(username)
-                .withServerHostname(hostname)
+                .withServerHostname(challengeHostname)
                 .withPort(port)
                 .withJourneyId(journeyId)
                 .withColours(true)
                 .withBufferedReader(reader)
                 .withConsoleOut(consoleOut)
+                .withRecordingSystemOn(true)
                 .withImplementationRunner(implementationRunner);
 
         session.start(userCommandLineArgs);
@@ -169,14 +175,13 @@ public class Steps {
 
     @Then("the server interaction should look like:$")
     public void parseInput(String expectedOutput) throws IOException, InteractionException {
-        // compare to
         String total = ((TestConsoleOut)consoleOut).getTotal();
         assertThat(expectedOutput, equalTo(total));
     }
 
     @And("the recording system should be notified with \"([^\"]*)\"$")
-    public void parseInput2(String expectedOutput) throws IOException, InteractionException {
-        throw new RuntimeException("not implemented");
+    public void parseInput2(String expectedOutput) throws IOException, InteractionException, UnirestException {
+        recordingServerStub.verifyEndpointWasHit("notify", "POST", expectedOutput);
 
     }
 
@@ -195,7 +200,6 @@ public class Steps {
 
     @Then("the implementation runner should be run with the provided implementations")
     public void checkQueueClientRunningImplementation() throws InteractionException {
-        // how to detect the provided implementation?
         assertTrue("Checkout implementation wasn't hit", checkoutHit);
         assertTrue("FizzBuzz implementation wasn't hit", fizzBuzzHit);
         assertTrue("Hello implementation wasn't hit", helloHit);
@@ -204,7 +208,8 @@ public class Steps {
 
     @Then("the client should not ask the user for input")
     public void checkClientDoesNotAskForInput() throws InteractionException {
-        throw new RuntimeException("not implemented!");
+        String total = ((TestConsoleOut)consoleOut).getTotal();
+        assertThat(total, not(containsString("Selected action is:")));
     }
 
 }

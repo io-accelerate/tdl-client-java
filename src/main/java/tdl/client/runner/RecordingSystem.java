@@ -4,19 +4,23 @@ import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
 
-import java.io.PrintStream;
 
 import static tdl.client.runner.RunnerAction.deployToProduction;
 
-public class RecordingSystem {
+class RecordingSystem {
     private static final String RECORDING_SYSTEM_ENDPOINT = "http://localhost:41375";
     private boolean recordingRequired;
 
-    public RecordingSystem(boolean recordingRequired) {
+    RecordingSystem(boolean recordingRequired) {
         this.recordingRequired = recordingRequired;
     }
 
-    static boolean isRecordingSystemOk() {
+    private boolean isRecordingRequired() {
+        return recordingRequired;
+//        return Boolean.parseBoolean(readFromConfigFile("tdl_require_rec", "true"));
+    }
+
+    boolean isRecordingSystemOk() {
         //noinspection SimplifiableConditionalExpression
         return isRecordingRequired() ? isRunning() : true;
     }
@@ -34,16 +38,10 @@ public class RecordingSystem {
         return false;
     }
 
-    private static boolean isRecordingRequired() {
-//        return Boolean.parseBoolean(readFromConfigFile("tdl_require_rec", "true"));
-        // TODO, pass lambda?
-        return false;
-    }
+    static void notifyEvent(boolean isRecordingRequired, String lastFetchedRound, String shortName) {
+//        consoleOut.printf("Notify round \"%s\", event \"%s\"%n\n", lastFetchedRound, shortName);
 
-    static void notifyEvent(String lastFetchedRound, String shortName, IConsoleOut consoleOut) {
-        consoleOut.printf("Notify round \"%s\", event \"%s\"%n\n", lastFetchedRound, shortName);
-
-        if (!isRecordingRequired()) {
+        if (!isRecordingRequired) {
             return;
         }
 
@@ -64,8 +62,8 @@ public class RecordingSystem {
         }
     }
 
-    static void deployNotifyEvent(String lastFetchedRound, IConsoleOut consoleOut) {
-        notifyEvent(lastFetchedRound, deployToProduction.getShortName(), consoleOut);
+    static void deployNotifyEvent(boolean recordingRequired, String lastFetchedRound) {
+        notifyEvent(recordingRequired, lastFetchedRound, deployToProduction.getShortName());
     }
 }
 

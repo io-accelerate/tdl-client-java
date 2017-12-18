@@ -1,7 +1,5 @@
 package tdl.client.runner;
 
-import tdl.client.ProcessingRules;
-
 
 class CombinedClient {
     private final IConsoleOut consoleOut;
@@ -26,8 +24,7 @@ class CombinedClient {
 
     String executeUserAction(String userInput) throws HttpClient.ServerErrorException, HttpClient.OtherCommunicationException, HttpClient.ClientErrorException {
         if (userInput.equals("deploy")) {
-            ProcessingRules deployProcessingRules = implementationRunner.createDeployProcessingRules();
-            implementationRunner.deployToQueue(deployProcessingRules);
+            implementationRunner.deployToQueue();
         }
         return executeAction(userInput);
     }

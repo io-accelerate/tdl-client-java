@@ -14,6 +14,7 @@ Feature: Should allow the user to interact with the challenge server
     And the recording server exposes the following endpoints
       | verb       | endpoint          | returnStatus | returnBody   |
       | GET        | status            | 200          | OK           |
+      | POST       | notify            | 200          | ACK          |
 
   # Business critical scenarios
 
@@ -28,11 +29,13 @@ Feature: Should allow the user to interact with the challenge server
       Available actions coming from server
       Selected action is: anySuccessful
       Successful action feedback
-      Challenge description saved to file: challenges/RoundID.txt
+      Challenge description saved to file: challenges/RoundID.txt.
+
       """
 
   Scenario: Refresh round description on successful action
     Given the action input comes from a provider returning "anySuccessful"
+    And the challenges folder is empty
     When user starts client
     Then the file "challenges/RoundID.txt" should contain
     """
@@ -55,8 +58,8 @@ Feature: Should allow the user to interact with the challenge server
   # Negative paths
 
   Scenario: Should exit when no available actions
-    Given server endpoint "availableActions" returns "No available actions"
+    Given server endpoint "availableActions" returns "No actions available."
     When user starts client
     Then the client should not ask the user for input
-
-  Scenario: Should exit if recording not available
+#
+#  Scenario: Should exit if recording not available

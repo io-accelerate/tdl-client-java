@@ -4,7 +4,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
-import java.io.IOException;
 
 
 public class ChallengeSession {
@@ -17,6 +16,8 @@ public class ChallengeSession {
     private BufferedReader reader;
     private ImplementationRunner implementationRunner;
     private IConsoleOut consoleOut;
+    private RecordingSystem recordingSystem;
+    private boolean recordingSystemOn;
 
     public static ChallengeSession forUsername(@SuppressWarnings("SameParameterValue") String username) {
         return new ChallengeSession(username);
@@ -61,10 +62,18 @@ public class ChallengeSession {
         return this;
     }
 
+    public ChallengeSession withRecordingSystemOn(boolean recordingSystemOn) {
+        this.recordingSystemOn = recordingSystemOn;
+        this.recordingSystem = new RecordingSystem(recordingSystemOn);
+        return this;
+    }
+
     //~~~~~~~~ The entry point ~~~~~~~~~
 
     public void start(String[] args) {
-        if (!RecordingSystem.isRecordingSystemOk()) {
+        implementationRunner.setRecordingSystem(recordingSystemOn);
+
+        if (!recordingSystem.isRecordingSystemOk()) {
             consoleOut.println("Please run `record_screen_and_upload` before continuing.");
             return;
         }
@@ -81,7 +90,7 @@ public class ChallengeSession {
                 String userInput = getUserInput(args);
                 consoleOut.println("Selected action is: " + userInput);
                 String roundDescription = combinedClient.executeUserAction(userInput);
-                RoundManagement.saveDescription(roundDescription, consoleOut);
+                RoundManagement.saveDescription(recordingSystemOn, roundDescription, consoleOut);
             }
         }  catch (HttpClient.ServerErrorException e) {
             LOG.error("Server experienced an error. Try again.", e);
@@ -94,15 +103,6 @@ public class ChallengeSession {
     }
 
     private String getUserInput(String[] args) {
-        return args.length > 0 ? args[0] : readInputFromConsole();
-    }
-
-    private String readInputFromConsole() {
-        try {
-            return reader.readLine();
-        } catch (IOException e) {
-            LOG.error("Could not read user input.", e);
-            return "error";
-        }
+        return args.length > 0 ? args[0] : "";
     }
 }

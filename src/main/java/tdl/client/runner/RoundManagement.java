@@ -14,7 +14,7 @@ class RoundManagement {
     private static final Path CHALLENGES_FOLDER = Paths.get("challenges");
     private static final Path LAST_FETCHED_ROUND_PATH = CHALLENGES_FOLDER.resolve("XR.txt");
 
-    static void saveDescription(String rawDescription, IConsoleOut consoleOut) {
+    static void saveDescription(boolean recordingSystemOn, String rawDescription, IConsoleOut consoleOut) {
         // DEBT - the first line of the response is the ID for the round, the rest of the responseMessage is the description
         int newlineIndex = rawDescription.indexOf('\n');
         if (newlineIndex <= 0) return;
@@ -22,7 +22,7 @@ class RoundManagement {
         String roundId = rawDescription.substring(0, newlineIndex);
         String lastFetchedRound = getLastFetchedRound();
         if (!roundId.equals(lastFetchedRound)) {
-            RecordingSystem.notifyEvent(roundId, getNewRoundDescription.getShortName(), consoleOut);
+            RecordingSystem.notifyEvent(recordingSystemOn, roundId, getNewRoundDescription.getShortName());
         }
         saveDescription(roundId, rawDescription, consoleOut);
     }
