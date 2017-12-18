@@ -3,13 +3,15 @@ package tdl.client.runner;
 
 class CombinedClient {
     private final IConsoleOut consoleOut;
+    private final boolean recordingSystemOn;
     private HttpClient httpClient;
-    private ImplementationRunner implementationRunner;
+    private IImplementationRunner implementationRunner;
 
-    CombinedClient(String journeyId, boolean useColours, String hostname, int port, IConsoleOut consoleOut, ImplementationRunner implementationRunner) {
+    CombinedClient(String journeyId, boolean useColours, String hostname, int port, IConsoleOut consoleOut, IImplementationRunner implementationRunner, boolean recordingSystemOn) {
         this.consoleOut = consoleOut;
         httpClient = new HttpClient(hostname, port, journeyId, useColours);
         this.implementationRunner = implementationRunner;
+        this.recordingSystemOn = recordingSystemOn;
     }
 
     boolean checkStatusOfChallenge() throws HttpClient.ServerErrorException, HttpClient.OtherCommunicationException, HttpClient.ClientErrorException {
@@ -25,6 +27,8 @@ class CombinedClient {
     String executeUserAction(String userInput) throws HttpClient.ServerErrorException, HttpClient.OtherCommunicationException, HttpClient.ClientErrorException {
         if (userInput.equals("deploy")) {
             implementationRunner.deployToQueue();
+            String lastFetchedRound = RoundManagement.getLastFetchedRound();
+            RecordingSystem.deployNotifyEvent(recordingSystemOn, lastFetchedRound);
         }
         return executeAction(userInput);
     }

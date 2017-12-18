@@ -3,7 +3,6 @@ package tdl.client.runner;
 import com.google.common.io.Files;
 
 import java.io.IOException;
-import java.io.PrintStream;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.nio.file.Paths;

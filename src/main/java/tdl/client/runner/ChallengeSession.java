@@ -14,7 +14,7 @@ public class ChallengeSession {
     private boolean useColours;
     private final String username;
     private BufferedReader reader;
-    private ImplementationRunner implementationRunner;
+    private IImplementationRunner implementationRunner;
     private IConsoleOut consoleOut;
     private RecordingSystem recordingSystem;
     private boolean recordingSystemOn;
@@ -57,7 +57,7 @@ public class ChallengeSession {
         return this;
     }
 
-    public ChallengeSession withImplementationRunner(ImplementationRunner implementationRunner) {
+    public ChallengeSession withImplementationRunner(IImplementationRunner implementationRunner) {
         this.implementationRunner = implementationRunner;
         return this;
     }
@@ -71,8 +71,6 @@ public class ChallengeSession {
     //~~~~~~~~ The entry point ~~~~~~~~~
 
     public void start(String[] args) {
-        implementationRunner.setRecordingSystem(recordingSystemOn);
-
         if (!recordingSystem.isRecordingSystemOk()) {
             consoleOut.println("Please run `record_screen_and_upload` before continuing.");
             return;
@@ -82,7 +80,7 @@ public class ChallengeSession {
     }
 
     private void runApp(String[] args) {
-        CombinedClient combinedClient = new CombinedClient(journeyId, useColours, hostname, port, consoleOut, implementationRunner);
+        CombinedClient combinedClient = new CombinedClient(journeyId, useColours, hostname, port, consoleOut, implementationRunner, recordingSystemOn);
 
         try {
             boolean shouldContinue = combinedClient.checkStatusOfChallenge();

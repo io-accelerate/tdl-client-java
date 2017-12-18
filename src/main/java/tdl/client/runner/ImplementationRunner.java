@@ -8,12 +8,11 @@ import java.util.HashMap;
 import java.util.Map;
 import static tdl.client.actions.ClientActions.publish;
 
-public class ImplementationRunner {
+public class ImplementationRunner implements IImplementationRunner {
     private final Map<String, UserImplementation> solutions;
     private final String username;
     private String hostname;
     private IConsoleOut consoleOut;
-    private RecordingSystem recordingSystem;
     private boolean recordingSystemOn;
 
     private ImplementationRunner(String username) {
@@ -44,7 +43,7 @@ public class ImplementationRunner {
         this.recordingSystemOn = recordingSystemOn;
     }
 
-    void deployToQueue() {
+    public void deployToQueue() {
         Client client = new Client.Builder()
                 .setHostname(hostname)
                 .setUniqueId(username)
@@ -52,8 +51,6 @@ public class ImplementationRunner {
 
         ProcessingRules processingRules = createDeployProcessingRules();
         client.goLiveWith(processingRules);
-        String lastFetchedRound = RoundManagement.getLastFetchedRound();
-        RecordingSystem.deployNotifyEvent(recordingSystemOn, lastFetchedRound);
     }
 
     private ProcessingRules createDeployProcessingRules() {

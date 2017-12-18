@@ -5,10 +5,7 @@ import cucumber.api.java.en.And;
 import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
-import tdl.client.abstractions.UserImplementation;
-import tdl.client.runner.ChallengeSession;
-import tdl.client.runner.IConsoleOut;
-import tdl.client.runner.ImplementationRunner;
+import tdl.client.runner.*;
 
 import java.io.*;
 import java.nio.file.Path;
@@ -19,7 +16,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.core.IsEqual.equalTo;
-import static org.junit.Assert.assertTrue;
 
 
 public class Steps {
@@ -27,11 +23,8 @@ public class Steps {
     private RecordingServerStub recordingServerStub;
     private String challengeHostname;
     private String recordingHostname;
+    private String implementationSolutionStub;
     private int port;
-    private boolean sumHit = false;
-    private boolean helloHit = false;
-    private boolean fizzBuzzHit = false;
-    private boolean checkoutHit = false;
     private String[] userCommandLineArgs = new String[]{""};
     private BufferedReader reader;
     private PrintStream writer;
@@ -89,7 +82,6 @@ public class Steps {
     public void deleteContentsOfChallengesFolder() throws IOException {
         Path path =  Paths.get("challenges");
         deleteFolderContents(path.toFile());
-//        new File("challenges/XR.txt").createNewFile();
     }
 
     void deleteFolderContents(File folder) {
@@ -110,6 +102,11 @@ public class Steps {
         userCommandLineArgs = new String[]{s};
     }
 
+    @Given("^there is an implementation runner that prints \"([^\"]*)\"$")
+    public void implementationRunnerPrinter(String s) {
+        implementationSolutionStub = s;
+    }
+
 
     // When
     @When("user starts client")
@@ -119,42 +116,13 @@ public class Steps {
         String journeyId = "dGRsLXRlc3QtY25vZGVqczAxfFNVTSxITE8sQ0hLfFE=";
         String username = "tdl-test-cnodejs01";
 
-        UserImplementation sum = new UserImplementation() {
-            @Override
-            public Object process(String... params) {
-                sumHit = true;
-                return null;
-            }
-        };
-        UserImplementation hello = new UserImplementation() {
-            @Override
-            public Object process(String... params) {
-                helloHit = true;
-                return null;
-            }
-        };
-        UserImplementation fizzBuzz = new UserImplementation() {
-            @Override
-            public Object process(String... params) {
-                fizzBuzzHit = true;
-                return null;
-            }
-        };
-        UserImplementation checkout = new UserImplementation() {
-            @Override
-            public Object process(String... params) {
-                checkoutHit = true;
-                return null;
-            }
-        };
         consoleOut = new TestConsoleOut();
-        ImplementationRunner implementationRunner = ImplementationRunner.forUsername(username)
-                .withHostname(recordingHostname)
-                .withConsoleOut(consoleOut)
-                .withSolutionFor("sum", sum)
-                .withSolutionFor("hello", hello)
-                .withSolutionFor("fizz_buzz", fizzBuzz)
-                .withSolutionFor("checkout", checkout);
+        IImplementationRunner implementationRunner;
+        if (implementationSolutionStub != null && !implementationSolutionStub.equals("")) {
+            implementationRunner = new NoisyImplementationRunner(implementationSolutionStub, consoleOut);
+        } else {
+            implementationRunner = new QuietImplementationRunner();
+        }
 
         writer = new PrintStream(new BufferedOutputStream(System.out));
         reader = new BufferedReader(new InputStreamReader(System.in));
@@ -200,10 +168,8 @@ public class Steps {
 
     @Then("the implementation runner should be run with the provided implementations")
     public void checkQueueClientRunningImplementation() throws InteractionException {
-        assertTrue("Checkout implementation wasn't hit", checkoutHit);
-        assertTrue("FizzBuzz implementation wasn't hit", fizzBuzzHit);
-        assertTrue("Hello implementation wasn't hit", helloHit);
-        assertTrue("Sum implementation wasn't hit", sumHit);
+        String total = ((TestConsoleOut)consoleOut).getTotal();
+        assertThat(total, containsString(implementationSolutionStub));
     }
 
     @Then("the client should not ask the user for input")

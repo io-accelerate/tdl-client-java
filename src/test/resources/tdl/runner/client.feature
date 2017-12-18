@@ -47,14 +47,16 @@ Feature: Should allow the user to interact with the challenge server
 
   Scenario: Deploy code to production and display feedback
     Given the action input comes from a provider returning "deploy"
+    And there is an implementation runner that prints "Running implementations"
     When user starts client
-#    Then the implementation runner should be run with the provided implementations
+    Then the implementation runner should be run with the provided implementations
     And the server interaction should look like:
       """
       Connecting to localhost
       Journey progress coming from server
       Available actions coming from server
       Selected action is: deploy
+      Running implementations
       Successful action feedback
       Challenge description saved to file: challenges/RoundID.txt.
 
