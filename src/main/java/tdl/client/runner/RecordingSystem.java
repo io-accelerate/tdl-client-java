@@ -4,10 +4,9 @@ import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
 
-
 import static tdl.client.runner.RunnerAction.deployToProduction;
 
-class RecordingSystem {
+class RecordingSystem implements RoundChangesListener {
     private static final String RECORDING_SYSTEM_ENDPOINT = "http://localhost:41375";
     private boolean recordingRequired;
 
@@ -38,10 +37,10 @@ class RecordingSystem {
         return false;
     }
 
-    static void notifyEvent(boolean isRecordingRequired, String lastFetchedRound, String shortName) {
+    void notifyEvent(String lastFetchedRound, String shortName) {
 //        consoleOut.printf("Notify round \"%s\", event \"%s\"%n\n", lastFetchedRound, shortName);
 
-        if (!isRecordingRequired) {
+        if (!recordingRequired) {
             return;
         }
 
@@ -62,8 +61,13 @@ class RecordingSystem {
         }
     }
 
-    static void deployNotifyEvent(boolean recordingRequired, String lastFetchedRound) {
-        notifyEvent(recordingRequired, lastFetchedRound, deployToProduction.getShortName());
+    void deployNotifyEvent(String lastFetchedRound) {
+        notifyEvent(lastFetchedRound, deployToProduction.getShortName());
+    }
+
+    @Override
+    public void onNewRound(String roundId, String shortName) {
+        notifyEvent(roundId, shortName);
     }
 }
 

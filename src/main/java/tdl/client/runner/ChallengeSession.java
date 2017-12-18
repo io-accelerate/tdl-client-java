@@ -14,10 +14,10 @@ public class ChallengeSession {
     private boolean useColours;
     private final String username;
     private BufferedReader reader;
-    private IImplementationRunner implementationRunner;
+    private ImplementationRunner implementationRunner;
     private IConsoleOut consoleOut;
     private RecordingSystem recordingSystem;
-    private boolean recordingSystemOn;
+    private HttpClient httpClient;
 
     public static ChallengeSession forUsername(@SuppressWarnings("SameParameterValue") String username) {
         return new ChallengeSession(username);
@@ -57,13 +57,12 @@ public class ChallengeSession {
         return this;
     }
 
-    public ChallengeSession withImplementationRunner(IImplementationRunner implementationRunner) {
+    public ChallengeSession withImplementationRunner(ImplementationRunner implementationRunner) {
         this.implementationRunner = implementationRunner;
         return this;
     }
 
     public ChallengeSession withRecordingSystemOn(boolean recordingSystemOn) {
-        this.recordingSystemOn = recordingSystemOn;
         this.recordingSystem = new RecordingSystem(recordingSystemOn);
         return this;
     }
@@ -80,15 +79,15 @@ public class ChallengeSession {
     }
 
     private void runApp(String[] args) {
-        CombinedClient combinedClient = new CombinedClient(journeyId, useColours, hostname, port, consoleOut, implementationRunner, recordingSystemOn);
+        httpClient = new HttpClient(hostname, port, journeyId, useColours);
 
         try {
-            boolean shouldContinue = combinedClient.checkStatusOfChallenge();
+            boolean shouldContinue = checkStatusOfChallenge();
             if (shouldContinue) {
                 String userInput = getUserInput(args);
                 consoleOut.println("Selected action is: " + userInput);
-                String roundDescription = combinedClient.executeUserAction(userInput);
-                RoundManagement.saveDescription(recordingSystemOn, roundDescription, consoleOut);
+                String roundDescription = executeUserAction(userInput);
+                RoundManagement.saveDescription(recordingSystem, roundDescription, consoleOut);
             }
         }  catch (HttpClient.ServerErrorException e) {
             LOG.error("Server experienced an error. Try again.", e);
@@ -102,5 +101,30 @@ public class ChallengeSession {
 
     private String getUserInput(String[] args) {
         return args.length > 0 ? args[0] : "";
+    }
+
+    private boolean checkStatusOfChallenge() throws HttpClient.ServerErrorException, HttpClient.OtherCommunicationException, HttpClient.ClientErrorException {
+        String journeyProgress = httpClient.getJourneyProgress();
+        consoleOut.println(journeyProgress);
+
+        String availableActions = httpClient.getAvailableActions();
+        consoleOut.println(availableActions);
+
+        return !availableActions.contains("No actions available.");
+    }
+
+    private String executeUserAction(String userInput) throws HttpClient.ServerErrorException, HttpClient.OtherCommunicationException, HttpClient.ClientErrorException {
+        if (userInput.equals("deploy")) {
+            implementationRunner.run();
+            String lastFetchedRound = RoundManagement.getLastFetchedRound();
+            recordingSystem.deployNotifyEvent(lastFetchedRound);
+        }
+        return executeAction(userInput);
+    }
+
+    private String executeAction(String userInput) throws HttpClient.ServerErrorException, HttpClient.OtherCommunicationException, HttpClient.ClientErrorException {
+        String actionFeedback = httpClient.sendAction(userInput);
+        consoleOut.println(actionFeedback);
+        return httpClient.getRoundDescription();
     }
 }

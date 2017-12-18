@@ -117,7 +117,7 @@ public class Steps {
         String username = "tdl-test-cnodejs01";
 
         consoleOut = new TestConsoleOut();
-        IImplementationRunner implementationRunner;
+        ImplementationRunner implementationRunner;
         if (implementationSolutionStub != null && !implementationSolutionStub.equals("")) {
             implementationRunner = new NoisyImplementationRunner(implementationSolutionStub, consoleOut);
         } else {

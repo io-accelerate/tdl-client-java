@@ -1,6 +1,6 @@
 package tdl.client.runner;
 
-public class NoisyImplementationRunner implements IImplementationRunner {
+public class NoisyImplementationRunner implements ImplementationRunner {
     private final String deployMessage;
     private final IConsoleOut consoleOut;
 
@@ -9,7 +9,7 @@ public class NoisyImplementationRunner implements IImplementationRunner {
         this.consoleOut = consoleOut;
     }
     @Override
-    public void deployToQueue() {
+    public void run() {
         consoleOut.println(deployMessage);
     }
 }
