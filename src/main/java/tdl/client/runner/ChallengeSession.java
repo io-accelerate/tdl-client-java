@@ -79,6 +79,7 @@ public class ChallengeSession {
             boolean shouldContinue = combinedClient.checkStatusOfChallenge();
             if (shouldContinue) {
                 String userInput = getUserInput(args);
+                consoleOut.println("Selected action is: " + userInput);
                 String roundDescription = combinedClient.executeUserAction(userInput);
                 RoundManagement.saveDescription(roundDescription, consoleOut);
             }

@@ -30,7 +30,6 @@ public class Steps {
     private boolean fizzBuzzHit = false;
     private boolean checkoutHit = false;
     private String[] userCommandLineArgs;
-    private ConsoleDriver driver;
     private BufferedReader reader;
     private PrintStream writer;
     private IConsoleOut consoleOut;
@@ -72,7 +71,7 @@ public class Steps {
         }
     }
 
-    @And("expects requests to have the Accept header set to \"([^\"]*)\"")
+    @And("the challenge server expects requests to have the Accept header set to \"([^\"]*)\"")
     public void configureAcceptHeader(String header) throws UnirestException {
         challengeServerStub.addHeaderToStubs(header);
     }
@@ -102,15 +101,18 @@ public class Steps {
         }
     }
 
+    @Given("the action input comes from a provider returning \"([^\"]*)\"$")
+    public void actionInputComesFromProviderReturning(String s) {
+        userCommandLineArgs = new String[]{s};
+    }
+
 
     // When
-
-    @When("user starts client with action \"([^\"]*)\"$")
-    public void userStartsChallenge(String action) throws UnirestException {
+    @When("user starts client")
+    public void userStartsChallenge() throws UnirestException {
         challengeServerStub.configureServer();
         String journeyId = "dGRsLXRlc3QtY25vZGVqczAxfFNVTSxITE8sQ0hLfFE=";
         String username = "tdl-test-cnodejs01";
-        userCommandLineArgs = new String[]{action};
 
         UserImplementation sum = new UserImplementation() {
             @Override
@@ -144,10 +146,10 @@ public class Steps {
         ImplementationRunner implementationRunner = ImplementationRunner.forUsername(username)
                 .withHostname(hostname)
                 .withConsoleOut(consoleOut)
-                .withSolutionFor("sum", p -> sum)
-                .withSolutionFor("hello", p -> hello)
-                .withSolutionFor("fizz_buzz", p -> fizzBuzz)
-                .withSolutionFor("checkout", p -> checkout);
+                .withSolutionFor("sum", sum)
+                .withSolutionFor("hello", hello)
+                .withSolutionFor("fizz_buzz", fizzBuzz)
+                .withSolutionFor("checkout", checkout);
 
         writer = new PrintStream(new BufferedOutputStream(System.out));
         reader = new BufferedReader(new InputStreamReader(System.in));
@@ -165,31 +167,21 @@ public class Steps {
 
     // Then
 
-    @Then("^the user should see:$")
+    @Then("the server interaction should look like:$")
     public void parseInput(String expectedOutput) throws IOException, InteractionException {
-        String[] lines = expectedOutput.split("\n");
-
         // compare to
         String total = ((TestConsoleOut)consoleOut).getTotal();
-        System.out.println(total);
+        assertThat(expectedOutput, equalTo(total));
     }
 
     @And("the recording system should be notified with \"([^\"]*)\"$")
     public void parseInput2(String expectedOutput) throws IOException, InteractionException {
-        String[] lines = expectedOutput.split("\n");
-        for (String line: lines) {
-            driver.readLinesUntilLine(line.trim());
-        }
-    }
+        throw new RuntimeException("not implemented");
 
-    @And("the client should exit")
-    public void exitClient() throws InteractionException {
-        driver.waitForAppToStop();
     }
 
     @Then("the file \"([^\"]*)\" should contain$")
     public void checkFileContainsDescription(String file, String text) throws IOException, InteractionException {
-        driver.waitForAppToStop();
         BufferedReader inputReader = new BufferedReader(new FileReader(file));
         StringBuilder content = new StringBuilder();
         String line;
@@ -201,7 +193,7 @@ public class Steps {
         assertThat("Contents of the file is not what is expected", c, equalTo(text));
     }
 
-    @Then("the queue client should be run with the provided implementations")
+    @Then("the implementation runner should be run with the provided implementations")
     public void checkQueueClientRunningImplementation() throws InteractionException {
         // how to detect the provided implementation?
         assertTrue("Checkout implementation wasn't hit", checkoutHit);
@@ -212,7 +204,7 @@ public class Steps {
 
     @Then("the client should not ask the user for input")
     public void checkClientDoesNotAskForInput() throws InteractionException {
-        driver.waitForAppToStop();
+        throw new RuntimeException("not implemented!");
     }
 
 }

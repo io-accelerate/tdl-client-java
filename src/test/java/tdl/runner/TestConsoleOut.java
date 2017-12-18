@@ -12,7 +12,7 @@ public class TestConsoleOut implements IConsoleOut {
 
     @Override
     public void printf(String s, String... strings) {
-        total += String.format(s, new Object[]{strings});
+        total += String.format(s, strings);
     }
 
     String getTotal() {
