@@ -4,24 +4,24 @@ Feature: Should allow the user to interact with the challenge server
     Given There is a challenge server running on "localhost" port 8222
     And journeyId is "aJourneyId"
     And the challenge server exposes the following endpoints
-      | verb       | endpointEquals               | returnStatus | returnBody                           | acceptHeader  |
-      | GET        | /availableActions/aJourneyId | 200          | Available actions coming from server | text/coloured |
-      | GET        | /roundDescription/aJourneyId | 200          | RoundID\nRound Description           | text/coloured |
-      | GET        | /journeyProgress/aJourneyId  | 200          | Journey progress coming from server  | text/coloured |
+      | verb       | endpointEquals               | status   | responseBody                         | acceptHeader  |
+      | GET        | /availableActions/aJourneyId | 200      | Available actions coming from server | text/coloured |
+      | GET        | /roundDescription/aJourneyId | 200      | RoundID\nRound Description           | text/coloured |
+      | GET        | /journeyProgress/aJourneyId  | 200      | Journey progress coming from server  | text/coloured |
 
     And the challenge server exposes the following endpoints
-      | verb       | endpointMatches                 | returnStatus | returnBody                           | acceptHeader  |
-      | POST       | /action/([a-zA-Z]+)/aJourneyId  | 200          | Successful action feedback           | text/coloured |
+      | verb       | endpointMatches                 | status   | responseBody                         | acceptHeader  |
+      | POST       | /action/([a-zA-Z]+)/aJourneyId  | 200      | Successful action feedback           | text/coloured |
 
     And There is a recording server running on "localhost" port 41375
     And the recording server exposes the following endpoints
-      | verb       | endpointEquals    | returnStatus | returnBody   |
-      | GET        | /status           | 200          | OK           |
-      | POST       | /notify           | 200          | ACK          |
+      | verb       | endpointEquals    | status   | responseBody   |
+      | GET        | /status           | 200      | OK             |
+      | POST       | /notify           | 200      | ACK            |
 
   # Business critical scenarios
 
-  Scenario: The server interaction
+#  Scenario: The server interaction
     Given the action input comes from a provider returning "anySuccessful"
     And the challenges folder is empty
     When user starts client
@@ -63,8 +63,8 @@ Feature: Should allow the user to interact with the challenge server
 
   Scenario: Should exit when no available actions
     Given the challenge server exposes the following endpoints
-      | verb       | endpointEquals                | returnStatus | returnBody               | acceptHeader  |
-      | GET        | /availableActions/aJourneyId  | 200          | No actions available.    | text/coloured |
+      | verb       | endpointEquals                | status  | responseBody             | acceptHeader  |
+      | GET        | /availableActions/aJourneyId  | 200     | No actions available.    | text/coloured |
     When user starts client
     Then the client should not ask the user for input
 
@@ -73,9 +73,37 @@ Feature: Should allow the user to interact with the challenge server
     When user starts client
     Then the client should not ask the user for input
     And the user is informed that they should start the recording
-
-#  Scenario: challenge server not available
 #
 #  Scenario: challenge server is returning 404
+#    Given the challenge server exposes the following endpoints
+#      | verb       | endpointEquals               | status   | responseBody   | acceptHeader  |
+#      | GET        | /availableActions/aJourneyId | 400      | Nothing here   | text/coloured |
+#    When user starts client
+#    And the server interaction should contains the following lines:
+#      """
+#      Nothing here
+#      """
+#
+#  Scenario: challenge server is returning 500
+#    Given the challenge server exposes the following endpoints
+#      | verb       | endpointEquals               | status  | statusMessage     | acceptHeader  |
+#      | GET        | /availableActions/aJourneyId | 500     | Error status text | text/coloured |
+#    When user starts client
+#    And the server interaction should contains the following lines:
+#      """
+#      Error status text
+#      """
 
+#  Scenario: challenge server is returning 100
+#    Given the challenge server exposes the following endpoints
+#      | verb       | endpointMatches                 | status   | statusMessage               | acceptHeader  |
+#      | POST       | /action/([a-zA-Z]+)/aJourneyId  | 100      | Error status text           | text/coloured |
+#    And the action input comes from a provider returning "someAction"
+#    When user starts client
+#    And the server interaction should contains the following lines:
+#      """
+#      Error status text
+#      """
 
+  # DEBT
+  Scenario: the journeyId should be URL safe

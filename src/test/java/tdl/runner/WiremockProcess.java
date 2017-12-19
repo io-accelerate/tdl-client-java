@@ -53,11 +53,15 @@ class WiremockProcess {
 
             final JsonObject responseJsonObj = new JsonObject();
 
-            if (data.returnBody != null) {
-                responseJsonObj.addProperty("body", data.returnBody);
+            if (data.responseBody != null) {
+                responseJsonObj.addProperty("body", data.responseBody);
             }
 
-            responseJsonObj.addProperty("status", data.returnStatus);
+            if (data.statusMessage != null) {
+                responseJsonObj.addProperty("statusMessage", data.statusMessage);
+            }
+
+            responseJsonObj.addProperty("status", data.status);
 
             final JsonObject completeJson = new JsonObject();
             completeJson.add("response", responseJsonObj);

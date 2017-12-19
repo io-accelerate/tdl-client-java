@@ -54,9 +54,10 @@ public class Steps {
         String verb;
         String endpointEquals;
         String endpointMatches;
-        int returnStatus;
-        String returnBody;
+        int status;
+        String responseBody;
         String acceptHeader;
+        String statusMessage;
     }
 
     @And("the challenge server exposes the following endpoints$")
@@ -111,6 +112,11 @@ public class Steps {
     @Given("^journeyId is \"([^\"]*)\"$")
     public void journeyid_is(String journeyId) throws Throwable {
         this.journeyId = journeyId;
+    }
+
+    @Given("the challenge server is broken")
+    public void challengeServerIsBroken() throws UnirestException {
+        challengeServerStub.reset();
     }
 
     // When
