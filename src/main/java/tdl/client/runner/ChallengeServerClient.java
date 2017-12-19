@@ -80,9 +80,9 @@ public class ChallengeServerClient {
         if (isClientError(responseStatus)) {
             throw new ClientErrorException(response.getBody());
         } else if (isServerError(responseStatus)) {
-            throw new ServerErrorException(response.getStatusText());
+            throw new ServerErrorException();
         } else if (isOtherErrorResponse(responseStatus)) {
-            throw new OtherCommunicationException(response.getStatusText());
+            throw new OtherCommunicationException();
         }
     }
 
@@ -113,8 +113,8 @@ public class ChallengeServerClient {
     }
 
     public static class ServerErrorException extends Exception {
-        ServerErrorException(String statusText) {
-            super(statusText);
+        ServerErrorException() {
+            super();
         }
     }
 
@@ -124,8 +124,8 @@ public class ChallengeServerClient {
             super(message,e);
         }
 
-        OtherCommunicationException(String statusText) {
-            super(statusText);
+        OtherCommunicationException() {
+            super();
         }
     }
 }

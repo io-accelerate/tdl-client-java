@@ -89,9 +89,13 @@ public class ChallengeSession {
                 RoundManagement.saveDescription(recordingSystem, roundDescription, consoleOut);
             }
         }  catch (ChallengeServerClient.ServerErrorException e) {
-            LOG.error("Server experienced an error. Try again.", e);
+            String msg = "Server experienced an error. Try again in a few minutes.";
+            LOG.error(msg, e);
+            consoleOut.println(msg);
         } catch (ChallengeServerClient.OtherCommunicationException e) {
-            LOG.error("Client threw an unexpected error.", e);
+            String msg = "Client threw an unexpected error. Try again.";
+            LOG.error(msg, e);
+            consoleOut.println(msg);
         } catch (ChallengeServerClient.ClientErrorException e) {
             LOG.error("The client sent something the server didn't expect.");
             consoleOut.println(e.getResponseMessage());

@@ -37,9 +37,7 @@ class RecordingSystem implements RoundChangesListener {
         return false;
     }
 
-    void notifyEvent(String lastFetchedRound, String shortName) {
-//        consoleOut.printf("Notify round \"%s\", event \"%s\"%n\n", lastFetchedRound, shortName);
-
+    private void notifyEvent(String lastFetchedRound, String shortName) {
         if (!recordingRequired) {
             return;
         }
