@@ -4,8 +4,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tdl.client.queue.ImplementationRunner;
 
-import java.io.BufferedReader;
-
 
 public class ChallengeSession {
     private final Logger LOG = LoggerFactory.getLogger(ChallengeSession.class);
@@ -14,11 +12,11 @@ public class ChallengeSession {
     private String journeyId;
     private boolean useColours;
     private final String username;
-    private BufferedReader reader;
     private ImplementationRunner implementationRunner;
     private IConsoleOut consoleOut;
     private RecordingSystem recordingSystem;
     private ChallengeServerClient challengeServerClient;
+    private IUserInputCallback userInputCallback;
 
     public static ChallengeSession forUsername(@SuppressWarnings("SameParameterValue") String username) {
         return new ChallengeSession(username);
@@ -48,11 +46,6 @@ public class ChallengeSession {
         return this;
     }
 
-    public ChallengeSession withBufferedReader(BufferedReader reader) {
-        this.reader = reader;
-        return this;
-    }
-
     public ChallengeSession withConsoleOut(IConsoleOut consoleOut) {
         this.consoleOut = consoleOut;
         return this;
@@ -68,24 +61,29 @@ public class ChallengeSession {
         return this;
     }
 
+    public ChallengeSession withUserInput(IUserInputCallback callback) {
+        this.userInputCallback = callback;
+        return this;
+    }
+
     //~~~~~~~~ The entry point ~~~~~~~~~
 
-    public void start(String[] args) {
+    public void start() {
         if (!recordingSystem.isRecordingSystemOk()) {
             consoleOut.println("Please run `record_screen_and_upload` before continuing.");
             return;
         }
         consoleOut.println("Connecting to " + hostname);
-        runApp(args);
+        runApp();
     }
 
-    private void runApp(String[] args) {
+    private void runApp() {
         challengeServerClient = new ChallengeServerClient(hostname, port, journeyId, useColours);
 
         try {
             boolean shouldContinue = checkStatusOfChallenge();
             if (shouldContinue) {
-                String userInput = getUserInput(args);
+                String userInput = this.userInputCallback.get();
                 consoleOut.println("Selected action is: " + userInput);
                 String roundDescription = executeUserAction(userInput);
                 RoundManagement.saveDescription(recordingSystem, roundDescription, consoleOut);
@@ -98,11 +96,6 @@ public class ChallengeSession {
             LOG.error("The client sent something the server didn't expect.");
             consoleOut.println(e.getResponseMessage());
         }
-    }
-
-    // TODO: get rid of this
-    private String getUserInput(String[] args) {
-        return args.length > 0 ? args[0] : "";
     }
 
     private boolean checkStatusOfChallenge() throws ChallengeServerClient.ServerErrorException, ChallengeServerClient.OtherCommunicationException, ChallengeServerClient.ClientErrorException {

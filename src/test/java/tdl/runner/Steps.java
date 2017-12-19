@@ -28,8 +28,6 @@ public class Steps {
     private String recordingHostname;
     private int port;
     private String[] userCommandLineArgs = new String[]{""};
-    private BufferedReader reader;
-    private PrintStream writer;
     private final IConsoleOut consoleOut = new TestConsoleOut();
     private ImplementationRunner implementationRunner = new QuietImplementationRunner();
     private String implementationRunnerMessage;
@@ -114,20 +112,19 @@ public class Steps {
     public void userStartsChallenge() throws UnirestException {
         String journeyId = "dGRsLXRlc3QtY25vZGVqczAxfFNVTSxITE8sQ0hLfFE=";
         String username = "tdl-test-cnodejs01";
+        IUserInputCallback callback = () -> userCommandLineArgs[0];
 
-        writer = new PrintStream(new BufferedOutputStream(System.out));
-        reader = new BufferedReader(new InputStreamReader(System.in));
         ChallengeSession session = ChallengeSession.forUsername(username)
                 .withServerHostname(challengeHostname)
                 .withPort(port)
                 .withJourneyId(journeyId)
                 .withColours(true)
-                .withBufferedReader(reader)
                 .withConsoleOut(consoleOut)
                 .withRecordingSystemOn(true)
-                .withImplementationRunner(implementationRunner);
-
-        session.start(userCommandLineArgs);
+                .withImplementationRunner(implementationRunner)
+                .withUserInput(callback);
+        
+        session.start();
     }
 
     // Then
