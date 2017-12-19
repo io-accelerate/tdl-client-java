@@ -1,10 +1,10 @@
 package tdl.examples;
 
-import tdl.client.Client;
-import tdl.client.ProcessingRules;
-import tdl.client.actions.ClientAction;
+import tdl.client.queue.QueueClient;
+import tdl.client.queue.ProcessingRules;
+import tdl.client.queue.actions.ClientAction;
 
-import static tdl.client.actions.ClientActions.*;
+import static tdl.client.queue.actions.ClientActions.*;
 
 /**
  * Created by julianghionoiu on 11/06/2015.
@@ -31,7 +31,7 @@ public class AddNumbers {
     }
 
     private static void startClient(final boolean ready) {
-        Client client = new Client.Builder()
+        QueueClient queueClient = new QueueClient.Builder()
                 .setHostname("localhost")
                 .setPort(61616)
                 .setUniqueId("julian@example.com")
@@ -43,7 +43,7 @@ public class AddNumbers {
             on("end_round").call(AddNumbers::sum).then(publishAndStop());
         }};
 
-        client.goLiveWith(processingRules);
+        queueClient.goLiveWith(processingRules);
     }
 
     //~~~~~~~ User implementations ~~~~~~~~~~~~~~

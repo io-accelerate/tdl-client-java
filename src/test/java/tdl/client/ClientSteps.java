@@ -1,9 +1,11 @@
 package tdl.client;
 
 import cucumber.api.java.en.*;
-import tdl.client.abstractions.UserImplementation;
-import tdl.client.actions.ClientAction;
-import tdl.client.actions.ClientActions;
+import tdl.client.queue.ProcessingRules;
+import tdl.client.queue.QueueClient;
+import tdl.client.queue.abstractions.UserImplementation;
+import tdl.client.queue.actions.ClientAction;
+import tdl.client.queue.actions.ClientActions;
 import tdl.client.audit.StdoutAuditStream;
 import utils.jmx.broker.RemoteJmxQueue;
 import utils.logging.LogAuditStream;
@@ -26,7 +28,7 @@ public class ClientSteps {
     // Variables set by the background tasks
     private RemoteJmxQueue requestQueue;
     private RemoteJmxQueue responseQueue;
-    private Client client;
+    private QueueClient queueClient;
 
     //Testing utils
     private int initialRequestCount;
@@ -51,7 +53,7 @@ public class ClientSteps {
         responseQueue.purge();
 
         logAuditStream.clearLog();
-        client = new Client.Builder()
+        queueClient = new QueueClient.Builder()
                 .setHostname(HOSTNAME)
                 .setPort(PORT)
                 .setUniqueId(username)
@@ -62,7 +64,7 @@ public class ClientSteps {
     @Given("^the broker is not available$")
     public void client_with_wrong_broker() throws Throwable {
         logAuditStream.clearLog();
-        client = new Client.Builder()
+        queueClient = new QueueClient.Builder()
                 .setHostname("111")
                 .setPort(PORT)
                 .setUniqueId("X")
@@ -73,7 +75,7 @@ public class ClientSteps {
     @Then("^the time to wait for requests is (\\d+)ms$")
     public void check_time(int expectedTimeout) throws Throwable {
         assertThat("The client request timeout has a different value.",
-                client.getRequestTimeoutMillis(), equalTo(expectedTimeout));
+                queueClient.getRequestTimeoutMillis(), equalTo(expectedTimeout));
     }
 
     @Then("^the request queue is \"([^\"]*)\"$")
@@ -178,7 +180,7 @@ public class ClientSteps {
         );
 
         long timestampBefore = System.nanoTime();
-        client.goLiveWith(processingRules);
+        queueClient.goLiveWith(processingRules);
         long timestampAfter = System.nanoTime();
         processingTimeMillis = (timestampAfter - timestampBefore) / 1000000;
     }

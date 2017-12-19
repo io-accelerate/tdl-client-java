@@ -22,12 +22,8 @@ class RecordingServerStub {
         wiremockProcess = new WiremockProcess(hostname, port);
     }
 
-    void createStubMapping(String verb, String endpoint, int returnCode, String responseBody) {
-        wiremockProcess.createStubMapping(verb, endpoint, returnCode, responseBody);
-    }
-
-    void configureServer() throws UnirestException {
-        wiremockProcess.configureServer();
+    void createNewMapping(Steps.ServerConfig config) throws UnirestException {
+        wiremockProcess.createNewMapping(config);
     }
 
     void reset() throws UnirestException {
@@ -39,11 +35,11 @@ class RecordingServerStub {
         assertThat(failMessage, countRequestsWithEndpoint(endpoint, methodType, body), equalTo(1));
     }
 
-    int countRequestsWithEndpoint(String endpoint, String verb, String body) throws UnirestException {
+    private int countRequestsWithEndpoint(String endpoint, String verb, String body) throws UnirestException {
         String url = String.format("http://%s:%d/%s", hostname, port, "__admin/requests/count");
         RequestMatchingData request = new RequestMatchingData();
         request.verb = verb;
-        request.url = "/" + endpoint;
+        request.url = endpoint;
         RequestMatchingData.BodyPatterns bodyPattern = new RequestMatchingData.BodyPatterns();
         bodyPattern.equalTo = body;
         request.bodyPatterns = new RequestMatchingData.BodyPatterns[]{bodyPattern};
@@ -77,7 +73,6 @@ class RecordingServerStub {
             requestJsonObj.addProperty("url", request.url);
             requestJsonObj.addProperty("method", request.verb);
             requestJsonObj.add("bodyPatterns", bodyPatterns);
-
             return requestJsonObj;
         }
     }

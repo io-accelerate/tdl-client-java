@@ -5,6 +5,9 @@ import cucumber.api.java.en.And;
 import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
+import tdl.client.queue.ImplementationRunner;
+import tdl.client.queue.NoisyImplementationRunner;
+import tdl.client.queue.QuietImplementationRunner;
 import tdl.client.runner.*;
 
 import java.io.*;
@@ -47,35 +50,27 @@ public class Steps {
         recordingServerStub.reset();
     }
 
-    class ServerConfig {
+    public class ServerConfig {
         String verb;
-        String endpoint;
+        String endpointEquals;
+        String endpointMatches;
         int returnStatus;
         String returnBody;
+        String acceptHeader;
     }
 
     @And("the challenge server exposes the following endpoints$")
-    public void configureChallengeServerEndpoint(List<ServerConfig> configs) {
+    public void configureChallengeServerEndpoint(List<ServerConfig> configs) throws UnirestException {
         for (ServerConfig config: configs) {
-            challengeServerStub.createStubMappingWithUnicodeRegex(config.verb, config.endpoint, config.returnStatus, config.returnBody);
+            challengeServerStub.createNewMapping(config);
         }
     }
 
     @And("the recording server exposes the following endpoints$")
-    public void configureRecordingServerEndpoint(List<ServerConfig> configs) {
+    public void configureRecordingServerEndpoint(List<ServerConfig> configs) throws UnirestException {
         for (ServerConfig config: configs) {
-            recordingServerStub.createStubMapping(config.verb, config.endpoint, config.returnStatus, config.returnBody);
+            recordingServerStub.createNewMapping(config);
         }
-    }
-
-    @And("the challenge server expects requests to have the Accept header set to \"([^\"]*)\"")
-    public void configureAcceptHeader(String header) throws UnirestException {
-        challengeServerStub.addHeaderToStubs(header);
-    }
-
-    @Given("server endpoint \"([^\"]*)\" returns \"([^\"]*)\"")
-    public void setupServerEndpointResponse(String endpoint, String returnValue) {
-        challengeServerStub.adjustStubMappingResponse(endpoint, returnValue);
     }
 
     @And("the challenges folder is empty")
@@ -104,15 +99,19 @@ public class Steps {
 
     @Given("^there is an implementation runner that prints \"([^\"]*)\"$")
     public void implementationRunnerPrinter(String s) {
+        // TODO runner should be initialised here
         implementationSolutionStub = s;
+    }
+
+    @Given("recording server is returning error")
+    public void recoringServerNotExposingEndpoints() throws UnirestException {
+        recordingServerStub.reset();
     }
 
 
     // When
     @When("user starts client")
     public void userStartsChallenge() throws UnirestException {
-        challengeServerStub.configureServer();
-        recordingServerStub.configureServer();
         String journeyId = "dGRsLXRlc3QtY25vZGVqczAxfFNVTSxITE8sQ0hLfFE=";
         String username = "tdl-test-cnodejs01";
 
@@ -141,15 +140,24 @@ public class Steps {
 
     // Then
 
+    @Then("the server interaction should contains the following lines:$")
+    public void checkServerInteractionContainsLines(String expectedOutput) throws IOException, InteractionException {
+        String total = ((TestConsoleOut)consoleOut).getTotal();
+        String[] lines = total.split("\n");
+        for (String line : lines) {
+            assertThat("Expected string is not contained in output", line, containsString(expectedOutput));
+        }
+    }
+
     @Then("the server interaction should look like:$")
     public void parseInput(String expectedOutput) throws IOException, InteractionException {
         String total = ((TestConsoleOut)consoleOut).getTotal();
-        assertThat(expectedOutput, equalTo(total));
+        assertThat("Expected string is not contained in output", total, equalTo(expectedOutput));
     }
 
     @And("the recording system should be notified with \"([^\"]*)\"$")
     public void parseInput2(String expectedOutput) throws IOException, InteractionException, UnirestException {
-        recordingServerStub.verifyEndpointWasHit("notify", "POST", expectedOutput);
+        recordingServerStub.verifyEndpointWasHit("/notify", "POST", expectedOutput);
 
     }
 
@@ -176,6 +184,12 @@ public class Steps {
     public void checkClientDoesNotAskForInput() throws InteractionException {
         String total = ((TestConsoleOut)consoleOut).getTotal();
         assertThat(total, not(containsString("Selected action is:")));
+    }
+
+    @And("the user is informed that they should start the recording")
+    public void checkForRecordingMessageError() {
+        String total = ((TestConsoleOut)consoleOut).getTotal();
+        assertThat(total, containsString("Please run `record_screen_and_upload` before continuing."));
     }
 
 }

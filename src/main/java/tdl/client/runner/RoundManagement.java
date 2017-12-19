@@ -9,7 +9,7 @@ import java.nio.file.Paths;
 
 import static tdl.client.runner.RunnerAction.getNewRoundDescription;
 
-class RoundManagement {
+public class RoundManagement {
     private static final Path CHALLENGES_FOLDER = Paths.get("challenges");
     private static final Path LAST_FETCHED_ROUND_PATH = CHALLENGES_FOLDER.resolve("XR.txt");
 
@@ -26,7 +26,7 @@ class RoundManagement {
         saveDescription(roundId, rawDescription, consoleOut);
     }
 
-    static String saveDescription(String label, String description, IConsoleOut consoleOut) {
+    public static String saveDescription(String label, String description, IConsoleOut consoleOut) {
         //Save description
         Path descriptionPath = CHALLENGES_FOLDER.resolve(label + ".txt");
         try {

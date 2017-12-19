@@ -1,7 +1,7 @@
 package tdl.client.runner;
 
-import tdl.client.actions.ClientAction;
-import tdl.client.actions.ClientActions;
+import tdl.client.queue.actions.ClientAction;
+import tdl.client.queue.actions.ClientActions;
 
 public enum RunnerAction {
     getNewRoundDescription("new", ClientActions.stop()),

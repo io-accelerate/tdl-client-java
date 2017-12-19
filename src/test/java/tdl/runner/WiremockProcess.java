@@ -5,76 +5,23 @@ import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
 
 import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
 
 
 class WiremockProcess {
     private final String hostname;
     private final int port;
-    private List<RequestData> configData = new ArrayList<>();
-    private static final String anyUnicodeRegex = "(?:\\P{M}\\p{M}*)+";
 
     WiremockProcess(String hostname, int port) {
         this.hostname = hostname;
         this.port = port;
     }
 
-    void createStubMapping(String verb, String endpoint, int returnCode, String body) {
-        // Obvs - change public fields to methods
+    void createNewMapping(Steps.ServerConfig config) throws UnirestException {
+        final Gson gson = new GsonBuilder().registerTypeAdapter(Steps.ServerConfig.class, new ServerConfigSerialiser()).create();
+        String json = gson.toJson(config);
 
-        RequestData data = new RequestData();
-        data.request = new RequestData.Request();
-        data.request.verb = verb;
-        data.request.url = "/" + endpoint;
-        data.response = new RequestData.Response();
-        data.response.status = returnCode;
-        data.response.body = body;
-        configData.add(data);
-    }
-
-    void createStubMappingWithUnicodeRegex(String verb, String endpoint, int returnCode, String body) {
-        // Obvs - change public fields to methods
-
-        RequestData data = new RequestData();
-        data.request = new RequestData.Request();
-        data.request.verb = verb;
-        data.request.urlPattern = getUrlPattern(endpoint);
-        data.response = new RequestData.Response();
-        data.response.status = returnCode;
-        data.response.body = body;
-        configData.add(data);
-    }
-
-    private String getUrlPattern(String endpoint) {
-        return String.format("/%s/%s", endpoint, anyUnicodeRegex);
-    }
-
-    void addHeaderToStubs(String header) throws UnirestException {
-        for (RequestData data : configData) {
-            data.request.headers = new RequestData.Request.Headers();
-            data.request.headers.accept = header;
-        }
-    }
-
-    void adjustStubMappingResponse(String endpoint, String response) {
-        Optional<RequestData> data = configData.stream().filter(s -> s.request.urlPattern.contains(endpoint)).findFirst();
-        if (data.isPresent()) {
-            RequestData requestData = data.get();
-            requestData.request.urlPattern = getUrlPattern(endpoint);
-            requestData.response.body = response;
-        }
-    }
-
-    void configureServer() throws UnirestException {
-        for (RequestData data : configData) {
-            final Gson gson = new GsonBuilder().registerTypeAdapter(RequestData.class, new RequestDataSerialiser()).create();
-            String json = gson.toJson(data);
-
-            String url = String.format("http://%s:%d/%s", hostname, port, "__admin/mappings/new");
-            Unirest.post(url).body(json).asJson();
-        }
+        String url = String.format("http://%s:%d/%s", hostname, port, "__admin/mappings/new");
+        Unirest.post(url).body(json).asJson();
     }
 
     void reset() throws UnirestException {
@@ -82,78 +29,41 @@ class WiremockProcess {
         Unirest.post(url).asJson();
     }
 
-    private static class RequestData {
-        Request request;
-        Response response;
-
-        static class Request {
-            String urlPattern;
-            String url;
-            String verb;
-            Headers headers;
-            String body;
-
-            static class Headers {
-                String accept;
-            }
-        }
-
-        static class Response {
-            int status;
-            String body;
-        }
-    }
-
-    public static class RequestDataSerialiser implements JsonSerializer<RequestData> {
+    public static class ServerConfigSerialiser implements JsonSerializer<Steps.ServerConfig> {
 
         @Override
-        public JsonElement serialize(final RequestData requestData, final Type typeOfSrc, final JsonSerializationContext context) {
-            RequestSerialiser requestSerialiser = new RequestSerialiser();
-            final JsonElement requestJsonObj = requestSerialiser.serialize(requestData.request, typeOfSrc, context);
+        public JsonElement serialize(final Steps.ServerConfig data, final Type typeOfSrc, final JsonSerializationContext context) {
+            final JsonObject requestJsonObj = new JsonObject();
+            if (data.endpointMatches != null) {
+                requestJsonObj.addProperty("urlPattern", data.endpointMatches);
+            }
+            if (data.endpointEquals != null) {
+                requestJsonObj.addProperty("url", data.endpointEquals);
+            }
+
+            requestJsonObj.addProperty("method", data.verb);
+
+            if (data.acceptHeader != null) {
+                final JsonObject headerJsonObj = new JsonObject();
+                final JsonObject acceptJsonObj = new JsonObject();
+                acceptJsonObj.addProperty("contains", data.acceptHeader);
+                headerJsonObj.add("Accept", acceptJsonObj);
+                requestJsonObj.add("headers", headerJsonObj);
+            }
 
             final JsonObject responseJsonObj = new JsonObject();
 
-            if (requestData.response.body != null) {
-                responseJsonObj.addProperty("body", requestData.response.body);
+            if (data.returnBody != null) {
+                responseJsonObj.addProperty("body", data.returnBody);
             }
 
-            responseJsonObj.addProperty("status", requestData.response.status);
+            responseJsonObj.addProperty("status", data.returnStatus);
 
             final JsonObject completeJson = new JsonObject();
             completeJson.add("response", responseJsonObj);
             completeJson.add("request", requestJsonObj);
 
             return completeJson;
-        }
-    }
-
-    public static class RequestSerialiser implements JsonSerializer<RequestData.Request> {
-
-        @Override
-        public JsonElement serialize(final RequestData.Request request, final Type typeOfSrc, final JsonSerializationContext context) {
-            final JsonObject requestJsonObj = new JsonObject();
-            if (request.urlPattern != null) {
-                requestJsonObj.addProperty("urlPattern", request.urlPattern);
-            }
-            if (request.url != null) {
-                requestJsonObj.addProperty("url", request.url);
-            }
-            if (request.verb != null) {
-                requestJsonObj.addProperty("method", request.verb);
-            }
-            if (request.body != null) {
-                requestJsonObj.addProperty("body", request.body);
-            }
-
-            if (request.headers != null) {
-                final JsonObject headerJsonObj = new JsonObject();
-                final JsonObject acceptJsonObj = new JsonObject();
-                acceptJsonObj.addProperty("contains", request.headers.accept);
-                headerJsonObj.add("Accept", acceptJsonObj);
-                requestJsonObj.add("headers", headerJsonObj);
-            }
-
-            return requestJsonObj;
         }
     }
 }

@@ -2,6 +2,7 @@ package tdl.client.runner;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tdl.client.queue.ImplementationRunner;
 
 import java.io.BufferedReader;
 
@@ -17,7 +18,7 @@ public class ChallengeSession {
     private ImplementationRunner implementationRunner;
     private IConsoleOut consoleOut;
     private RecordingSystem recordingSystem;
-    private HttpClient httpClient;
+    private ChallengeServerClient challengeServerClient;
 
     public static ChallengeSession forUsername(@SuppressWarnings("SameParameterValue") String username) {
         return new ChallengeSession(username);
@@ -79,7 +80,7 @@ public class ChallengeSession {
     }
 
     private void runApp(String[] args) {
-        httpClient = new HttpClient(hostname, port, journeyId, useColours);
+        challengeServerClient = new ChallengeServerClient(hostname, port, journeyId, useColours);
 
         try {
             boolean shouldContinue = checkStatusOfChallenge();
@@ -89,31 +90,32 @@ public class ChallengeSession {
                 String roundDescription = executeUserAction(userInput);
                 RoundManagement.saveDescription(recordingSystem, roundDescription, consoleOut);
             }
-        }  catch (HttpClient.ServerErrorException e) {
+        }  catch (ChallengeServerClient.ServerErrorException e) {
             LOG.error("Server experienced an error. Try again.", e);
-        } catch (HttpClient.OtherCommunicationException e) {
+        } catch (ChallengeServerClient.OtherCommunicationException e) {
             LOG.error("Client threw an unexpected error.", e);
-        } catch (HttpClient.ClientErrorException e) {
+        } catch (ChallengeServerClient.ClientErrorException e) {
             LOG.error("The client sent something the server didn't expect.");
             consoleOut.println(e.getResponseMessage());
         }
     }
 
+    // TODO: get rid of this
     private String getUserInput(String[] args) {
         return args.length > 0 ? args[0] : "";
     }
 
-    private boolean checkStatusOfChallenge() throws HttpClient.ServerErrorException, HttpClient.OtherCommunicationException, HttpClient.ClientErrorException {
-        String journeyProgress = httpClient.getJourneyProgress();
+    private boolean checkStatusOfChallenge() throws ChallengeServerClient.ServerErrorException, ChallengeServerClient.OtherCommunicationException, ChallengeServerClient.ClientErrorException {
+        String journeyProgress = challengeServerClient.getJourneyProgress();
         consoleOut.println(journeyProgress);
 
-        String availableActions = httpClient.getAvailableActions();
+        String availableActions = challengeServerClient.getAvailableActions();
         consoleOut.println(availableActions);
 
         return !availableActions.contains("No actions available.");
     }
 
-    private String executeUserAction(String userInput) throws HttpClient.ServerErrorException, HttpClient.OtherCommunicationException, HttpClient.ClientErrorException {
+    private String executeUserAction(String userInput) throws ChallengeServerClient.ServerErrorException, ChallengeServerClient.OtherCommunicationException, ChallengeServerClient.ClientErrorException {
         if (userInput.equals("deploy")) {
             implementationRunner.run();
             String lastFetchedRound = RoundManagement.getLastFetchedRound();
@@ -122,9 +124,9 @@ public class ChallengeSession {
         return executeAction(userInput);
     }
 
-    private String executeAction(String userInput) throws HttpClient.ServerErrorException, HttpClient.OtherCommunicationException, HttpClient.ClientErrorException {
-        String actionFeedback = httpClient.sendAction(userInput);
+    private String executeAction(String userInput) throws ChallengeServerClient.ServerErrorException, ChallengeServerClient.OtherCommunicationException, ChallengeServerClient.ClientErrorException {
+        String actionFeedback = challengeServerClient.sendAction(userInput);
         consoleOut.println(actionFeedback);
-        return httpClient.getRoundDescription();
+        return challengeServerClient.getRoundDescription();
     }
 }
