@@ -21,7 +21,7 @@ Feature: Should allow the user to interact with the challenge server
     Given the action input comes from a provider returning "anySuccessful"
     And the challenges folder is empty
     When user starts client
-    Then the server interaction should look like:
+    Then the server interaction should contains the following lines:
       """
       Connecting to localhost
       Journey progress coming from server
@@ -29,7 +29,6 @@ Feature: Should allow the user to interact with the challenge server
       Selected action is: anySuccessful
       Successful action feedback
       Challenge description saved to file: challenges/RoundID.txt.
-
       """
 
   Scenario: Refresh round description on successful action
@@ -49,16 +48,10 @@ Feature: Should allow the user to interact with the challenge server
     And there is an implementation runner that prints "Running implementations"
     When user starts client
     Then the implementation runner should be run with the provided implementations
-    And the server interaction should look like:
+    And the server interaction should contains the following lines:
       """
-      Connecting to localhost
-      Journey progress coming from server
-      Available actions coming from server
       Selected action is: deploy
       Running implementations
-      Successful action feedback
-      Challenge description saved to file: challenges/RoundID.txt.
-
       """
     And the recording system should be notified with "RoundID/deploy"
 

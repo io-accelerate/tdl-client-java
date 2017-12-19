@@ -143,9 +143,9 @@ public class Steps {
     @Then("the server interaction should contains the following lines:$")
     public void checkServerInteractionContainsLines(String expectedOutput) throws IOException, InteractionException {
         String total = ((TestConsoleOut)consoleOut).getTotal();
-        String[] lines = total.split("\n");
+        String[] lines = expectedOutput.split("\n");
         for (String line : lines) {
-            assertThat("Expected string is not contained in output", line, containsString(expectedOutput));
+            assertThat("Expected string is not contained in output", total, containsString(line));
         }
     }
 
