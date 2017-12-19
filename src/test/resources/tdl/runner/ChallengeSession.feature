@@ -95,5 +95,16 @@ Feature: Should allow the user to interact with the challenge server
       Server experienced an error. Try again in a few minutes.
       """
 
+  Scenario: challenge server is returning 301
+    Given the challenge server exposes the following endpoints
+      | verb       | endpointMatches                 | status        | acceptHeader  |
+      | POST       | /action/([a-zA-Z]+)/aJourneyId  | 301           | text/coloured |
+    And the action input comes from a provider returning "someAction"
+    When user starts client
+    And the server interaction should contains the following lines:
+      """
+      Client threw an unexpected error. Try again.
+      """
+
   # DEBT
   Scenario: the journeyId should be URL safe
