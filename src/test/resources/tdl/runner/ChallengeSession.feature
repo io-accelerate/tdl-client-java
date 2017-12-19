@@ -2,12 +2,16 @@ Feature: Should allow the user to interact with the challenge server
 
   Background:
     Given There is a challenge server running on "localhost" port 8222
+    And journeyId is "aJourneyId"
     And the challenge server exposes the following endpoints
-      | verb       | endpointMatches        | returnStatus | returnBody                           | acceptHeader  |
-      | GET        | /availableActions/(.*) | 200          | Available actions coming from server | text/coloured |
-      | GET        | /roundDescription/(.*) | 200          | RoundID\nRound Description           | text/coloured |
-      | GET        | /journeyProgress/(.*)  | 200          | Journey progress coming from server  | text/coloured |
-      | POST       | /action/(.*)/(.*)      | 200          | Successful action feedback           | text/coloured |
+      | verb       | endpointEquals               | returnStatus | returnBody                           | acceptHeader  |
+      | GET        | /availableActions/aJourneyId | 200          | Available actions coming from server | text/coloured |
+      | GET        | /roundDescription/aJourneyId | 200          | RoundID\nRound Description           | text/coloured |
+      | GET        | /journeyProgress/aJourneyId  | 200          | Journey progress coming from server  | text/coloured |
+
+    And the challenge server exposes the following endpoints
+      | verb       | endpointMatches                 | returnStatus | returnBody                           | acceptHeader  |
+      | POST       | /action/([a-zA-Z]+)/aJourneyId  | 200          | Successful action feedback           | text/coloured |
 
     And There is a recording server running on "localhost" port 41375
     And the recording server exposes the following endpoints
@@ -59,8 +63,8 @@ Feature: Should allow the user to interact with the challenge server
 
   Scenario: Should exit when no available actions
     Given the challenge server exposes the following endpoints
-      | verb       | endpointMatches         | returnStatus | returnBody               | acceptHeader  |
-      | GET        | /availableActions/(.*)  | 200          | No actions available.    | text/coloured |
+      | verb       | endpointEquals                | returnStatus | returnBody               | acceptHeader  |
+      | GET        | /availableActions/aJourneyId  | 200          | No actions available.    | text/coloured |
     When user starts client
     Then the client should not ask the user for input
 

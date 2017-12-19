@@ -7,7 +7,7 @@ import static net.trajano.commons.testing.UtilityClassTestUtil.assertUtilityClas
 /**
  * Created by julianghionoiu on 31/01/2016.
  */
-public class QueueClientActionsTest {
+public class QueueBasedImplementationRunnerActionsTest {
 
     @Test
     public void should_satisfy_contract_for_utility_class() {

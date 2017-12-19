@@ -1,6 +1,6 @@
 package tdl.examples;
 
-import tdl.client.queue.QueueClient;
+import tdl.client.queue.QueueBasedImplementationRunner;
 import tdl.client.queue.ProcessingRules;
 import tdl.client.queue.actions.ClientAction;
 
@@ -31,7 +31,7 @@ public class AddNumbers {
     }
 
     private static void startClient(final boolean ready) {
-        QueueClient queueClient = new QueueClient.Builder()
+        QueueBasedImplementationRunner queueBasedImplementationRunner = new QueueBasedImplementationRunner.Builder()
                 .setHostname("localhost")
                 .setPort(61616)
                 .setUniqueId("julian@example.com")
@@ -43,7 +43,7 @@ public class AddNumbers {
             on("end_round").call(AddNumbers::sum).then(publishAndStop());
         }};
 
-        queueClient.goLiveWith(processingRules);
+        queueBasedImplementationRunner.goLiveWith(processingRules);
     }
 
     //~~~~~~~ User implementations ~~~~~~~~~~~~~~

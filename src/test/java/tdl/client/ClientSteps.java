@@ -2,7 +2,7 @@ package tdl.client;
 
 import cucumber.api.java.en.*;
 import tdl.client.queue.ProcessingRules;
-import tdl.client.queue.QueueClient;
+import tdl.client.queue.QueueBasedImplementationRunner;
 import tdl.client.queue.abstractions.UserImplementation;
 import tdl.client.queue.actions.ClientAction;
 import tdl.client.queue.actions.ClientActions;
@@ -28,7 +28,7 @@ public class ClientSteps {
     // Variables set by the background tasks
     private RemoteJmxQueue requestQueue;
     private RemoteJmxQueue responseQueue;
-    private QueueClient queueClient;
+    private QueueBasedImplementationRunner queueBasedImplementationRunner;
 
     //Testing utils
     private int initialRequestCount;
@@ -53,7 +53,7 @@ public class ClientSteps {
         responseQueue.purge();
 
         logAuditStream.clearLog();
-        queueClient = new QueueClient.Builder()
+        queueBasedImplementationRunner = new QueueBasedImplementationRunner.Builder()
                 .setHostname(HOSTNAME)
                 .setPort(PORT)
                 .setUniqueId(username)
@@ -64,7 +64,7 @@ public class ClientSteps {
     @Given("^the broker is not available$")
     public void client_with_wrong_broker() throws Throwable {
         logAuditStream.clearLog();
-        queueClient = new QueueClient.Builder()
+        queueBasedImplementationRunner = new QueueBasedImplementationRunner.Builder()
                 .setHostname("111")
                 .setPort(PORT)
                 .setUniqueId("X")
@@ -75,7 +75,7 @@ public class ClientSteps {
     @Then("^the time to wait for requests is (\\d+)ms$")
     public void check_time(int expectedTimeout) throws Throwable {
         assertThat("The client request timeout has a different value.",
-                queueClient.getRequestTimeoutMillis(), equalTo(expectedTimeout));
+                queueBasedImplementationRunner.getRequestTimeoutMillis(), equalTo(expectedTimeout));
     }
 
     @Then("^the request queue is \"([^\"]*)\"$")
@@ -180,7 +180,7 @@ public class ClientSteps {
         );
 
         long timestampBefore = System.nanoTime();
-        queueClient.goLiveWith(processingRules);
+        queueBasedImplementationRunner.goLiveWith(processingRules);
         long timestampAfter = System.nanoTime();
         processingTimeMillis = (timestampAfter - timestampBefore) / 1000000;
     }

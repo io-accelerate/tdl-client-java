@@ -31,6 +31,7 @@ public class Steps {
     private final IConsoleOut consoleOut = new TestConsoleOut();
     private ImplementationRunner implementationRunner = new QuietImplementationRunner();
     private String implementationRunnerMessage;
+    private String journeyId;
 
     // Given
 
@@ -107,10 +108,14 @@ public class Steps {
         recordingServerStub.reset();
     }
 
+    @Given("^journeyId is \"([^\"]*)\"$")
+    public void journeyid_is(String journeyId) throws Throwable {
+        this.journeyId = journeyId;
+    }
+
     // When
     @When("user starts client")
     public void userStartsChallenge() throws UnirestException {
-        String journeyId = "dGRsLXRlc3QtY25vZGVqczAxfFNVTSxITE8sQ0hLfFE=";
         String username = "tdl-test-cnodejs01";
         IUserInputCallback callback = () -> userCommandLineArgs[0];
 
@@ -123,7 +128,7 @@ public class Steps {
                 .withRecordingSystemOn(true)
                 .withImplementationRunner(implementationRunner)
                 .withUserInput(callback);
-        
+
         session.start();
     }
 
@@ -179,5 +184,4 @@ public class Steps {
         String total = ((TestConsoleOut)consoleOut).getTotal();
         assertThat(total, containsString("Please run `record_screen_and_upload` before continuing."));
     }
-
 }
