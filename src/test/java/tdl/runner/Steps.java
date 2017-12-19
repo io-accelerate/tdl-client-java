@@ -26,12 +26,13 @@ public class Steps {
     private RecordingServerStub recordingServerStub;
     private String challengeHostname;
     private String recordingHostname;
-    private String implementationSolutionStub;
     private int port;
     private String[] userCommandLineArgs = new String[]{""};
     private BufferedReader reader;
     private PrintStream writer;
-    private IConsoleOut consoleOut;
+    private final IConsoleOut consoleOut = new TestConsoleOut();
+    private ImplementationRunner implementationRunner = new QuietImplementationRunner();
+    private String implementationRunnerMessage;
 
     // Given
 
@@ -50,7 +51,7 @@ public class Steps {
         recordingServerStub.reset();
     }
 
-    public class ServerConfig {
+    class ServerConfig {
         String verb;
         String endpointEquals;
         String endpointMatches;
@@ -99,8 +100,8 @@ public class Steps {
 
     @Given("^there is an implementation runner that prints \"([^\"]*)\"$")
     public void implementationRunnerPrinter(String s) {
-        // TODO runner should be initialised here
-        implementationSolutionStub = s;
+        implementationRunnerMessage = s;
+        implementationRunner = new NoisyImplementationRunner(implementationRunnerMessage, consoleOut);
     }
 
     @Given("recording server is returning error")
@@ -108,20 +109,11 @@ public class Steps {
         recordingServerStub.reset();
     }
 
-
     // When
     @When("user starts client")
     public void userStartsChallenge() throws UnirestException {
         String journeyId = "dGRsLXRlc3QtY25vZGVqczAxfFNVTSxITE8sQ0hLfFE=";
         String username = "tdl-test-cnodejs01";
-
-        consoleOut = new TestConsoleOut();
-        ImplementationRunner implementationRunner;
-        if (implementationSolutionStub != null && !implementationSolutionStub.equals("")) {
-            implementationRunner = new NoisyImplementationRunner(implementationSolutionStub, consoleOut);
-        } else {
-            implementationRunner = new QuietImplementationRunner();
-        }
 
         writer = new PrintStream(new BufferedOutputStream(System.out));
         reader = new BufferedReader(new InputStreamReader(System.in));
@@ -158,7 +150,6 @@ public class Steps {
     @And("the recording system should be notified with \"([^\"]*)\"$")
     public void parseInput2(String expectedOutput) throws IOException, InteractionException, UnirestException {
         recordingServerStub.verifyEndpointWasHit("/notify", "POST", expectedOutput);
-
     }
 
     @Then("the file \"([^\"]*)\" should contain$")
@@ -177,7 +168,7 @@ public class Steps {
     @Then("the implementation runner should be run with the provided implementations")
     public void checkQueueClientRunningImplementation() throws InteractionException {
         String total = ((TestConsoleOut)consoleOut).getTotal();
-        assertThat(total, containsString(implementationSolutionStub));
+        assertThat(total, containsString(implementationRunnerMessage));
     }
 
     @Then("the client should not ask the user for input")
