@@ -207,10 +207,4 @@ public class RunnerSteps {
         String total = ((TestConsoleOut)consoleOut).getTotal();
         assertThat(total, not(containsString("Selected action is:")));
     }
-
-    @And("the user is informed that they should start the recording")
-    public void checkForRecordingMessageError() {
-        String total = ((TestConsoleOut)consoleOut).getTotal();
-        assertThat(total, containsString("Please run `record_screen_and_upload` before continuing."));
-    }
 }
