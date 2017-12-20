@@ -1,4 +1,4 @@
-package tdl.runner;
+package tdl.client.runner;
 
 import com.mashape.unirest.http.exceptions.UnirestException;
 import cucumber.api.java.en.And;
@@ -8,7 +8,6 @@ import cucumber.api.java.en.When;
 import tdl.client.queue.ImplementationRunner;
 import tdl.client.queue.NoisyImplementationRunner;
 import tdl.client.queue.QuietImplementationRunner;
-import tdl.client.runner.*;
 
 import java.io.*;
 import java.nio.file.Path;
@@ -21,7 +20,7 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.core.IsEqual.equalTo;
 
 
-public class Steps {
+public class RunnerSteps {
     private WiremockProcess challengeServerStub;
     private RecordingServerStub recordingServerStub;
     private String challengeHostname;
@@ -74,6 +73,25 @@ public class Steps {
         }
     }
 
+    @Given("^the challenge server returns (\\d+) for all requests$")
+    public void the_challenge_server_returns_for_all_requests(int returnCode) throws Throwable {
+        ServerConfig config = new ServerConfig();
+        config.endpointMatches = "^(.*)";
+        config.status = returnCode;
+        config.verb = "ANY";
+        challengeServerStub.createNewMapping(config);
+    }
+
+    @Given("^the challenge server returns (\\d+), response body \"([^\"]*)\" for all requests$")
+    public void the_challenge_server_returns_response_body_for_all_requests(int returnCode, String body) throws Throwable {
+        ServerConfig config = new ServerConfig();
+        config.endpointMatches = "^(.*)";
+        config.status = returnCode;
+        config.verb = "ANY";
+        config.responseBody = body;
+        challengeServerStub.createNewMapping(config);
+    }
+
     @And("the challenges folder is empty")
     public void deleteContentsOfChallengesFolder() throws IOException {
         Path path =  Paths.get("challenges");
@@ -123,7 +141,7 @@ public class Steps {
     @When("user starts client")
     public void userStartsChallenge() throws UnirestException {
         String username = "tdl-test-cnodejs01";
-        IUserInputCallback callback = () -> userCommandLineArgs[0];
+        ActionProvider callback = () -> userCommandLineArgs[0];
 
         ChallengeSession session = ChallengeSession.forUsername(username)
                 .withServerHostname(challengeHostname)

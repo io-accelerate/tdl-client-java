@@ -1,5 +1,5 @@
 package tdl.client.runner;
 
-public interface IUserInputCallback {
+public interface ActionProvider {
     String get();
 }

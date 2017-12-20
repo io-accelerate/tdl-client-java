@@ -31,19 +31,14 @@ public class AddNumbers {
     }
 
     private static void startClient(final boolean ready) {
-        QueueBasedImplementationRunner queueBasedImplementationRunner = new QueueBasedImplementationRunner.Builder()
+        new QueueBasedImplementationRunner.Builder()
                 .setHostname("localhost")
                 .setPort(61616)
                 .setUniqueId("julian@example.com")
-                .create();
-
-        ProcessingRules processingRules = new ProcessingRules() {{
-            on("display_description").call(params -> "OK").then(publish());
-            on("sums").call(AddNumbers::sum).then(publishIf(ready));
-            on("end_round").call(AddNumbers::sum).then(publishAndStop());
-        }};
-
-        queueBasedImplementationRunner.goLiveWith(processingRules);
+                .withSolutionFor("sums", AddNumbers::sum, publishIf(ready))
+                .withSolutionFor("end_round", AddNumbers::sum, publishAndStop())
+                .create()
+                .run();
     }
 
     //~~~~~~~ User implementations ~~~~~~~~~~~~~~

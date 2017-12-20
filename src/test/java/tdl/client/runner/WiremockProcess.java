@@ -1,4 +1,4 @@
-package tdl.runner;
+package tdl.client.runner;
 
 import com.google.gson.*;
 import com.mashape.unirest.http.Unirest;
@@ -16,8 +16,8 @@ class WiremockProcess {
         this.port = port;
     }
 
-    void createNewMapping(Steps.ServerConfig config) throws UnirestException {
-        final Gson gson = new GsonBuilder().registerTypeAdapter(Steps.ServerConfig.class, new ServerConfigSerialiser()).create();
+    void createNewMapping(RunnerSteps.ServerConfig config) throws UnirestException {
+        final Gson gson = new GsonBuilder().registerTypeAdapter(RunnerSteps.ServerConfig.class, new ServerConfigSerialiser()).create();
         String json = gson.toJson(config);
 
         String url = String.format("http://%s:%d/%s", hostname, port, "__admin/mappings/new");
@@ -29,10 +29,10 @@ class WiremockProcess {
         Unirest.post(url).asJson();
     }
 
-    public static class ServerConfigSerialiser implements JsonSerializer<Steps.ServerConfig> {
+    public static class ServerConfigSerialiser implements JsonSerializer<RunnerSteps.ServerConfig> {
 
         @Override
-        public JsonElement serialize(final Steps.ServerConfig data, final Type typeOfSrc, final JsonSerializationContext context) {
+        public JsonElement serialize(final RunnerSteps.ServerConfig data, final Type typeOfSrc, final JsonSerializationContext context) {
             final JsonObject requestJsonObj = new JsonObject();
             if (data.endpointMatches != null) {
                 requestJsonObj.addProperty("urlPattern", data.endpointMatches);

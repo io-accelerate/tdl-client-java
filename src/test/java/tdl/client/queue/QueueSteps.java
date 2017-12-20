@@ -1,6 +1,7 @@
-package tdl.client;
+package tdl.client.queue;
 
 import cucumber.api.java.en.*;
+import tdl.client.SingletonTestBroker;
 import tdl.client.queue.ProcessingRules;
 import tdl.client.queue.QueueBasedImplementationRunner;
 import tdl.client.queue.abstractions.UserImplementation;
@@ -18,7 +19,7 @@ import java.util.stream.Collectors;
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertThat;
 
-public class ClientSteps {
+public class QueueSteps {
     private final SingletonTestBroker broker;
 
     // Test broker location
@@ -29,13 +30,14 @@ public class ClientSteps {
     private RemoteJmxQueue requestQueue;
     private RemoteJmxQueue responseQueue;
     private QueueBasedImplementationRunner queueBasedImplementationRunner;
+    private QueueBasedImplementationRunner.Builder queueBasedImplementationRunnerBuilder;
 
     //Testing utils
     private int initialRequestCount;
     private long processingTimeMillis;
     private LogAuditStream logAuditStream;
 
-    public ClientSteps(SingletonTestBroker broker) {
+    public QueueSteps(SingletonTestBroker broker) {
         this.broker = broker;
         this.logAuditStream = new LogAuditStream(new StdoutAuditStream());
         this.initialRequestCount = 0;
@@ -53,23 +55,22 @@ public class ClientSteps {
         responseQueue.purge();
 
         logAuditStream.clearLog();
-        queueBasedImplementationRunner = new QueueBasedImplementationRunner.Builder()
+        queueBasedImplementationRunnerBuilder = new QueueBasedImplementationRunner.Builder()
                 .setHostname(HOSTNAME)
                 .setPort(PORT)
                 .setUniqueId(username)
-                .setAuditStream(logAuditStream)
-                .create();
+                .setAuditStream(logAuditStream);
+        queueBasedImplementationRunner = queueBasedImplementationRunnerBuilder.create();
     }
 
     @Given("^the broker is not available$")
     public void client_with_wrong_broker() throws Throwable {
         logAuditStream.clearLog();
-        queueBasedImplementationRunner = new QueueBasedImplementationRunner.Builder()
+        queueBasedImplementationRunnerBuilder = new QueueBasedImplementationRunner.Builder()
                 .setHostname("111")
                 .setPort(PORT)
                 .setUniqueId("X")
-                .setAuditStream(logAuditStream)
-                .create();
+                .setAuditStream(logAuditStream);
     }
 
     @Then("^the time to wait for requests is (\\d+)ms$")
@@ -174,13 +175,17 @@ public class ClientSteps {
 
     @When("^I go live with the following processing rules:$")
     public void go_live(List<ProcessingRuleRepresentation> listOfRules) throws Throwable {
-        ProcessingRules processingRules = new ProcessingRules();
         listOfRules.forEach((ruleLine) ->
-                        processingRules.on(ruleLine.method).call(asImplementation(ruleLine.call)).then(asAction(ruleLine.action))
+            queueBasedImplementationRunnerBuilder.withSolutionFor(
+                    ruleLine.method,
+                    asImplementation(ruleLine.call),
+                    asAction(ruleLine.action)
+            )
         );
+        queueBasedImplementationRunner = queueBasedImplementationRunnerBuilder.create();
 
         long timestampBefore = System.nanoTime();
-        queueBasedImplementationRunner.goLiveWith(processingRules);
+        queueBasedImplementationRunner.run();
         long timestampAfter = System.nanoTime();
         processingTimeMillis = (timestampAfter - timestampBefore) / 1000000;
     }

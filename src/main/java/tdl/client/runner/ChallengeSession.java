@@ -16,7 +16,7 @@ public class ChallengeSession {
     private IConsoleOut consoleOut;
     private RecordingSystem recordingSystem;
     private ChallengeServerClient challengeServerClient;
-    private IUserInputCallback userInputCallback;
+    private ActionProvider userInputCallback;
 
     public static ChallengeSession forUsername(@SuppressWarnings("SameParameterValue") String username) {
         return new ChallengeSession(username);
@@ -61,7 +61,7 @@ public class ChallengeSession {
         return this;
     }
 
-    public ChallengeSession withUserInput(IUserInputCallback callback) {
+    public ChallengeSession withUserInput(ActionProvider callback) {
         this.userInputCallback = callback;
         return this;
     }

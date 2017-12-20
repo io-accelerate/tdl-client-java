@@ -6,6 +6,20 @@
 
 Java client to connect to the central kata server.
 
+To run the acceptance tests, start the WireMock servers:
+```
+python wiremock-wrapper/fetch-wiremock-and-run.py 41375
+python wiremock-wrapper/fetch-wiremock-and-run.py 8222
+```
+
+And the broker, with:
+```
+./broker/activemq-wrapper start
+```
+
+Then run the tests in RunAllAcceptanceTest.java
+
+
 How to release a new version:
 ```bash
 ./release.sh

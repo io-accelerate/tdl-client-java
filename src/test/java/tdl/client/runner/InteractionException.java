@@ -1,4 +1,4 @@
-package tdl.runner;
+package tdl.client.runner;
 
 public class InteractionException extends Exception {
 

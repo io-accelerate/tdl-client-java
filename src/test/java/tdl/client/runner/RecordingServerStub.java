@@ -1,4 +1,4 @@
-package tdl.runner;
+package tdl.client.runner;
 
 import com.google.gson.*;
 import com.mashape.unirest.http.HttpResponse;
@@ -22,7 +22,7 @@ class RecordingServerStub {
         wiremockProcess = new WiremockProcess(hostname, port);
     }
 
-    void createNewMapping(Steps.ServerConfig config) throws UnirestException {
+    void createNewMapping(RunnerSteps.ServerConfig config) throws UnirestException {
         wiremockProcess.createNewMapping(config);
     }
 

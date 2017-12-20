@@ -1,4 +1,4 @@
-package tdl.runner;
+package tdl.client.runner;
 
 import java.io.BufferedReader;
 import java.io.IOException;

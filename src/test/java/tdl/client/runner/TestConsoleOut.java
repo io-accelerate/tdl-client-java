@@ -1,6 +1,4 @@
-package tdl.runner;
-
-import tdl.client.runner.IConsoleOut;
+package tdl.client.runner;
 
 
 public class TestConsoleOut implements IConsoleOut {

@@ -1,4 +1,4 @@
-package tdl.runner;
+package tdl.client.runner;
 
 /**
  * Created by julianghionoiu on 02/05/2015.

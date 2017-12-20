@@ -11,11 +11,6 @@ import tdl.client.audit.Auditable;
 import tdl.client.audit.StdoutAuditStream;
 import tdl.client.queue.transport.BrokerCommunicationException;
 import tdl.client.queue.transport.RemoteBroker;
-import tdl.client.runner.IConsoleOut;
-import tdl.client.runner.RoundManagement;
-
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
 
 import static tdl.client.queue.actions.ClientActions.publish;
@@ -27,34 +22,30 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
     private final String uniqueId;
     private final Audit audit;
     private int requestTimeoutMillis;
-    private final Map<String, UserImplementation> solutions;
-    private IConsoleOut consoleOut;
+    private ProcessingRules deployProcessingRules;
 
     QueueBasedImplementationRunner(String hostname, int port, String uniqueId, int requestTimeoutMillis,
-                                   AuditStream auditStream, Map<String, UserImplementation> solutions, IConsoleOut consoleOut) {
+                                   AuditStream auditStream, ProcessingRules deployProcessingRules) {
         this.hostname = hostname;
         this.port = port;
         this.uniqueId = uniqueId;
         this.requestTimeoutMillis = requestTimeoutMillis;
         this.audit = new Audit(auditStream);
-        this.solutions = solutions;
-        this.consoleOut = consoleOut;
+        this.deployProcessingRules = deployProcessingRules;
     }
 
     public static class Builder {
         private String hostname;
-        private String username;
         private int port;
         private String uniqueId;
         private int requestTimeoutMillis;
         private AuditStream auditStream = new StdoutAuditStream();
-        private final Map<String, UserImplementation> solutions;
-        private IConsoleOut consoleOut;
+        private ProcessingRules deployProcessingRules;
 
         public Builder() {
             port = 61616;
             requestTimeoutMillis = 500;
-            this.solutions = new HashMap<>();
+            deployProcessingRules = createDeployProcessingRules();
         }
 
         public Builder setHostname(String hostname) {
@@ -84,55 +75,47 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
             return this;
         }
 
-        public Builder withSolutionFor(String methodName, UserImplementation solution) {
-            solutions.put(methodName, solution);
+        public Builder withSolutionFor(String methodName, UserImplementation userImplementation) {
+            deployProcessingRules
+                    .on(methodName)
+                    .call(userImplementation)
+                    .then(publish());
             return this;
         }
 
-        public Builder withConsoleOut(IConsoleOut consoleOut) {
-            this.consoleOut = consoleOut;
+        public Builder withSolutionFor(String methodName, UserImplementation userImplementation, ClientAction action) {
+            deployProcessingRules
+                    .on(methodName)
+                    .call(userImplementation)
+                    .then(action);
             return this;
         }
 
         public QueueBasedImplementationRunner create() {
-            return new QueueBasedImplementationRunner(hostname, port, uniqueId, requestTimeoutMillis, auditStream, solutions, consoleOut);
+            return new QueueBasedImplementationRunner(hostname, port, uniqueId, requestTimeoutMillis, auditStream, deployProcessingRules);
+        }
+
+        private static ProcessingRules createDeployProcessingRules() {
+            ProcessingRules deployProcessingRules = new ProcessingRules();
+
+            // Debt - we only need this to consume message from the server
+            deployProcessingRules
+                    .on("display_description")
+                    .call(params -> "OK")
+                    .then(publish());
+
+            return deployProcessingRules;
         }
     }
 
     public void run() {
-        ProcessingRules processingRules = createDeployProcessingRules();
-        goLiveWith(processingRules);
-    }
-
-    private ProcessingRules createDeployProcessingRules() {
-        ProcessingRules deployProcessingRules = new ProcessingRules();
-
-        // Debt - do we need this anymore?
-        deployProcessingRules
-                .on("display_description")
-                .call(p -> RoundManagement.saveDescription(p[0], p[1], consoleOut))
-                .then(publish());
-
-        solutions.forEach((methodName, userImplementation) -> deployProcessingRules
-                .on(methodName)
-                .call(userImplementation)
-                .then(publish()));
-
-        return deployProcessingRules;
-    }
-
-    public int getRequestTimeoutMillis() {
-        return requestTimeoutMillis;
-    }
-
-    public void goLiveWith(ProcessingRules processingRules) {
         audit.logLine("Starting client");
         try (RemoteBroker remoteBroker = new RemoteBroker(hostname, port, uniqueId, requestTimeoutMillis)){
             //Design: We use a while loop instead of an ActiveMQ MessageListener to process the messages in order
             audit.logLine("Waiting for requests");
             Optional<Request> request = remoteBroker.receive();
             while (request.isPresent()) {
-                request = applyProcessingRules(request.get(), processingRules, remoteBroker);
+                request = applyProcessingRules(request.get(), deployProcessingRules, remoteBroker);
             }
         } catch (Exception e) {
             String message = "There was a problem processing messages";
@@ -140,6 +123,10 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
             audit.logException(message, e);
         }
         audit.logLine("Stopping client");
+    }
+
+    public int getRequestTimeoutMillis() {
+        return requestTimeoutMillis;
     }
 
     private Optional<Request> applyProcessingRules(
