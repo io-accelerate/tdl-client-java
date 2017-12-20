@@ -156,7 +156,7 @@ public class RunnerSteps {
                 .withConsoleOut(consoleOut)
                 .withRecordingSystemOn(true)
                 .withImplementationRunner(implementationRunner)
-                .withUserInput(actionProviderCallback);
+                .withActionProvider(actionProviderCallback);
 
         session.start();
     }

@@ -61,7 +61,7 @@ public class ChallengeSession {
         return this;
     }
 
-    public ChallengeSession withUserInput(ActionProvider callback) {
+    public ChallengeSession withActionProvider(ActionProvider callback) {
         this.userInputCallback = callback;
         return this;
     }
