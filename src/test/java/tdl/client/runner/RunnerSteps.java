@@ -15,6 +15,7 @@ import java.nio.file.Paths;
 import java.util.List;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.core.IsEqual.equalTo;
@@ -22,15 +23,15 @@ import static org.hamcrest.core.IsEqual.equalTo;
 
 public class RunnerSteps {
     private WiremockProcess challengeServerStub;
-    private RecordingServerStub recordingServerStub;
+    private WiremockProcess recordingServerStub;
     private String challengeHostname;
     private String recordingHostname;
     private int port;
-    private String[] userCommandLineArgs = new String[]{""};
     private final IConsoleOut consoleOut = new TestConsoleOut();
     private ImplementationRunner implementationRunner = new QuietImplementationRunner();
     private String implementationRunnerMessage;
     private String journeyId;
+    private ActionProvider actionProviderCallback = () -> null;
 
     // Given
 
@@ -45,7 +46,7 @@ public class RunnerSteps {
     @And("There is a recording server running on \"([^\"]*)\" port (\\d+)$")
     public void setupRecordingServerWithSetup(String hostname, int port) throws UnirestException {
         this.recordingHostname = hostname;
-        recordingServerStub = new RecordingServerStub(hostname, port);
+        recordingServerStub = new WiremockProcess(hostname, port);
         recordingServerStub.reset();
     }
 
@@ -113,7 +114,7 @@ public class RunnerSteps {
 
     @Given("the action input comes from a provider returning \"([^\"]*)\"$")
     public void actionInputComesFromProviderReturning(String s) {
-        userCommandLineArgs = new String[]{s};
+        actionProviderCallback = () -> s;
     }
 
     @Given("^there is an implementation runner that prints \"([^\"]*)\"$")
@@ -137,11 +138,15 @@ public class RunnerSteps {
         challengeServerStub.reset();
     }
 
+    @Given("^the journeyId contains special characters$")
+    public void the_journeyId_is() throws Throwable {
+        journeyId = "uvwxyz012===3456789===+/==";
+    }
+
     // When
     @When("user starts client")
     public void userStartsChallenge() throws UnirestException {
         String username = "tdl-test-cnodejs01";
-        ActionProvider callback = () -> userCommandLineArgs[0];
 
         ChallengeSession session = ChallengeSession.forUsername(username)
                 .withServerHostname(challengeHostname)
@@ -151,14 +156,14 @@ public class RunnerSteps {
                 .withConsoleOut(consoleOut)
                 .withRecordingSystemOn(true)
                 .withImplementationRunner(implementationRunner)
-                .withUserInput(callback);
+                .withUserInput(actionProviderCallback);
 
         session.start();
     }
 
     // Then
 
-    @Then("the server interaction should contains the following lines:$")
+    @Then("the server interaction should contain the following lines:$")
     public void checkServerInteractionContainsLines(String expectedOutput) throws IOException, InteractionException {
         String total = ((TestConsoleOut)consoleOut).getTotal();
         String[] lines = expectedOutput.split("\n");
@@ -168,13 +173,13 @@ public class RunnerSteps {
     }
 
     @Then("the server interaction should look like:$")
-    public void parseInput(String expectedOutput) throws IOException, InteractionException {
+    public void server_interaction_should_look_like(String expectedOutput) throws IOException, InteractionException {
         String total = ((TestConsoleOut)consoleOut).getTotal();
-        assertThat("Expected string is not contained in output", total, equalTo(expectedOutput));
+        assertThat("Expected string is not contained in output", total, containsString(expectedOutput));
     }
 
     @And("the recording system should be notified with \"([^\"]*)\"$")
-    public void parseInput2(String expectedOutput) throws IOException, InteractionException, UnirestException {
+    public void recording_system_should_be_notified_with(String expectedOutput) throws IOException, InteractionException, UnirestException {
         recordingServerStub.verifyEndpointWasHit("/notify", "POST", expectedOutput);
     }
 
