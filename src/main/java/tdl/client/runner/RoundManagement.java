@@ -2,6 +2,7 @@ package tdl.client.runner;
 
 import com.google.common.io.Files;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
@@ -27,7 +28,12 @@ public class RoundManagement {
     }
 
     public static String saveDescription(String label, String description, ConsoleOut consoleOut) {
+        File challengesFolder = CHALLENGES_FOLDER.toFile();
+        if (!challengesFolder.exists()) {
+            challengesFolder.mkdir();
+        }
         //Save description
+
         Path descriptionPath = CHALLENGES_FOLDER.resolve(label + ".txt");
         try {
             Files.write(description.getBytes(), descriptionPath.toFile());
