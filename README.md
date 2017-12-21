@@ -14,7 +14,7 @@ python wiremock-wrapper/fetch-wiremock-and-run.py 8222
 
 And the broker, with:
 ```
-./broker/activemq-wrapper start
+python broker/activemq-wrapper.py start
 ```
 
 Then run the tests in RunAllAcceptanceTest.java
