@@ -1,17 +1,17 @@
 package tdl.client.queue;
 
-import tdl.client.runner.ConsoleOut;
+import tdl.client.audit.AuditStream;
 
 public class NoisyImplementationRunner implements ImplementationRunner {
     private final String deployMessage;
-    private final ConsoleOut consoleOut;
+    private final AuditStream auditStream;
 
-    public NoisyImplementationRunner(String deployMessage, ConsoleOut consoleOut) {
+    public NoisyImplementationRunner(String deployMessage, AuditStream auditStream) {
         this.deployMessage = deployMessage;
-        this.consoleOut = consoleOut;
+        this.auditStream = auditStream;
     }
     @Override
     public void run() {
-        consoleOut.println(deployMessage);
+        auditStream.println(deployMessage);
     }
 }

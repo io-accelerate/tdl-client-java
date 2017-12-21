@@ -5,6 +5,7 @@ import cucumber.api.java.en.And;
 import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
+import tdl.client.audit.AuditStream;
 import tdl.client.queue.ImplementationRunner;
 import tdl.client.queue.NoisyImplementationRunner;
 import tdl.client.queue.QuietImplementationRunner;
@@ -15,7 +16,6 @@ import java.nio.file.Paths;
 import java.util.List;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.core.IsEqual.equalTo;
@@ -27,7 +27,7 @@ public class RunnerSteps {
     private String challengeHostname;
     private String recordingHostname;
     private int port;
-    private final ConsoleOut consoleOut = new TestConsoleOut();
+    private final AuditStream auditStream = new TestAuditStream();
     private ImplementationRunner implementationRunner = new QuietImplementationRunner();
     private String implementationRunnerMessage;
     private String journeyId;
@@ -120,7 +120,7 @@ public class RunnerSteps {
     @Given("^there is an implementation runner that prints \"([^\"]*)\"$")
     public void implementationRunnerPrinter(String s) {
         implementationRunnerMessage = s;
-        implementationRunner = new NoisyImplementationRunner(implementationRunnerMessage, consoleOut);
+        implementationRunner = new NoisyImplementationRunner(implementationRunnerMessage, auditStream);
     }
 
     @Given("recording server is returning error")
@@ -153,7 +153,7 @@ public class RunnerSteps {
                 .withPort(port)
                 .withJourneyId(journeyId)
                 .withColours(true)
-                .withConsoleOut(consoleOut)
+                .withAuditStream(auditStream)
                 .withRecordingSystemOn(true)
                 .withImplementationRunner(implementationRunner)
                 .withActionProvider(actionProviderCallback);
@@ -165,7 +165,7 @@ public class RunnerSteps {
 
     @Then("the server interaction should contain the following lines:$")
     public void checkServerInteractionContainsLines(String expectedOutput) throws IOException, InteractionException {
-        String total = ((TestConsoleOut)consoleOut).getTotal();
+        String total = getTotalStdout();
         String[] lines = expectedOutput.split("\n");
         for (String line : lines) {
             assertThat("Expected string is not contained in output", total, containsString(line));
@@ -174,7 +174,7 @@ public class RunnerSteps {
 
     @Then("the server interaction should look like:$")
     public void server_interaction_should_look_like(String expectedOutput) throws IOException, InteractionException {
-        String total = ((TestConsoleOut)consoleOut).getTotal();
+        String total = getTotalStdout();
         assertThat("Expected string is not contained in output", total, containsString(expectedOutput));
     }
 
@@ -198,13 +198,17 @@ public class RunnerSteps {
 
     @Then("the implementation runner should be run with the provided implementations")
     public void checkQueueClientRunningImplementation() throws InteractionException {
-        String total = ((TestConsoleOut)consoleOut).getTotal();
+        String total = getTotalStdout();
         assertThat(total, containsString(implementationRunnerMessage));
     }
 
     @Then("the client should not ask the user for input")
     public void checkClientDoesNotAskForInput() throws InteractionException {
-        String total = ((TestConsoleOut)consoleOut).getTotal();
+        String total = getTotalStdout();
         assertThat(total, not(containsString("Selected action is:")));
+    }
+
+    private String getTotalStdout() {
+        return ((TestAuditStream)auditStream).getTotal();
     }
 }

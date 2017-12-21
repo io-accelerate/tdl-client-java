@@ -1,16 +1,13 @@
 package tdl.client.runner;
 
+import tdl.client.audit.AuditStream;
 
-public class TestConsoleOut implements ConsoleOut {
+public class TestAuditStream implements AuditStream {
     private String total = "";
 
+    @Override
     public void println(String s) {
         total += s + "\n";
-    }
-
-    @Override
-    public void printf(String s, String... strings) {
-        total += String.format(s, strings);
     }
 
     String getTotal() {

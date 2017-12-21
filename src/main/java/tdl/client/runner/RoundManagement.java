@@ -1,6 +1,7 @@
 package tdl.client.runner;
 
 import com.google.common.io.Files;
+import tdl.client.audit.AuditStream;
 
 import java.io.File;
 import java.io.IOException;
@@ -14,7 +15,7 @@ public class RoundManagement {
     private static final Path CHALLENGES_FOLDER = Paths.get("challenges");
     private static final Path LAST_FETCHED_ROUND_PATH = CHALLENGES_FOLDER.resolve("XR.txt");
 
-    static void saveDescription(RoundChangesListener listener, String rawDescription, ConsoleOut consoleOut) {
+    static void saveDescription(RoundChangesListener listener, String rawDescription, AuditStream auditStream) {
         // DEBT - the first line of the response is the ID for the round, the rest of the responseMessage is the description
         int newlineIndex = rawDescription.indexOf('\n');
         if (newlineIndex <= 0) return;
@@ -24,10 +25,10 @@ public class RoundManagement {
         if (!roundId.equals(lastFetchedRound)) {
             listener.onNewRound(roundId, getNewRoundDescription.getShortName());
         }
-        saveDescription(roundId, rawDescription, consoleOut);
+        saveDescription(roundId, rawDescription, auditStream);
     }
 
-    public static String saveDescription(String label, String description, ConsoleOut consoleOut) {
+    public static String saveDescription(String label, String description, AuditStream auditStream) {
         File challengesFolder = CHALLENGES_FOLDER.toFile();
         if (!challengesFolder.exists()) {
             challengesFolder.mkdir();
@@ -40,7 +41,7 @@ public class RoundManagement {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        consoleOut.println("Challenge description saved to file: " + descriptionPath + ".");
+        auditStream.println("Challenge description saved to file: " + descriptionPath + ".");
 
         //Save round label
         try {
