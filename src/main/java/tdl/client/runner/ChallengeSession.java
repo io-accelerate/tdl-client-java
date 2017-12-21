@@ -2,6 +2,8 @@ package tdl.client.runner;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tdl.client.audit.AuditStream;
+import tdl.client.audit.StdoutAuditStream;
 import tdl.client.queue.ImplementationRunner;
 
 
@@ -13,7 +15,7 @@ public class ChallengeSession {
     private boolean useColours;
     private final String username;
     private ImplementationRunner implementationRunner;
-    private ConsoleOut consoleOut;
+    private AuditStream auditStream;
     private RecordingSystem recordingSystem;
     private ChallengeServerClient challengeServerClient;
     private ActionProvider userInputCallback;
@@ -24,6 +26,10 @@ public class ChallengeSession {
 
     private ChallengeSession(String username) {
         this.username = username;
+        this.port = 8222;
+        this.useColours = true;
+        this.recordingSystem = new RecordingSystem(true);
+        this.auditStream = new StdoutAuditStream();
     }
 
     public ChallengeSession withServerHostname(@SuppressWarnings("SameParameterValue") String hostname) {
@@ -46,8 +52,8 @@ public class ChallengeSession {
         return this;
     }
 
-    public ChallengeSession withConsoleOut(ConsoleOut consoleOut) {
-        this.consoleOut = consoleOut;
+    public ChallengeSession withAuditStream(AuditStream auditStream) {
+        this.auditStream = auditStream;
         return this;
     }
 
@@ -70,10 +76,10 @@ public class ChallengeSession {
 
     public void start() {
         if (!recordingSystem.isRecordingSystemOk()) {
-            consoleOut.println("Please run `record_screen_and_upload` before continuing.");
+            auditStream.println("Please run `record_screen_and_upload` before continuing.");
             return;
         }
-        consoleOut.println("Connecting to " + hostname);
+        auditStream.println("Connecting to " + hostname);
         runApp();
     }
 
@@ -84,30 +90,30 @@ public class ChallengeSession {
             boolean shouldContinue = checkStatusOfChallenge();
             if (shouldContinue) {
                 String userInput = this.userInputCallback.get();
-                consoleOut.println("Selected action is: " + userInput);
+                auditStream.println("Selected action is: " + userInput);
                 String roundDescription = executeUserAction(userInput);
-                RoundManagement.saveDescription(recordingSystem, roundDescription, consoleOut);
+                RoundManagement.saveDescription(recordingSystem, roundDescription, auditStream);
             }
         }  catch (ChallengeServerClient.ServerErrorException e) {
             String msg = "Server experienced an error. Try again in a few minutes.";
             LOG.error(msg, e);
-            consoleOut.println(msg);
+            auditStream.println(msg);
         } catch (ChallengeServerClient.OtherCommunicationException e) {
             String msg = "Client threw an unexpected error. Try again.";
             LOG.error(msg, e);
-            consoleOut.println(msg);
+            auditStream.println(msg);
         } catch (ChallengeServerClient.ClientErrorException e) {
             LOG.error("The client sent something the server didn't expect.");
-            consoleOut.println(e.getResponseMessage());
+            auditStream.println(e.getResponseMessage());
         }
     }
 
     private boolean checkStatusOfChallenge() throws ChallengeServerClient.ServerErrorException, ChallengeServerClient.OtherCommunicationException, ChallengeServerClient.ClientErrorException {
         String journeyProgress = challengeServerClient.getJourneyProgress();
-        consoleOut.println(journeyProgress);
+        auditStream.println(journeyProgress);
 
         String availableActions = challengeServerClient.getAvailableActions();
-        consoleOut.println(availableActions);
+        auditStream.println(availableActions);
 
         return !availableActions.contains("No actions available.");
     }
@@ -123,7 +129,7 @@ public class ChallengeSession {
 
     private String executeAction(String userInput) throws ChallengeServerClient.ServerErrorException, ChallengeServerClient.OtherCommunicationException, ChallengeServerClient.ClientErrorException {
         String actionFeedback = challengeServerClient.sendAction(userInput);
-        consoleOut.println(actionFeedback);
+        auditStream.println(actionFeedback);
         return challengeServerClient.getRoundDescription();
     }
 }
