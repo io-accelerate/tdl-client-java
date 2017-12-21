@@ -1,10 +1,10 @@
 package tdl.examples;
 
-import tdl.client.Client;
-import tdl.client.ProcessingRules;
-import tdl.client.actions.ClientAction;
+import tdl.client.queue.QueueBasedImplementationRunner;
+import tdl.client.queue.ProcessingRules;
+import tdl.client.queue.actions.ClientAction;
 
-import static tdl.client.actions.ClientActions.*;
+import static tdl.client.queue.actions.ClientActions.*;
 
 /**
  * Created by julianghionoiu on 11/06/2015.
@@ -31,19 +31,14 @@ public class AddNumbers {
     }
 
     private static void startClient(final boolean ready) {
-        Client client = new Client.Builder()
+        new QueueBasedImplementationRunner.Builder()
                 .setHostname("localhost")
                 .setPort(61616)
                 .setUniqueId("julian@example.com")
-                .create();
-
-        ProcessingRules processingRules = new ProcessingRules() {{
-            on("display_description").call(params -> "OK").then(publish());
-            on("sums").call(AddNumbers::sum).then(publishIf(ready));
-            on("end_round").call(AddNumbers::sum).then(publishAndStop());
-        }};
-
-        client.goLiveWith(processingRules);
+                .withSolutionFor("sums", AddNumbers::sum, publishIf(ready))
+                .withSolutionFor("end_round", AddNumbers::sum, publishAndStop())
+                .create()
+                .run();
     }
 
     //~~~~~~~ User implementations ~~~~~~~~~~~~~~

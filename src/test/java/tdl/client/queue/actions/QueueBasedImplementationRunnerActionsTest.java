@@ -1,17 +1,17 @@
-package tdl.client.audit;
+package tdl.client.queue.actions;
 
 import org.junit.Test;
 
 import static net.trajano.commons.testing.UtilityClassTestUtil.assertUtilityClassWellDefined;
 
 /**
- * Created by julianghionoiu on 03/02/2016.
+ * Created by julianghionoiu on 31/01/2016.
  */
-public class PresentationUtilsTest {
+public class QueueBasedImplementationRunnerActionsTest {
 
     @Test
     public void should_satisfy_contract_for_utility_class() {
-        assertUtilityClassWellDefined(PresentationUtils.class);
+        assertUtilityClassWellDefined(ClientActions.class);
     }
 
 
