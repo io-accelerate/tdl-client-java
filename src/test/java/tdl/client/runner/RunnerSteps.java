@@ -25,7 +25,6 @@ public class RunnerSteps {
     private WiremockProcess challengeServerStub;
     private WiremockProcess recordingServerStub;
     private String challengeHostname;
-    private String recordingHostname;
     private int port;
     private final AuditStream auditStream = new TestAuditStream();
     private ImplementationRunner implementationRunner = new QuietImplementationRunner();
@@ -45,7 +44,6 @@ public class RunnerSteps {
 
     @And("There is a recording server running on \"([^\"]*)\" port (\\d+)$")
     public void setupRecordingServerWithSetup(String hostname, int port) throws UnirestException {
-        this.recordingHostname = hostname;
         recordingServerStub = new WiremockProcess(hostname, port);
         recordingServerStub.reset();
     }
