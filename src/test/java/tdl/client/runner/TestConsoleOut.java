@@ -1,7 +1,7 @@
 package tdl.client.runner;
 
 
-public class TestConsoleOut implements IConsoleOut {
+public class TestConsoleOut implements ConsoleOut {
     private String total = "";
 
     public void println(String s) {

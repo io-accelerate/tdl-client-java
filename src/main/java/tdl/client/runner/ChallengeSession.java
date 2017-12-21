@@ -13,7 +13,7 @@ public class ChallengeSession {
     private boolean useColours;
     private final String username;
     private ImplementationRunner implementationRunner;
-    private IConsoleOut consoleOut;
+    private ConsoleOut consoleOut;
     private RecordingSystem recordingSystem;
     private ChallengeServerClient challengeServerClient;
     private ActionProvider userInputCallback;
@@ -46,7 +46,7 @@ public class ChallengeSession {
         return this;
     }
 
-    public ChallengeSession withConsoleOut(IConsoleOut consoleOut) {
+    public ChallengeSession withConsoleOut(ConsoleOut consoleOut) {
         this.consoleOut = consoleOut;
         return this;
     }

@@ -1,13 +1,12 @@
 package tdl.client.queue;
 
-import tdl.client.queue.ImplementationRunner;
-import tdl.client.runner.IConsoleOut;
+import tdl.client.runner.ConsoleOut;
 
 public class NoisyImplementationRunner implements ImplementationRunner {
     private final String deployMessage;
-    private final IConsoleOut consoleOut;
+    private final ConsoleOut consoleOut;
 
-    public NoisyImplementationRunner(String deployMessage, IConsoleOut consoleOut) {
+    public NoisyImplementationRunner(String deployMessage, ConsoleOut consoleOut) {
         this.deployMessage = deployMessage;
         this.consoleOut = consoleOut;
     }

@@ -13,7 +13,7 @@ public class RoundManagement {
     private static final Path CHALLENGES_FOLDER = Paths.get("challenges");
     private static final Path LAST_FETCHED_ROUND_PATH = CHALLENGES_FOLDER.resolve("XR.txt");
 
-    static void saveDescription(RoundChangesListener listener, String rawDescription, IConsoleOut consoleOut) {
+    static void saveDescription(RoundChangesListener listener, String rawDescription, ConsoleOut consoleOut) {
         // DEBT - the first line of the response is the ID for the round, the rest of the responseMessage is the description
         int newlineIndex = rawDescription.indexOf('\n');
         if (newlineIndex <= 0) return;
@@ -26,7 +26,7 @@ public class RoundManagement {
         saveDescription(roundId, rawDescription, consoleOut);
     }
 
-    public static String saveDescription(String label, String description, IConsoleOut consoleOut) {
+    public static String saveDescription(String label, String description, ConsoleOut consoleOut) {
         //Save description
         Path descriptionPath = CHALLENGES_FOLDER.resolve(label + ".txt");
         try {

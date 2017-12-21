@@ -27,7 +27,7 @@ public class RunnerSteps {
     private String challengeHostname;
     private String recordingHostname;
     private int port;
-    private final IConsoleOut consoleOut = new TestConsoleOut();
+    private final ConsoleOut consoleOut = new TestConsoleOut();
     private ImplementationRunner implementationRunner = new QuietImplementationRunner();
     private String implementationRunnerMessage;
     private String journeyId;
