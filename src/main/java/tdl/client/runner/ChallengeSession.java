@@ -8,12 +8,8 @@ import tdl.client.queue.ImplementationRunner;
 
 public class ChallengeSession {
     private final Logger LOG = LoggerFactory.getLogger(ChallengeSession.class);
-    private String hostname;
-    private int port;
-    private String journeyId;
-    private boolean useColours;
+    private ChallengeSessionConfig config;
     private ImplementationRunner implementationRunner;
-    private AuditStream auditStream;
     private RecordingSystem recordingSystem;
     private ChallengeServerClient challengeServerClient;
     private ActionProvider userInputCallback;
@@ -27,12 +23,7 @@ public class ChallengeSession {
     }
 
     public ChallengeSession withConfig(ChallengeSessionConfig config) {
-        this.hostname = config.getHostname();
-        this.recordingSystem = new RecordingSystem(config.getRecordingSystemShouldBeOn());
-        this.journeyId = config.getJourneyId();
-        this.port = config.getPort();
-        this.auditStream = config.getAuditStream();
-        this.useColours = config.getUseColours();
+        this.config = config;
         return this;
     }
 
@@ -44,17 +35,20 @@ public class ChallengeSession {
     //~~~~~~~~ The entry point ~~~~~~~~~
 
     public void start() {
+        recordingSystem = new RecordingSystem(config.getRecordingSystemShouldBeOn());
+        AuditStream auditStream = config.getAuditStream();
 
         if (!recordingSystem.isRecordingSystemOk()) {
             auditStream.println("Please run `record_screen_and_upload` before continuing.");
             return;
         }
-        auditStream.println("Connecting to " + hostname);
+        auditStream.println("Connecting to " + config.getHostname());
         runApp();
     }
 
     private void runApp() {
-        challengeServerClient = new ChallengeServerClient(hostname, port, journeyId, useColours);
+        AuditStream auditStream = config.getAuditStream();
+        challengeServerClient = new ChallengeServerClient(config.getHostname(), config.getPort(), config.getJourneyId(), config.getUseColours());
 
         try {
             boolean shouldContinue = checkStatusOfChallenge();
@@ -79,6 +73,8 @@ public class ChallengeSession {
     }
 
     private boolean checkStatusOfChallenge() throws ChallengeServerClient.ServerErrorException, ChallengeServerClient.OtherCommunicationException, ChallengeServerClient.ClientErrorException {
+        AuditStream auditStream = config.getAuditStream();
+
         String journeyProgress = challengeServerClient.getJourneyProgress();
         auditStream.println(journeyProgress);
 
@@ -99,7 +95,7 @@ public class ChallengeSession {
 
     private String executeAction(String userInput) throws ChallengeServerClient.ServerErrorException, ChallengeServerClient.OtherCommunicationException, ChallengeServerClient.ClientErrorException {
         String actionFeedback = challengeServerClient.sendAction(userInput);
-        auditStream.println(actionFeedback);
+        config.getAuditStream().println(actionFeedback);
         return challengeServerClient.getRoundDescription();
     }
 }
