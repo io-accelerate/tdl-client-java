@@ -3,7 +3,6 @@ package tdl.client.runner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tdl.client.audit.AuditStream;
-import tdl.client.audit.StdoutAuditStream;
 import tdl.client.queue.ImplementationRunner;
 
 
@@ -13,57 +12,27 @@ public class ChallengeSession {
     private int port;
     private String journeyId;
     private boolean useColours;
-    private final String username;
     private ImplementationRunner implementationRunner;
     private AuditStream auditStream;
     private RecordingSystem recordingSystem;
     private ChallengeServerClient challengeServerClient;
     private ActionProvider userInputCallback;
 
-    public static ChallengeSession forUsername(@SuppressWarnings("SameParameterValue") String username) {
-        return new ChallengeSession(username);
+    public static ChallengeSession forRunner(ImplementationRunner implementationRunner) {
+        return new ChallengeSession(implementationRunner);
     }
 
-    private ChallengeSession(String username) {
-        this.username = username;
-        this.port = 8222;
-        this.useColours = true;
-        this.recordingSystem = new RecordingSystem(true);
-        this.auditStream = new StdoutAuditStream();
+    private ChallengeSession(ImplementationRunner runner) {
+        this.implementationRunner = runner;
     }
 
-    public ChallengeSession withServerHostname(@SuppressWarnings("SameParameterValue") String hostname) {
-        this.hostname = hostname;
-        return this;
-    }
-
-    public ChallengeSession withPort(int port) {
-        this.port = port;
-        return this;
-    }
-
-    public ChallengeSession withJourneyId(String journeyId) {
-        this.journeyId = journeyId;
-        return this;
-    }
-
-    public ChallengeSession withColours(boolean useColours) {
-        this.useColours = useColours;
-        return this;
-    }
-
-    public ChallengeSession withAuditStream(AuditStream auditStream) {
-        this.auditStream = auditStream;
-        return this;
-    }
-
-    public ChallengeSession withImplementationRunner(ImplementationRunner implementationRunner) {
-        this.implementationRunner = implementationRunner;
-        return this;
-    }
-
-    public ChallengeSession withRecordingSystemOn(boolean recordingSystemOn) {
-        this.recordingSystem = new RecordingSystem(recordingSystemOn);
+    public ChallengeSession withConfig(ChallengeSessionConfig config) {
+        this.hostname = config.getHostname();
+        this.recordingSystem = new RecordingSystem(config.getRecordingSystemShouldBeOn());
+        this.journeyId = config.getJourneyId();
+        this.port = config.getPort();
+        this.auditStream = config.getAuditStream();
+        this.useColours = config.getUseColours();
         return this;
     }
 
@@ -75,6 +44,7 @@ public class ChallengeSession {
     //~~~~~~~~ The entry point ~~~~~~~~~
 
     public void start() {
+
         if (!recordingSystem.isRecordingSystemOk()) {
             auditStream.println("Please run `record_screen_and_upload` before continuing.");
             return;
