@@ -53,22 +53,27 @@ public class QueueSteps {
         responseQueue.purge();
 
         logAuditStream.clearLog();
-        queueBasedImplementationRunnerBuilder = new QueueBasedImplementationRunner.Builder()
-                .setHostname(HOSTNAME)
+        ImplementationRunnerConfig config = new ImplementationRunnerConfig().setHostname(HOSTNAME)
                 .setPort(PORT)
                 .setUniqueId(username)
                 .setAuditStream(logAuditStream);
+
+        queueBasedImplementationRunnerBuilder = new QueueBasedImplementationRunner.Builder()
+                .setConfig(config);
+
         queueBasedImplementationRunner = queueBasedImplementationRunnerBuilder.create();
     }
 
     @Given("^the broker is not available$")
     public void client_with_wrong_broker() throws Throwable {
         logAuditStream.clearLog();
-        queueBasedImplementationRunnerBuilder = new QueueBasedImplementationRunner.Builder()
+        ImplementationRunnerConfig config = new ImplementationRunnerConfig()
                 .setHostname("111")
                 .setPort(PORT)
                 .setUniqueId("X")
                 .setAuditStream(logAuditStream);
+        queueBasedImplementationRunnerBuilder = new QueueBasedImplementationRunner.Builder()
+                .setConfig(config);
     }
 
     @Then("^the time to wait for requests is (\\d+)ms$")
@@ -110,8 +115,6 @@ public class QueueSteps {
         }
         initialRequestCount = requests.size() * number;
     }
-
-
 
 
     //~~~~~ Implementations
