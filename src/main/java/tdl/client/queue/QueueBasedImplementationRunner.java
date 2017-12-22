@@ -8,7 +8,6 @@ import tdl.client.queue.abstractions.response.Response;
 import tdl.client.queue.actions.ClientAction;
 import tdl.client.audit.AuditStream;
 import tdl.client.audit.Auditable;
-import tdl.client.audit.StdoutAuditStream;
 import tdl.client.queue.transport.BrokerCommunicationException;
 import tdl.client.queue.transport.RemoteBroker;
 import java.util.Optional;
@@ -17,61 +16,26 @@ import static tdl.client.queue.actions.ClientActions.publish;
 
 public class QueueBasedImplementationRunner implements ImplementationRunner {
     private static final Logger LOGGER = LoggerFactory.getLogger(QueueBasedImplementationRunner.class);
-    private final String hostname;
-    private final int port;
-    private final String uniqueId;
     private final Audit audit;
-    private int requestTimeoutMillis;
     private ProcessingRules deployProcessingRules;
+    private ImplementationRunnerConfig config;
 
-    QueueBasedImplementationRunner(String hostname, int port, String uniqueId, int requestTimeoutMillis,
-                                   AuditStream auditStream, ProcessingRules deployProcessingRules) {
-        this.hostname = hostname;
-        this.port = port;
-        this.uniqueId = uniqueId;
-        this.requestTimeoutMillis = requestTimeoutMillis;
-        this.audit = new Audit(auditStream);
+    QueueBasedImplementationRunner(ImplementationRunnerConfig config, ProcessingRules deployProcessingRules) {
+        this.config = config;
         this.deployProcessingRules = deployProcessingRules;
+        audit = new Audit(config.getAuditStream());
     }
 
     public static class Builder {
-        private String hostname;
-        private int port;
-        private String uniqueId;
-        private int requestTimeoutMillis;
-        private AuditStream auditStream = new StdoutAuditStream();
         private ProcessingRules deployProcessingRules;
+        private ImplementationRunnerConfig config;
 
         public Builder() {
-            port = 61616;
-            requestTimeoutMillis = 500;
             deployProcessingRules = createDeployProcessingRules();
         }
 
-        public Builder setHostname(String hostname) {
-            this.hostname = hostname;
-            return this;
-        }
-
-        public Builder setPort(int port) {
-            this.port = port;
-            return this;
-        }
-
-        public Builder setUniqueId(String uniqueId) {
-            this.uniqueId = uniqueId;
-            return this;
-        }
-
-        @SuppressWarnings("WeakerAccess")
-        public Builder setRequestTimeoutMillis(@SuppressWarnings("SameParameterValue") int requestTimeoutMillis) {
-            this.requestTimeoutMillis = requestTimeoutMillis;
-            return this;
-        }
-
-        @SuppressWarnings("WeakerAccess")
-        public Builder setAuditStream(AuditStream auditStream) {
-            this.auditStream = auditStream;
+        public Builder setConfig(ImplementationRunnerConfig config) {
+            this.config = config;
             return this;
         }
 
@@ -92,7 +56,7 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
         }
 
         public QueueBasedImplementationRunner create() {
-            return new QueueBasedImplementationRunner(hostname, port, uniqueId, requestTimeoutMillis, auditStream, deployProcessingRules);
+            return new QueueBasedImplementationRunner(config, deployProcessingRules);
         }
 
         private static ProcessingRules createDeployProcessingRules() {
@@ -110,7 +74,7 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
 
     public void run() {
         audit.logLine("Starting client");
-        try (RemoteBroker remoteBroker = new RemoteBroker(hostname, port, uniqueId, requestTimeoutMillis)){
+        try (RemoteBroker remoteBroker = new RemoteBroker(config.getHostname(), config.getPort(), config.getUniqueId(), config.getRequestTimeoutMillis())){
             //Design: We use a while loop instead of an ActiveMQ MessageListener to process the messages in order
             audit.logLine("Waiting for requests");
             Optional<Request> request = remoteBroker.receive();
@@ -126,7 +90,7 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
     }
 
     public int getRequestTimeoutMillis() {
-        return requestTimeoutMillis;
+        return config.getRequestTimeoutMillis();
     }
 
     private Optional<Request> applyProcessingRules(
@@ -148,6 +112,7 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
         audit.endLine();
         return clientAction.getNextRequest(remoteBroker);
     }
+
 
     //~~~~ Utils
 

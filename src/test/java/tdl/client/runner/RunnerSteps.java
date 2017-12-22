@@ -144,19 +144,17 @@ public class RunnerSteps {
     // When
     @When("user starts client")
     public void userStartsChallenge() throws UnirestException {
-        String username = "tdl-test-cnodejs01";
-
-        ChallengeSession session = ChallengeSession.forUsername(username)
+        ChallengeSessionConfig config = ChallengeSessionConfig.forJourneyId(journeyId)
                 .withServerHostname(challengeHostname)
                 .withPort(port)
-                .withJourneyId(journeyId)
                 .withColours(true)
                 .withAuditStream(auditStream)
-                .withRecordingSystemOn(true)
-                .withImplementationRunner(implementationRunner)
-                .withActionProvider(actionProviderCallback);
+                .withRecordingSystemShouldBeOn(true);
 
-        session.start();
+        ChallengeSession.forRunner(implementationRunner)
+                .withConfig(config)
+                .withActionProvider(actionProviderCallback)
+                .start();
     }
 
     // Then

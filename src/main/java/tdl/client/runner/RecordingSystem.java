@@ -16,7 +16,6 @@ class RecordingSystem implements RoundChangesListener {
 
     private boolean isRecordingRequired() {
         return recordingRequired;
-//        return Boolean.parseBoolean(readFromConfigFile("tdl_require_rec", "true"));
     }
 
     boolean isRecordingSystemOk() {
