@@ -144,8 +144,6 @@ public class RunnerSteps {
     // When
     @When("user starts client")
     public void userStartsChallenge() throws UnirestException {
-        String username = "tdl-test-cnodejs01";
-
         ChallengeSessionConfig config = ChallengeSessionConfig.forJourneyId(journeyId)
                 .withServerHostname(challengeHostname)
                 .withPort(port)
