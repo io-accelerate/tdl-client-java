@@ -1,5 +1,5 @@
 package tdl.client.runner;
 
 public interface RoundChangesListener {
-    void onNewRound(String roundId, String shortName);
+    void onNewRound(String roundId);
 }

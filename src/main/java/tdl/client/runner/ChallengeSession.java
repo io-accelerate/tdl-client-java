@@ -88,13 +88,17 @@ public class ChallengeSession {
         if (userInput.equals("deploy")) {
             implementationRunner.run();
             String lastFetchedRound = RoundManagement.getLastFetchedRound();
-            recordingSystem.deployNotifyEvent(lastFetchedRound);
+            recordingSystem.notifyEvent(lastFetchedRound, RecordingSystem.Event.ROUND_SOLUTION_DEPLOY);
         }
         return executeAction(userInput);
     }
 
     private String executeAction(String userInput) throws ChallengeServerClient.ServerErrorException, ChallengeServerClient.OtherCommunicationException, ChallengeServerClient.ClientErrorException {
         String actionFeedback = challengeServerClient.sendAction(userInput);
+        if (actionFeedback.contains("Round time for")) {
+            String lastFetchedRound = RoundManagement.getLastFetchedRound();
+            recordingSystem.notifyEvent(lastFetchedRound, RecordingSystem.Event.ROUND_COMPLETED);
+        }
         config.getAuditStream().println(actionFeedback);
         return challengeServerClient.getRoundDescription();
     }

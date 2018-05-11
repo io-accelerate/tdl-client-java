@@ -7,3 +7,4 @@ activemq-data
 secret.gradle
 out
 wiremock-wrapper/wiremock-standalone-*.jar
+challenges

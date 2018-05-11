@@ -9,8 +9,6 @@ import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import static tdl.client.runner.RunnerAction.getNewRoundDescription;
-
 public class RoundManagement {
     private static final Path CHALLENGES_FOLDER = Paths.get("challenges");
     private static final Path LAST_FETCHED_ROUND_PATH = CHALLENGES_FOLDER.resolve("XR.txt");
@@ -23,14 +21,15 @@ public class RoundManagement {
         String roundId = rawDescription.substring(0, newlineIndex);
         String lastFetchedRound = getLastFetchedRound();
         if (!roundId.equals(lastFetchedRound)) {
-            listener.onNewRound(roundId, getNewRoundDescription.getShortName());
+            listener.onNewRound(roundId);
         }
         saveDescription(roundId, rawDescription, auditStream);
     }
 
-    public static String saveDescription(String label, String description, AuditStream auditStream) {
+    private static String saveDescription(String label, String description, AuditStream auditStream) {
         File challengesFolder = CHALLENGES_FOLDER.toFile();
         if (!challengesFolder.exists()) {
+            //noinspection ResultOfMethodCallIgnored
             challengesFolder.mkdir();
         }
         //Save description
