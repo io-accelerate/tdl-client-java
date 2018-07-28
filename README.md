@@ -19,7 +19,6 @@ python broker/activemq-wrapper.py start
 
 Then run the tests in RunAllAcceptanceTest.java
 
-
 How to release a new version:
 ```bash
 ./release.sh
