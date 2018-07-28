@@ -51,13 +51,38 @@ public class ChallengeSession {
         challengeServerClient = new ChallengeServerClient(config.getHostname(), config.getPort(), config.getJourneyId(), config.getUseColours());
 
         try {
-            boolean shouldContinue = checkStatusOfChallenge();
-            if (shouldContinue) {
-                String userInput = this.userInputCallback.get();
-                auditStream.println("Selected action is: " + userInput);
-                String roundDescription = executeUserAction(userInput);
-                RoundManagement.saveDescription(recordingSystem, roundDescription, auditStream);
+            String journeyProgress = challengeServerClient.getJourneyProgress();
+            auditStream.println(journeyProgress);
+
+            String availableActions = challengeServerClient.getAvailableActions();
+            auditStream.println(availableActions);
+
+            boolean noActionsAvailable = availableActions.contains("No actions available.");
+            if (noActionsAvailable) {
+                recordingSystem.tellToStop();
+                return;
             }
+
+
+            String userInput = this.userInputCallback.get();
+            auditStream.println("Selected action is: " + userInput);
+            if (userInput.equals("deploy")) {
+                implementationRunner.run();
+                String lastFetchedRound = RoundManagement.getLastFetchedRound();
+                recordingSystem.notifyEvent(lastFetchedRound, RecordingSystem.Event.ROUND_SOLUTION_DEPLOY);
+            }
+            String actionFeedback = challengeServerClient.sendAction(userInput);
+            if (actionFeedback.contains("Round time for")) {
+                String lastFetchedRound = RoundManagement.getLastFetchedRound();
+                recordingSystem.notifyEvent(lastFetchedRound, RecordingSystem.Event.ROUND_COMPLETED);
+            }
+            if (actionFeedback.contains("All challenges have been completed")) {
+                recordingSystem.tellToStop();
+            }
+
+            config.getAuditStream().println(actionFeedback);
+            String roundDescription = challengeServerClient.getRoundDescription();
+            RoundManagement.saveDescription(recordingSystem, roundDescription, auditStream);
         }  catch (ChallengeServerClient.ServerErrorException e) {
             String msg = "Server experienced an error. Try again in a few minutes.";
             LOG.error(msg, e);
@@ -72,34 +97,4 @@ public class ChallengeSession {
         }
     }
 
-    private boolean checkStatusOfChallenge() throws ChallengeServerClient.ServerErrorException, ChallengeServerClient.OtherCommunicationException, ChallengeServerClient.ClientErrorException {
-        AuditStream auditStream = config.getAuditStream();
-
-        String journeyProgress = challengeServerClient.getJourneyProgress();
-        auditStream.println(journeyProgress);
-
-        String availableActions = challengeServerClient.getAvailableActions();
-        auditStream.println(availableActions);
-
-        return !availableActions.contains("No actions available.");
-    }
-
-    private String executeUserAction(String userInput) throws ChallengeServerClient.ServerErrorException, ChallengeServerClient.OtherCommunicationException, ChallengeServerClient.ClientErrorException {
-        if (userInput.equals("deploy")) {
-            implementationRunner.run();
-            String lastFetchedRound = RoundManagement.getLastFetchedRound();
-            recordingSystem.notifyEvent(lastFetchedRound, RecordingSystem.Event.ROUND_SOLUTION_DEPLOY);
-        }
-        return executeAction(userInput);
-    }
-
-    private String executeAction(String userInput) throws ChallengeServerClient.ServerErrorException, ChallengeServerClient.OtherCommunicationException, ChallengeServerClient.ClientErrorException {
-        String actionFeedback = challengeServerClient.sendAction(userInput);
-        if (actionFeedback.contains("Round time for")) {
-            String lastFetchedRound = RoundManagement.getLastFetchedRound();
-            recordingSystem.notifyEvent(lastFetchedRound, RecordingSystem.Event.ROUND_COMPLETED);
-        }
-        config.getAuditStream().println(actionFeedback);
-        return challengeServerClient.getRoundDescription();
-    }
 }

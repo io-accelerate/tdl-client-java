@@ -1,4 +1,4 @@
-package tdl.client.runner;
+package acceptance.runner;
 
 import tdl.client.audit.AuditStream;
 

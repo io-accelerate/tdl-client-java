@@ -1,4 +1,4 @@
-package tdl.client.runner;
+package acceptance.runner;
 
 import com.google.gson.*;
 import com.mashape.unirest.http.HttpResponse;

@@ -5,6 +5,8 @@ import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
 
 class RecordingSystem implements RoundChangesListener {
+
+
     enum Event {
         ROUND_START("new"),
         ROUND_SOLUTION_DEPLOY("deploy"),
@@ -51,13 +53,21 @@ class RecordingSystem implements RoundChangesListener {
     }
 
     public void notifyEvent(String roundId, Event event) {
+        sentPost("/notify", roundId+"/"+event.getName());
+    }
+
+    public void tellToStop() {
+        sentPost("/stop", "");
+    }
+
+    private void sentPost(String endpoint, String body) {
         if (!recordingRequired) {
             return;
         }
 
         try {
-            HttpResponse<String> stringHttpResponse = Unirest.post(RECORDING_SYSTEM_ENDPOINT + "/notify")
-                    .body(roundId+"/"+event.getName())
+            HttpResponse<String> stringHttpResponse = Unirest.post(RECORDING_SYSTEM_ENDPOINT + endpoint)
+                    .body(body)
                     .asString();
             if (stringHttpResponse.getStatus() != 200) {
                 System.err.println("Recording system returned code: "+stringHttpResponse.getStatus());

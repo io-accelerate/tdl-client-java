@@ -1,7 +1,9 @@
-package tdl.client.queue;
+package acceptance.queue;
 
 import cucumber.api.java.en.*;
-import tdl.client.SingletonTestBroker;
+import acceptance.SingletonTestBroker;
+import tdl.client.queue.ImplementationRunnerConfig;
+import tdl.client.queue.QueueBasedImplementationRunner;
 import tdl.client.queue.abstractions.UserImplementation;
 import tdl.client.queue.actions.ClientAction;
 import tdl.client.queue.actions.ClientActions;

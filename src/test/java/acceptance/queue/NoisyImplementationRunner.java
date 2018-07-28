@@ -1,6 +1,7 @@
-package tdl.client.queue;
+package acceptance.queue;
 
 import tdl.client.audit.AuditStream;
+import tdl.client.queue.ImplementationRunner;
 
 public class NoisyImplementationRunner implements ImplementationRunner {
     private final String deployMessage;

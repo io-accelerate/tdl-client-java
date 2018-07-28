@@ -1,4 +1,4 @@
-package tdl.client;
+package acceptance;
 
 import utils.jmx.broker.RemoteJmxBroker;
 import utils.jmx.broker.RemoteJmxQueue;

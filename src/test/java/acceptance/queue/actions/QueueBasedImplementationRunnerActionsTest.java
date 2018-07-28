@@ -1,6 +1,7 @@
-package tdl.client.queue.actions;
+package acceptance.queue.actions;
 
 import org.junit.Test;
+import tdl.client.queue.actions.ClientActions;
 
 import static net.trajano.commons.testing.UtilityClassTestUtil.assertUtilityClassWellDefined;
 

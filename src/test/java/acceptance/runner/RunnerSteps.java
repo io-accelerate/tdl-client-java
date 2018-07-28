@@ -1,5 +1,6 @@
-package tdl.client.runner;
+package acceptance.runner;
 
+import acceptance.queue.NoisyImplementationRunner;
 import com.mashape.unirest.http.exceptions.UnirestException;
 import cucumber.api.java.en.And;
 import cucumber.api.java.en.Given;
@@ -7,10 +8,15 @@ import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
 import tdl.client.audit.AuditStream;
 import tdl.client.queue.ImplementationRunner;
-import tdl.client.queue.NoisyImplementationRunner;
-import tdl.client.queue.QuietImplementationRunner;
+import acceptance.queue.QuietImplementationRunner;
+import tdl.client.runner.ActionProvider;
+import tdl.client.runner.ChallengeSession;
+import tdl.client.runner.ChallengeSessionConfig;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
@@ -60,14 +66,14 @@ public class RunnerSteps {
 
     @And("the challenge server exposes the following endpoints$")
     public void configureChallengeServerEndpoint(List<ServerConfig> configs) throws UnirestException {
-        for (ServerConfig config: configs) {
+        for (ServerConfig config : configs) {
             challengeServerStub.createNewMapping(config);
         }
     }
 
     @And("the recording server exposes the following endpoints$")
     public void configureRecordingServerEndpoint(List<ServerConfig> configs) throws UnirestException {
-        for (ServerConfig config: configs) {
+        for (ServerConfig config : configs) {
             recordingServerStub.createNewMapping(config);
         }
     }
@@ -92,16 +98,16 @@ public class RunnerSteps {
     }
 
     @And("the challenges folder is empty")
-    public void deleteContentsOfChallengesFolder() throws IOException {
-        Path path =  Paths.get("challenges");
+    public void deleteContentsOfChallengesFolder() {
+        Path path = Paths.get("challenges");
         deleteFolderContents(path.toFile());
     }
 
     void deleteFolderContents(File folder) {
         File[] files = folder.listFiles();
-        if(files!=null) { //some JVMs return null for empty dirs
-            for(File f: files) {
-                if(f.isDirectory()) {
+        if (files != null) { //some JVMs return null for empty dirs
+            for (File f : files) {
+                if (f.isDirectory()) {
                     deleteFolderContents(f);
                 } else {
                     f.delete();
@@ -127,7 +133,7 @@ public class RunnerSteps {
     }
 
     @Given("^journeyId is \"([^\"]*)\"$")
-    public void journeyid_is(String journeyId) throws Throwable {
+    public void journeyid_is(String journeyId) {
         this.journeyId = journeyId;
     }
 
@@ -137,13 +143,13 @@ public class RunnerSteps {
     }
 
     @Given("^the journeyId contains special characters$")
-    public void the_journeyId_is() throws Throwable {
+    public void the_journeyId_is() {
         journeyId = "uvwxyz012===3456789===+/==";
     }
 
     // When
     @When("user starts client")
-    public void userStartsChallenge() throws UnirestException {
+    public void userStartsChallenge() {
         ChallengeSessionConfig config = ChallengeSessionConfig.forJourneyId(journeyId)
                 .withServerHostname(challengeHostname)
                 .withPort(port)
@@ -160,7 +166,7 @@ public class RunnerSteps {
     // Then
 
     @Then("the server interaction should contain the following lines:$")
-    public void checkServerInteractionContainsLines(String expectedOutput) throws IOException, InteractionException {
+    public void checkServerInteractionContainsLines(String expectedOutput) {
         String total = getTotalStdout();
         String[] lines = expectedOutput.split("\n");
         for (String line : lines) {
@@ -169,22 +175,27 @@ public class RunnerSteps {
     }
 
     @Then("the server interaction should look like:$")
-    public void server_interaction_should_look_like(String expectedOutput) throws IOException, InteractionException {
+    public void server_interaction_should_look_like(String expectedOutput) {
         String total = getTotalStdout();
         assertThat("Expected string is not contained in output", total, containsString(expectedOutput));
     }
 
     @And("the recording system should be notified with \"([^\"]*)\"$")
-    public void recording_system_should_be_notified_with(String expectedOutput) throws IOException, InteractionException, UnirestException {
+    public void recording_system_should_be_notified_with(String expectedOutput) throws UnirestException {
         recordingServerStub.verifyEndpointWasHit("/notify", "POST", expectedOutput);
     }
 
+    @And("the recording system should have received a stop signal$")
+    public void recording_system_should_receive_stop_signal() throws UnirestException {
+        recordingServerStub.verifyEndpointWasHit("/stop", "POST", "");
+    }
+
     @Then("the file \"([^\"]*)\" should contain$")
-    public void checkFileContainsDescription(String file, String text) throws IOException, InteractionException {
+    public void checkFileContainsDescription(String file, String text) throws IOException {
         BufferedReader inputReader = new BufferedReader(new FileReader(file));
         StringBuilder content = new StringBuilder();
         String line;
-        while ((line = inputReader.readLine()) != null){
+        while ((line = inputReader.readLine()) != null) {
             content.append(line);
             content.append("\n");
         }
@@ -193,18 +204,18 @@ public class RunnerSteps {
     }
 
     @Then("the implementation runner should be run with the provided implementations")
-    public void checkQueueClientRunningImplementation() throws InteractionException {
+    public void checkQueueClientRunningImplementation() {
         String total = getTotalStdout();
         assertThat(total, containsString(implementationRunnerMessage));
     }
 
     @Then("the client should not ask the user for input")
-    public void checkClientDoesNotAskForInput() throws InteractionException {
+    public void checkClientDoesNotAskForInput() {
         String total = getTotalStdout();
         assertThat(total, not(containsString("Selected action is:")));
     }
 
     private String getTotalStdout() {
-        return ((TestAuditStream)auditStream).getTotal();
+        return ((TestAuditStream) auditStream).getTotal();
     }
 }
