@@ -31,7 +31,7 @@ git push origin "v${CURRENT_VERSION}"
 echo "Pushed tag to Git origin. It will now trigger the deployment pipeline."
 
 cat > "${VERSION_FILE}" <<-EOF
-previousVersion=$CURRENT_VERSION
+previousVersion=${CURRENT_VERSION}
 # the current MAJOR.MINOR.PATCH version is dynamically computed from the version of the Spec and previous patch
 EOF
 

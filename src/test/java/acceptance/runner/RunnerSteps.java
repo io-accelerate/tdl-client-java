@@ -103,13 +103,14 @@ public class RunnerSteps {
         deleteFolderContents(path.toFile());
     }
 
-    void deleteFolderContents(File folder) {
+    private void deleteFolderContents(File folder) {
         File[] files = folder.listFiles();
         if (files != null) { //some JVMs return null for empty dirs
             for (File f : files) {
                 if (f.isDirectory()) {
                     deleteFolderContents(f);
                 } else {
+                    //noinspection ResultOfMethodCallIgnored
                     f.delete();
                 }
             }

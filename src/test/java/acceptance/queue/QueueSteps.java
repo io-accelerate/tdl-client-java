@@ -35,7 +35,7 @@ public class QueueSteps {
     //Testing utils
     private int initialRequestCount;
     private long processingTimeMillis;
-    private LogAuditStream logAuditStream;
+    private final LogAuditStream logAuditStream;
 
     public QueueSteps(SingletonTestBroker broker) {
         this.broker = broker;
@@ -67,31 +67,32 @@ public class QueueSteps {
     }
 
     @Given("^the broker is not available$")
-    public void client_with_wrong_broker() throws Throwable {
+    public void client_with_wrong_broker() {
         logAuditStream.clearLog();
         ImplementationRunnerConfig config = new ImplementationRunnerConfig()
                 .setHostname("111")
                 .setPort(PORT)
                 .setUniqueId("X")
-                .setAuditStream(logAuditStream);
+                .setAuditStream(logAuditStream)
+                .setRequestTimeoutMillis(200);
         queueBasedImplementationRunnerBuilder = new QueueBasedImplementationRunner.Builder()
                 .setConfig(config);
     }
 
     @Then("^the time to wait for requests is (\\d+)ms$")
-    public void check_time(int expectedTimeout) throws Throwable {
+    public void check_time(int expectedTimeout) {
         assertThat("The client request timeout has a different value.",
                 queueBasedImplementationRunner.getRequestTimeoutMillis(), equalTo(expectedTimeout));
     }
 
     @Then("^the request queue is \"([^\"]*)\"$")
-    public void check_request_queue(String expectedValue) throws Throwable {
+    public void check_request_queue(String expectedValue) {
         assertThat("Request queue has a different value.",
                 requestQueue.getName(), equalTo(expectedValue));
     }
 
     @Then("^the response queue is \"([^\"]*)\"$")
-    public void check_response_queue(String expectedValue) throws Throwable {
+    public void check_response_queue(String expectedValue) {
         assertThat("Response queue has a different value.",
                 responseQueue.getName(), equalTo(expectedValue));
     }
@@ -170,14 +171,14 @@ public class QueueSteps {
         }
     }
 
-    public class ProcessingRuleRepresentation {
+    class ProcessingRuleRepresentation {
         String method;
         String call;
         String action;
     }
 
     @When("^I go live with the following processing rules:$")
-    public void go_live(List<ProcessingRuleRepresentation> listOfRules) throws Throwable {
+    public void go_live(List<ProcessingRuleRepresentation> listOfRules) {
         listOfRules.forEach((ruleLine) ->
             queueBasedImplementationRunnerBuilder.withSolutionFor(
                     ruleLine.method,
@@ -222,7 +223,7 @@ public class QueueSteps {
     }
 
     @Then("^the client should display to console:$")
-    public void the_client_should_display_to_console(List<OutputRepresentation> expectedOutputs) throws Throwable {
+    public void the_client_should_display_to_console(List<OutputRepresentation> expectedOutputs) {
         String output = logAuditStream.getLog();
         for (OutputRepresentation expectedLine : expectedOutputs) {
             assertThat(output, containsString(expectedLine.output));
@@ -231,7 +232,7 @@ public class QueueSteps {
     }
 
     @But("^the client should not display to console:$")
-    public void the_client_should_not_display_to_console(List<String> rejectedOutputs) throws Throwable {
+    public void the_client_should_not_display_to_console(List<String> rejectedOutputs) {
         String output = logAuditStream.getLog();
         for (String expectedLine : rejectedOutputs) {
             assertThat(output, not(containsString(expectedLine)));
@@ -251,12 +252,12 @@ public class QueueSteps {
     }
 
     @Then("^I should get no exception$")
-    public void I_should_get_no_exception() throws Throwable {
-        //No exception
+    public void I_should_get_no_exception() {
+        System.out.println("Looking good");
     }
 
     @And("^the processing time should be lower than (\\d+)ms$")
-    public void processingTimeShouldBeLowerThanMs(long threshold) throws Throwable {
+    public void processingTimeShouldBeLowerThanMs(long threshold) {
         assertThat(processingTimeMillis, lessThan(threshold));
     }
 

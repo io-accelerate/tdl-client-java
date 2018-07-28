@@ -9,7 +9,7 @@ import java.util.*;
 /**
  * Created by julianghionoiu on 13/06/2015.
  */
-public class Playground {
+class Playground {
 
 
     public static void main(String[] args) throws Exception {

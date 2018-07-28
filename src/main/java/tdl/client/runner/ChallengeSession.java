@@ -8,10 +8,9 @@ import tdl.client.queue.ImplementationRunner;
 
 public class ChallengeSession {
     private final Logger LOG = LoggerFactory.getLogger(ChallengeSession.class);
+    private final ImplementationRunner implementationRunner;
     private ChallengeSessionConfig config;
-    private ImplementationRunner implementationRunner;
     private RecordingSystem recordingSystem;
-    private ChallengeServerClient challengeServerClient;
     private ActionProvider userInputCallback;
 
     public static ChallengeSession forRunner(ImplementationRunner implementationRunner) {
@@ -48,7 +47,11 @@ public class ChallengeSession {
 
     private void runApp() {
         AuditStream auditStream = config.getAuditStream();
-        challengeServerClient = new ChallengeServerClient(config.getHostname(), config.getPort(), config.getJourneyId(), config.getUseColours());
+        ChallengeServerClient challengeServerClient = new ChallengeServerClient(
+                config.getHostname(),
+                config.getPort(),
+                config.getJourneyId(),
+                config.getUseColours());
 
         try {
             String journeyProgress = challengeServerClient.getJourneyProgress();

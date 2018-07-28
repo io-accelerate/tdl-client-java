@@ -12,19 +12,19 @@ class RecordingSystem implements RoundChangesListener {
         ROUND_SOLUTION_DEPLOY("deploy"),
         ROUND_COMPLETED("done");
 
-        private String name;
+        private final String name;
 
         Event(String name) {
             this.name = name;
         }
 
-        public String getName() {
+        String getName() {
             return name;
         }
     }
 
     private static final String RECORDING_SYSTEM_ENDPOINT = "http://localhost:41375";
-    private boolean recordingRequired;
+    private final boolean recordingRequired;
 
     RecordingSystem(boolean recordingRequired) {
         this.recordingRequired = recordingRequired;
@@ -52,11 +52,11 @@ class RecordingSystem implements RoundChangesListener {
         return false;
     }
 
-    public void notifyEvent(String roundId, Event event) {
+    void notifyEvent(String roundId, Event event) {
         sentPost("/notify", roundId+"/"+event.getName());
     }
 
-    public void tellToStop() {
+    void tellToStop() {
         sentPost("/stop", "");
     }
 

@@ -17,17 +17,17 @@ import static tdl.client.queue.actions.ClientActions.publish;
 public class QueueBasedImplementationRunner implements ImplementationRunner {
     private static final Logger LOGGER = LoggerFactory.getLogger(QueueBasedImplementationRunner.class);
     private final Audit audit;
-    private ProcessingRules deployProcessingRules;
-    private ImplementationRunnerConfig config;
+    private final ProcessingRules deployProcessingRules;
+    private final ImplementationRunnerConfig config;
 
-    QueueBasedImplementationRunner(ImplementationRunnerConfig config, ProcessingRules deployProcessingRules) {
+    private QueueBasedImplementationRunner(ImplementationRunnerConfig config, ProcessingRules deployProcessingRules) {
         this.config = config;
         this.deployProcessingRules = deployProcessingRules;
         audit = new Audit(config.getAuditStream());
     }
 
     public static class Builder {
-        private ProcessingRules deployProcessingRules;
+        private final ProcessingRules deployProcessingRules;
         private ImplementationRunnerConfig config;
 
         public Builder() {
@@ -39,6 +39,7 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
             return this;
         }
 
+        @SuppressWarnings("unused")
         public Builder withSolutionFor(String methodName, UserImplementation userImplementation) {
             deployProcessingRules
                     .on(methodName)

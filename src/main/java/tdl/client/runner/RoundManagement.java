@@ -9,7 +9,7 @@ import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-public class RoundManagement {
+class RoundManagement {
     private static final Path CHALLENGES_FOLDER = Paths.get("challenges");
     private static final Path LAST_FETCHED_ROUND_PATH = CHALLENGES_FOLDER.resolve("XR.txt");
 
@@ -26,7 +26,7 @@ public class RoundManagement {
         saveDescription(roundId, rawDescription, auditStream);
     }
 
-    private static String saveDescription(String label, String description, AuditStream auditStream) {
+    private static void saveDescription(String label, String description, AuditStream auditStream) {
         File challengesFolder = CHALLENGES_FOLDER.toFile();
         if (!challengesFolder.exists()) {
             //noinspection ResultOfMethodCallIgnored
@@ -49,7 +49,6 @@ public class RoundManagement {
             throw new RuntimeException(e);
         }
 
-        return "OK";
     }
 
     static String getLastFetchedRound() {

@@ -16,19 +16,19 @@ import java.util.Map;
 /**
  * Created by julianghionoiu on 27/09/2015.
  */
-public class JolokiaSession {
+class JolokiaSession {
     private final CloseableHttpClient httpClient;
     private final Gson gson;
 
     private final URI jolokiaURI;
 
-    public JolokiaSession(URI jolokiaURI) {
+    private JolokiaSession(URI jolokiaURI) {
         this.jolokiaURI = jolokiaURI;
         this.httpClient = HttpClients.createDefault();
         this.gson = new Gson();
     }
 
-    public static JolokiaSession connect(String host, int adminPort) throws Exception {
+    static JolokiaSession connect(String host, int adminPort) throws Exception {
         CloseableHttpClient httpClient = HttpClients.createDefault();
         URI jolokiaURI = URI.create("http://" + host + ":" + adminPort + "/api/jolokia");
 
@@ -53,7 +53,7 @@ public class JolokiaSession {
         return new JolokiaSession(jolokiaURI);
     }
 
-    public JsonElement request(Map<String, Object> jolokiaPayload) throws Exception {
+    JsonElement request(Map<String, Object> jolokiaPayload) throws Exception {
         String jsonPayload = gson.toJson(jolokiaPayload);
         HttpPost httpPost = new HttpPost(jolokiaURI);
         httpPost.addHeader("Content-Type", "application/json");

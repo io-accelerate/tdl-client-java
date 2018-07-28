@@ -3,19 +3,16 @@ package tdl.client.runner;
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 
 
-public class ChallengeServerClient {
-    private final Logger LOG = LoggerFactory.getLogger(ChallengeServerClient.class);
-    private String hostname;
-    private String journeyId;
-    private int port;
-    private String acceptHeader;
+class ChallengeServerClient {
+    private final String hostname;
+    private final String journeyId;
+    private final int port;
+    private final String acceptHeader;
 
     ChallengeServerClient(String hostname, int port, String journeyId, boolean useColours) {
         this.hostname = hostname;
@@ -98,27 +95,27 @@ public class ChallengeServerClient {
         return responseStatus < 200 || responseStatus > 300;
     }
 
-    public static class ClientErrorException extends Exception {
+    static class ClientErrorException extends Exception {
 
-        String responseMessage;
+        private final String responseMessage;
         ClientErrorException(String message) {
             this.responseMessage = message;
         }
 
-        public String getResponseMessage() {
+        String getResponseMessage() {
             return responseMessage;
         }
 
 
     }
 
-    public static class ServerErrorException extends Exception {
+    static class ServerErrorException extends Exception {
         ServerErrorException() {
             super();
         }
     }
 
-    public static class OtherCommunicationException extends Exception {
+    static class OtherCommunicationException extends Exception {
 
         OtherCommunicationException(String message, Exception e) {
             super(message,e);

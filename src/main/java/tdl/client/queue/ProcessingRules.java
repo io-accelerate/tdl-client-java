@@ -20,11 +20,11 @@ public class ProcessingRules {
 
     //~~~ Builders
 
-    public ProcessingRules() {
+    ProcessingRules() {
         rules = new HashMap<>();
     }
 
-    public void add(String methodName, UserImplementation userImplementation, ClientAction clientAction) {
+    private void add(String methodName, UserImplementation userImplementation, ClientAction clientAction) {
         rules.put(methodName, new ProcessingRule(userImplementation, clientAction));
     }
 
@@ -38,23 +38,23 @@ public class ProcessingRules {
         private final String methodName;
         private UserImplementation userImplementation;
 
-        public ProcessingRuleBuilder(ProcessingRules instance, String methodName) {
+        ProcessingRuleBuilder(ProcessingRules instance, String methodName) {
             this.instance = instance;
             this.methodName = methodName;
         }
 
-        public ProcessingRuleBuilder call(UserImplementation userImplementation) {
+        ProcessingRuleBuilder call(UserImplementation userImplementation) {
             this.userImplementation = userImplementation;
             return this;
         }
 
-        public void then(ClientAction clientAction) {
+        void then(ClientAction clientAction) {
             instance.add(methodName, userImplementation, clientAction);
         }
     }
     //~~~ Accessors
 
-    public Response getResponseFor(Request request) {
+    Response getResponseFor(Request request) {
         ProcessingRule rule;
         String methodName = request.getMethodName();
         if (rules.containsKey(methodName)) {

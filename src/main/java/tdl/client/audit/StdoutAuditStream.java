@@ -7,7 +7,7 @@ import java.io.PrintStream;
  */
 public class StdoutAuditStream implements AuditStream {
 
-    private PrintStream printStream;
+    private final PrintStream printStream;
 
     public StdoutAuditStream() {
         printStream = System.out;

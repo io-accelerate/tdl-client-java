@@ -2,7 +2,6 @@ package tdl.client.queue.actions;
 
 import tdl.client.queue.abstractions.Request;
 import tdl.client.queue.abstractions.response.Response;
-import tdl.client.queue.transport.BrokerCommunicationException;
 import tdl.client.queue.transport.RemoteBroker;
 
 import java.util.Optional;
@@ -16,12 +15,11 @@ public class StopAction implements ClientAction {
     }
 
     @Override
-    public void afterResponse(RemoteBroker remoteBroker, Request request, Response response)
-            throws BrokerCommunicationException {
+    public void afterResponse(RemoteBroker remoteBroker, Request request, Response response) {
         //Do nothing
     }
 
-    public Optional<Request> getNextRequest(RemoteBroker t) throws BrokerCommunicationException {
+    public Optional<Request> getNextRequest(RemoteBroker t) {
         return Optional.empty();
     }
 }

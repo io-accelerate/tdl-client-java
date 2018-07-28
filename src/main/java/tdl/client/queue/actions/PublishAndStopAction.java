@@ -21,7 +21,7 @@ public class PublishAndStopAction implements ClientAction {
         remoteBroker.respondTo(request, with(response));
     }
 
-    public Optional<Request> getNextRequest(RemoteBroker t) throws BrokerCommunicationException {
+    public Optional<Request> getNextRequest(RemoteBroker t) {
         return Optional.empty();
     }
 }

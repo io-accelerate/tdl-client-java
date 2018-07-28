@@ -35,6 +35,7 @@ class WiremockProcess {
     }
 
 
+    @SuppressWarnings("SameParameterValue")
     void verifyEndpointWasHit(String endpoint, String methodType, String body) throws UnirestException {
         String failMessage = "Endpoint \"" + endpoint + "\" should have been hit exactly once, with methodType \"" + methodType + "\"";
         assertThat(failMessage, countRequestsWithEndpoint(endpoint, methodType, body), equalTo(1));
@@ -61,7 +62,7 @@ class WiremockProcess {
         String equalTo;
     }
 
-    public static class RequestMatchingSerialiser implements JsonSerializer<RequestMatchingData> {
+    static class RequestMatchingSerialiser implements JsonSerializer<RequestMatchingData> {
 
         @Override
         public JsonElement serialize(final RequestMatchingData request, final Type typeOfSrc, final JsonSerializationContext context) {
@@ -88,7 +89,7 @@ class WiremockProcess {
         }
     }
 
-    public static class ServerConfigSerialiser implements JsonSerializer<RunnerSteps.ServerConfig> {
+    static class ServerConfigSerialiser implements JsonSerializer<RunnerSteps.ServerConfig> {
 
         @Override
         public JsonElement serialize(final RunnerSteps.ServerConfig data, final Type typeOfSrc, final JsonSerializationContext context) {

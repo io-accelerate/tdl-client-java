@@ -9,8 +9,8 @@ import tdl.client.queue.transport.StringMessage;
  * Created by julianghionoiu on 20/06/2015.
  */
 public class Request implements Auditable {
-    private StringMessage originalMessage;
-    private JsonRpcRequest requestData;
+    private final StringMessage originalMessage;
+    private final JsonRpcRequest requestData;
 
     public Request(StringMessage originalMessage, JsonRpcRequest requestData) {
         this.originalMessage = originalMessage;

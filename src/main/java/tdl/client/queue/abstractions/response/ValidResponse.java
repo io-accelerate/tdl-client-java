@@ -7,9 +7,9 @@ import tdl.client.audit.PresentationUtils;
  * Created by julianghionoiu on 20/06/2015.
  */
 public class ValidResponse implements Response {
-    private String id;
-    private Object result;
-    private ClientAction clientAction;
+    private final String id;
+    private final Object result;
+    private final ClientAction clientAction;
 
     public ValidResponse(String id, Object result, ClientAction clientAction) {
         this.id = id;

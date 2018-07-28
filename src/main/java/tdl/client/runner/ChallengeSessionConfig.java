@@ -5,10 +5,10 @@ import tdl.client.audit.StdoutAuditStream;
 
 public class ChallengeSessionConfig {
     private AuditStream auditStream;
+    private final String journeyId;
     private boolean recordingSystemShouldBeOn;
     private String hostname;
     private int port;
-    private String journeyId;
     private boolean useColours;
 
 
@@ -49,11 +49,11 @@ public class ChallengeSessionConfig {
         return this;
     }
 
-    public boolean getRecordingSystemShouldBeOn() {
+    boolean getRecordingSystemShouldBeOn() {
         return recordingSystemShouldBeOn;
     }
 
-    public String getHostname() {
+    String getHostname() {
         return hostname;
     }
 
@@ -61,15 +61,15 @@ public class ChallengeSessionConfig {
         return port;
     }
 
-    public String getJourneyId() {
+    String getJourneyId() {
         return journeyId;
     }
 
-    public AuditStream getAuditStream() {
+    AuditStream getAuditStream() {
         return auditStream;
     }
 
-    public boolean getUseColours() {
+    boolean getUseColours() {
         return useColours;
     }
 }
