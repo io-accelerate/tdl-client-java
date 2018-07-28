@@ -56,7 +56,7 @@ class Version {
 }
 
 // Get Spec version from Git
-def specFolder = file("${projectDir}/src/test/resources/tdl/client")
+def specFolder = file("${projectDir}/src/test/resources/acceptance")
 def git_describe_process = ['sh', '-c', "git --git-dir ${specFolder}/.git describe --all"]
         .execute()
 
