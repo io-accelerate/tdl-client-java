@@ -54,15 +54,15 @@ class RecordingSystem implements RoundChangesListener {
 
     void notifyEvent(String roundId, Event event) {
         System.out.println("Notify round "+roundId+", event "+event.getName());
-        sentPost("/notify", roundId+"/"+event.getName());
+        sendPost("/notify", roundId+"/"+event.getName());
     }
 
     void tellToStop() {
         System.out.println("Stopping recording system");
-        sentPost("/stop", "");
+        sendPost("/stop", "");
     }
 
-    private void sentPost(String endpoint, String body) {
+    private void sendPost(String endpoint, String body) {
         if (!recordingRequired) {
             return;
         }
