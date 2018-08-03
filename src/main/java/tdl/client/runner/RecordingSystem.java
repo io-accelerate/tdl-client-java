@@ -53,10 +53,12 @@ class RecordingSystem implements RoundChangesListener {
     }
 
     void notifyEvent(String roundId, Event event) {
+        System.out.println("Notify round "+roundId+", event "+event.getName());
         sentPost("/notify", roundId+"/"+event.getName());
     }
 
     void tellToStop() {
+        System.out.println("Stopping recording system");
         sentPost("/stop", "");
     }
 
