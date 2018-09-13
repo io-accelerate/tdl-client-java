@@ -3,6 +3,21 @@
 [![Codeship Status for julianghionoiu/tdl-client-java](https://img.shields.io/codeship/da7ca170-097e-0133-70b1-36ea30c979a9.svg)](https://codeship.com/projects/90604)
 [![Coverage Status](https://coveralls.io/repos/julianghionoiu/tdl-client-java/badge.svg?branch=master&service=github)](https://coveralls.io/github/julianghionoiu/tdl-client-java?branch=master)
 
+### Submodules
+
+Project contains submodules as mentioned in the `.gitmodules` file:
+
+- broker
+- src/test/resources/tdl/client (gets cloned into src/test/resources/acceptance)
+- wiremock 
+
+Use the below command to update the submodules of the project:
+
+```
+git submodule update --init
+```
+
+### Getting started
 
 Java client to connect to the central kata server.
 
