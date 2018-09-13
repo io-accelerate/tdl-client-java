@@ -21,6 +21,7 @@ git submodule update --init
 
 Java client to connect to the central kata server.
 
+#### Manual 
 To run the acceptance tests, start the WireMock servers:
 ```
 python wiremock/fetch-wiremock-and-run.py start 41375
@@ -32,11 +33,33 @@ And the broker, with:
 python broker/activemq-wrapper.py start
 ```
 
-Then run the tests in RunAllAcceptanceTest.java
+Stopping the above services would be the same, using the `stop` command instead of the `start` command.
+
+#### Automatic (via script)
+
+Start and stop the wiremocks and broker services with the below:
+ 
+```bash
+./startExternalDependencies.sh
+``` 
+
+```bash
+./stopExternalDependencies.sh
+``` 
+
+Then run the tests in RunAllAcceptanceTest.java via the CLI:
+
+```bash
+./gradlew test
+```
+
+Or via the IDE
+
+### Release
 
 How to release a new version:
 ```bash
 ./release.sh
 ```
 
-After Codeship build finishes, go to bintray.com and publish the new version then sync to Maven Central.
+After Codeship build finishes, go to http://bintray.com and publish the new version then sync to Maven Central.
