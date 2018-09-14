@@ -18,6 +18,8 @@ startBroker() {
     if [[ "${BROKER_TYPE}" == "activemq" ]]; then
         echo "~~~~~~~~~~ Broker type: ${BROKER_TYPE} ~~~~~~~~~"
         python broker/activemq-wrapper.py start
+    elif [[ "${BROKER_TYPE}" == "elasticmq" ]]; then
+        python ../tdl-local-sqs/elasticmq-wrapper.py start
     else
         IMAGE_NAME=goaws
         echo "~~~~~~~~~~ Broker type: ${BROKER_TYPE} ~~~~~~~~~"

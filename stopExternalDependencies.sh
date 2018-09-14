@@ -9,12 +9,12 @@ SQS_PORT=28161
 
 stopProcessAtPort() {
     PORT=$1
-    PID=$(netstat -tulpn | grep :41375 | awk '{print $7}' | tr -d "/java" || true)
+    PID=$(netstat -tulpn | grep :${PORT} | awk '{print $7}' | tr -d "/java" || true)
     if [[ -z "${PID}" ]]; then
-        echo "~~~~~~~~~~ Wiremock on port ${PORT} stopped ~~~~~~~~~"
+        echo "~~~~~~~~~~ Process on port ${PORT} stopped ~~~~~~~~~"
     else
         kill -9 ${PID}
-        echo "~~~~~~~~~~ Wiremock on port ${PORT} killed ~~~~~~~~~"
+        echo "~~~~~~~~~~ Process on port ${PORT} killed ~~~~~~~~~"
     fi
 }
 
@@ -30,6 +30,9 @@ stopBroker() {
     echo "~~~~~~~~~~ Stopping Broker ~~~~~~~~~"
     if [[ "${BROKER_TYPE}" == "activemq" ]]; then
         python broker/activemq-wrapper.py stop
+    elif [[ "${BROKER_TYPE}" == "elasticmq" ]]; then
+        python ../tdl-local-sqs/elasticmq-wrapper.py stop
+        stopProcessAtPort 9324
     else
         CONTAINER_NAME=goaws
         CONTAINER_ID=$(docker ps --filter="name=${CONTAINER_NAME}" -q)
