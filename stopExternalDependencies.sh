@@ -49,7 +49,7 @@ stopBroker() {
         echo "~~~~~~~~~~ Removing container ${CONTAINER_ID} ~~~~~~~~~"
         CONTAINER_ID=$(docker ps --filter="name=${CONTAINER_NAME}" -q -a)
         echo ${CONTAINER_ID} | xargs -r docker rm || true
-    fi    
+    fi
 }
 
 stopWiremocks
