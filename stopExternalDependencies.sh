@@ -4,7 +4,7 @@ set -e
 set -u
 set -o pipefail
 
-BROKER_TYPE=${BROKER_TYPE:-"amazonsqs"}
+BROKER_TYPE=${BROKER_TYPE:-"activemq"}
 SQS_PORT=28161
 
 stopProcessAtPort() {
@@ -33,7 +33,7 @@ stopBroker() {
     elif [[ "${BROKER_TYPE}" == "elasticmq" ]]; then
         python ../tdl-local-sqs/elasticmq-wrapper.py stop
         stopProcessAtPort 9324
-    else
+    elif [[ "${BROKER_TYPE}" == "amazonsqs" ]]; then
         CONTAINER_NAME=goaws
         CONTAINER_ID=$(docker ps --filter="name=${CONTAINER_NAME}" -q)
         echo ${CONTAINER_ID} | xargs -r docker stop || true

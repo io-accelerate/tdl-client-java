@@ -4,7 +4,7 @@ set -e
 set -u
 set -o pipefail
 
-BROKER_TYPE=${BROKER_TYPE:-"amazonsqs"}
+BROKER_TYPE=${BROKER_TYPE:-"activemq"}
 SQS_PORT=28161
 
 startWiremocks() {
@@ -20,7 +20,7 @@ startBroker() {
         python broker/activemq-wrapper.py start
     elif [[ "${BROKER_TYPE}" == "elasticmq" ]]; then
         python ../tdl-local-sqs/elasticmq-wrapper.py start
-    else
+    elif [[ "${BROKER_TYPE}" == "amazonsqs" ]]; then
         IMAGE_NAME=goaws
         echo "~~~~~~~~~~ Broker type: ${BROKER_TYPE} ~~~~~~~~~"
         docker pull pafortin/${IMAGE_NAME}
