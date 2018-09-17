@@ -1,27 +1,55 @@
 package acceptance;
 
-import utils.jmx.broker.RemoteJmxBroker;
-import utils.jmx.broker.RemoteJmxQueue;
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
+import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.client.builder.AwsClientBuilder;
+import com.amazonaws.services.sqs.AmazonSQS;
+import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
+import com.typesafe.config.Config;
+import com.typesafe.config.ConfigFactory;
+import tdl.client.runner.connector.SqsEventQueue;
 
 /**
  * Created by julianghionoiu on 11/10/2015.
  */
 public class SingletonTestBroker {
-    // Test broker admin connection
-    private static final String HOSTNAME = "localhost";
-    private static final int JMX_PORT = 28161;
-    private static final String BROKER_NAME = "TEST.BROKER";
+    private AmazonSQS client;
+    private String serviceEndpoint;
 
-    private static RemoteJmxBroker BROKER_INSTANCE;
+    public SingletonTestBroker() {
+        logToConsole(" SingletonTestBroker creation [start]");
 
-    public SingletonTestBroker() throws Exception {
-        //All the instances are just a proxy for the same broker
-        if (BROKER_INSTANCE == null) {
-            BROKER_INSTANCE = RemoteJmxBroker.connect(HOSTNAME, JMX_PORT, BROKER_NAME);
+        Config config = ConfigFactory.load();
+        config.checkValid(ConfigFactory.defaultReference());
+
+        serviceEndpoint = config.getString("sqs.serviceEndpoint");
+        client = createAWSClient(
+                serviceEndpoint,
+                config.getString("sqs.signingRegion"),
+                config.getString("sqs.accessKey"),
+                config.getString("sqs.secretKey")
+        );
+        logToConsole(" SingletonTestBroker creation [end]");
+    }
+
+    public SqsEventQueue addQueue(String queueName) throws Exception {
+        logToConsole(" SingletonTestBroker addQueue");
+        return new SqsEventQueue(client, serviceEndpoint, queueName);
+
+    }
+
+    private void logToConsole(String s) {
+        if ((System.getenv("DEBUG") != null) && System.getenv("DEBUG").contains("true")) {
+            System.out.println(s);
         }
     }
 
-    public RemoteJmxQueue addQueue(String queueName) throws Exception {
-        return BROKER_INSTANCE.addQueue(queueName);
+    private static AmazonSQS createAWSClient(String serviceEndpoint, String signingRegion, String accessKey, String secretKey) {
+        AwsClientBuilder.EndpointConfiguration endpointConfiguration =
+                new AwsClientBuilder.EndpointConfiguration(serviceEndpoint, signingRegion);
+        return AmazonSQSClientBuilder.standard()
+                .withEndpointConfiguration(endpointConfiguration)
+                .withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials(accessKey, secretKey)))
+                .build();
     }
 }

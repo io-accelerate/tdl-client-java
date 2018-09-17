@@ -1,22 +1,33 @@
 package acceptance.queue;
 
-import cucumber.api.java.en.*;
 import acceptance.SingletonTestBroker;
+import cucumber.api.java.en.And;
+import cucumber.api.java.en.But;
+import cucumber.api.java.en.Given;
+import cucumber.api.java.en.Then;
+import cucumber.api.java.en.When;
+import tdl.client.audit.StdoutAuditStream;
 import tdl.client.queue.ImplementationRunnerConfig;
 import tdl.client.queue.QueueBasedImplementationRunner;
 import tdl.client.queue.abstractions.UserImplementation;
 import tdl.client.queue.actions.ClientAction;
 import tdl.client.queue.actions.ClientActions;
-import tdl.client.audit.StdoutAuditStream;
-import utils.jmx.broker.RemoteJmxQueue;
+import tdl.client.runner.connector.EventProcessingException;
+import tdl.client.runner.connector.QueueEventHandlers;
+import tdl.client.runner.connector.SqsEventQueue;
+import tdl.client.runner.events.ExecuteCommandEvent;
 import utils.logging.LogAuditStream;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.lessThan;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
 
 public class QueueSteps {
@@ -24,11 +35,11 @@ public class QueueSteps {
 
     // Test broker location
     private static final String HOSTNAME = "localhost";
-    private static final int PORT = 21616;
+    private static final int PORT = 28161; // 21616
 
     // Variables set by the background tasks
-    private RemoteJmxQueue requestQueue;
-    private RemoteJmxQueue responseQueue;
+    private SqsEventQueue requestQueue;
+    private SqsEventQueue responseQueue;
     private QueueBasedImplementationRunner queueBasedImplementationRunner;
     private QueueBasedImplementationRunner.Builder queueBasedImplementationRunnerBuilder;
 
@@ -36,22 +47,34 @@ public class QueueSteps {
     private int initialRequestCount;
     private long processingTimeMillis;
     private final LogAuditStream logAuditStream;
+    private QueueEventHandlers queueEventHandlers;
+    private List<Object> capturedEvents = new ArrayList<>();
+    private long consumedMessagesCount;
+    private long receivesMessagesCount;
 
     public QueueSteps(SingletonTestBroker broker) {
         this.broker = broker;
         this.logAuditStream = new LogAuditStream(new StdoutAuditStream());
         this.initialRequestCount = 0;
         this.processingTimeMillis = 0;
+
+        queueEventHandlers = new QueueEventHandlers();
+
+        try {
+            queueEventHandlers.put(ExecuteCommandEvent.class, capturedEvents::add);
+        } catch (EventProcessingException e) {
+            throw new IllegalArgumentException("Could not create queue handlers");
+        }
     }
 
     //~~~~~ Setup
 
     @Given("^I start with a clean broker and a client for user \"([^\"]*)\"$")
     public void create_the_queues(String username) throws Throwable {
-        requestQueue = broker.addQueue(username +".req");
+        requestQueue = broker.addQueue(username +"-req");
         requestQueue.purge();
 
-        responseQueue = broker.addQueue(username +".resp");
+        responseQueue = broker.addQueue(username +"-resp");
         responseQueue.purge();
 
         logAuditStream.clearLog();
@@ -105,15 +128,18 @@ public class QueueSteps {
     @Given("^I receive the following requests:$")
     public void initialize_request_queue(List<RequestRepresentation> requests) throws Throwable {
         for (RequestRepresentation request : requests) {
-            requestQueue.sendTextMessage(request.payload);
+            logToConsole("payload: " + request.payload);
+            requestQueue.send(new ExecuteCommandEvent(request.payload));
         }
         initialRequestCount = requests.size();
+        logToConsole("initial requests sent: " + initialRequestCount);
     }
     @Given("^I receive (\\d+) identical requests like:$")
     public void sent_loads_of_requests(int number, List<RequestRepresentation> requests) throws Throwable {
         for (int i = 0; i < number; i++) {
             for (RequestRepresentation request : requests) {
-                requestQueue.sendTextMessage(request.payload);
+                logToConsole("payload: " + request.payload);
+                requestQueue.send(new ExecuteCommandEvent(request.payload));
             }
         }
         initialRequestCount = requests.size() * number;
@@ -188,22 +214,28 @@ public class QueueSteps {
         );
         queueBasedImplementationRunner = queueBasedImplementationRunnerBuilder.create();
 
+        queueBasedImplementationRunner.start();
         long timestampBefore = System.nanoTime();
         queueBasedImplementationRunner.run();
         long timestampAfter = System.nanoTime();
         processingTimeMillis = (timestampAfter - timestampBefore) / 1000000;
+        consumedMessagesCount = queueBasedImplementationRunner.getConsumedMessagesCount();
+        receivesMessagesCount = queueBasedImplementationRunner.getReceivesMessagesCount();
     }
 
     //~~~~~ Assertions
 
     @Then("^the client should consume all requests$")
-    public void request_queue_empty() throws Throwable {
-        assertThat("Requests have not been consumed",requestQueue.getSize(), equalTo(asLong(0)));
+    public void request_queue_empty() {
+        assertThat("Requests have not been consumed",
+                requestQueue.getSize(), equalTo(asLong(0)));
+        queueBasedImplementationRunner.stop();
     }
 
     @Then("^the client should consume first request$")
-    public void request_queue_less_than_one() throws Throwable {
-        assertThat("Wrong number of requests have been consumed",requestQueue.getSize(), equalTo(asLong(initialRequestCount-1)));
+    public void request_queue_less_than_one() {
+        assertThat("Wrong number of requests have been consumed", consumedMessagesCount, equalTo(asLong(initialRequestCount-1)));
+        queueBasedImplementationRunner.stop();
     }
 
     class ResponseRepresentation {
@@ -215,7 +247,10 @@ public class QueueSteps {
         List<String> expectedContents = expectedResponses.stream()
                 .map(responseRepresentation -> responseRepresentation.payload)
                 .collect(Collectors.toList());
-        assertThat("The responses are not correct",responseQueue.getMessageContents(), equalTo(expectedContents));
+
+        List<String> actualContents = queueBasedImplementationRunner.getReceivedMessages();
+        assertThat("The responses are not correct", actualContents, equalTo(expectedContents));
+        queueBasedImplementationRunner.stop();
     }
 
     class OutputRepresentation {
@@ -229,6 +264,7 @@ public class QueueSteps {
             assertThat(output, containsString(expectedLine.output));
         }
         System.out.println(output);
+        queueBasedImplementationRunner.stop();
     }
 
     @But("^the client should not display to console:$")
@@ -242,13 +278,14 @@ public class QueueSteps {
     @Then("^the client should not consume any request$")
     public void request_queue_unchanged() throws Throwable {
         assertThat("The request queue has different size. The message has been consumed.",
-                requestQueue.getSize(), equalTo(asLong(initialRequestCount)));
+                receivesMessagesCount, equalTo(asLong(initialRequestCount)));
     }
 
     @And("^the client should not publish any response$")
     public void response_queue_unchanged() throws Throwable {
         assertThat("The response queue has different size. Messages have been published.",
                 responseQueue.getSize(), equalTo(asLong(0)));
+        queueBasedImplementationRunner.stop();
     }
 
     @Then("^I should get no exception$")
@@ -265,5 +302,11 @@ public class QueueSteps {
 
     private static Long asLong(Integer value) {
         return (long) value;
+    }
+
+    private void logToConsole(String s) {
+        if ((System.getenv("DEBUG") != null) && System.getenv("DEBUG").contains("true")) {
+            System.out.println(s);
+        }
     }
 }

@@ -7,3 +7,6 @@
 [submodule "wiremock"]
 	path = wiremock
 	url = git@github.com:julianghionoiu/tdl-client-test-wiremock.git
+[submodule "local-sqs"]
+	path = local-sqs
+	url = git@github.com:julianghionoiu/tdl-local-sqs.git

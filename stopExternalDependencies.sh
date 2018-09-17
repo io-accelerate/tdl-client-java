@@ -31,8 +31,8 @@ stopBroker() {
     if [[ "${BROKER_TYPE}" == "activemq" ]]; then
         python broker/activemq-wrapper.py stop
     elif [[ "${BROKER_TYPE}" == "elasticmq" ]]; then
-        python ../tdl-local-sqs/elasticmq-wrapper.py stop
-        stopProcessAtPort 9324
+        python local-sqs/elasticmq-wrapper.py stop
+        stopProcessAtPort ${SQS_PORT}
     elif [[ "${BROKER_TYPE}" == "amazonsqs" ]]; then
         CONTAINER_NAME=goaws
         CONTAINER_ID=$(docker ps --filter="name=${CONTAINER_NAME}" -q)

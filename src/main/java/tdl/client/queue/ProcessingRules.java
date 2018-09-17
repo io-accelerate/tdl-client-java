@@ -11,6 +11,7 @@ import tdl.client.queue.actions.ClientAction;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Created by julianghionoiu on 17/10/2015.
@@ -25,10 +26,18 @@ public class ProcessingRules {
     }
 
     private void add(String methodName, UserImplementation userImplementation, ClientAction clientAction) {
+        logToConsole("           ProcessingRules add");
         rules.put(methodName, new ProcessingRule(userImplementation, clientAction));
     }
 
+    private static void logToConsole(String s) {
+        if ((System.getenv("DEBUG") != null) && System.getenv("DEBUG").contains("true")) {
+            System.out.println(s);
+        }
+    }
+
     public ProcessingRuleBuilder on(String methodName) {
+        logToConsole("           ProcessingRules on");
         return new ProcessingRuleBuilder(this, methodName);
     }
 
@@ -39,22 +48,26 @@ public class ProcessingRules {
         private UserImplementation userImplementation;
 
         ProcessingRuleBuilder(ProcessingRules instance, String methodName) {
+            logToConsole("           ProcessingRuleBuilder creation");
             this.instance = instance;
             this.methodName = methodName;
         }
 
         ProcessingRuleBuilder call(UserImplementation userImplementation) {
+            logToConsole("           ProcessingRuleBuilder call");
             this.userImplementation = userImplementation;
             return this;
         }
 
         void then(ClientAction clientAction) {
+            logToConsole("           ProcessingRuleBuilder then");
             instance.add(methodName, userImplementation, clientAction);
         }
     }
     //~~~ Accessors
 
     Response getResponseFor(Request request) {
+        logToConsole("           ProcessingRules getResponseFor [start]");
         ProcessingRule rule;
         String methodName = request.getMethodName();
         if (rules.containsKey(methodName)) {
@@ -73,7 +86,19 @@ public class ProcessingRules {
             LoggerFactory.getLogger(ProcessingRules.class).warn(message, e);
             return new FatalErrorResponse(message);
         }
+
+        logToConsole("           ProcessingRules getResponseFor [end]");
         return response;
     }
 
+    @Override
+    public String toString() {
+        String rulesAsString = rules.entrySet()
+                .stream()
+                .map(entry -> entry.getKey() + " - " + entry.getValue() + "\n")
+                .collect(Collectors.joining(", "));
+        return "ProcessingRules{" +
+                "rules=" + rulesAsString +
+                '}';
+    }
 }

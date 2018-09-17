@@ -19,7 +19,8 @@ startBroker() {
         echo "~~~~~~~~~~ Broker type: ${BROKER_TYPE} ~~~~~~~~~"
         python broker/activemq-wrapper.py start
     elif [[ "${BROKER_TYPE}" == "elasticmq" ]]; then
-        python ../tdl-local-sqs/elasticmq-wrapper.py start
+        echo "~~~~~~~~~~ Broker type: ${BROKER_TYPE} ~~~~~~~~~"
+        python local-sqs/elasticmq-wrapper.py start
     elif [[ "${BROKER_TYPE}" == "amazonsqs" ]]; then
         IMAGE_NAME=goaws
         echo "~~~~~~~~~~ Broker type: ${BROKER_TYPE} ~~~~~~~~~"
@@ -36,8 +37,8 @@ region = amazonsqs
 output = json
 EOL
 
-        aws --endpoint-url http://localhost:${SQS_PORT} sqs create-queue --queue-name testuser.req
-        aws --endpoint-url http://localhost:${SQS_PORT} sqs create-queue --queue-name testuser.resp
+        aws --endpoint-url http://localhost:${SQS_PORT} sqs create-queue --queue-name testuser-req
+        aws --endpoint-url http://localhost:${SQS_PORT} sqs create-queue --queue-name testuser-resp
     fi
 }
 

@@ -12,9 +12,16 @@ public class ValidResponse implements Response {
     private final ClientAction clientAction;
 
     public ValidResponse(String id, Object result, ClientAction clientAction) {
+        logToConsole("     ValidResponse creation");
         this.id = id;
         this.result = result;
         this.clientAction = clientAction;
+    }
+
+    public void logToConsole(String s) {
+        if ((System.getenv("DEBUG") != null) && System.getenv("DEBUG").contains("true")) {
+            System.out.println(s);
+        }
     }
 
     @Override
@@ -24,6 +31,7 @@ public class ValidResponse implements Response {
 
     @Override
     public Object getResult() {
+        logToConsole("     ValidResponse getResult");
         return result;
     }
 
@@ -32,11 +40,13 @@ public class ValidResponse implements Response {
 
     @Override
     public ClientAction getClientAction() {
+        logToConsole("     ValidResponse getClientAction");
         return clientAction;
     }
 
     @Override
     public String getAuditText() {
+        logToConsole("     ValidResponse getAuditText");
         return String.format("resp = %s", PresentationUtils.toDisplayableString(result));
     }
 
