@@ -49,8 +49,6 @@ public class QueueSteps {
     private final LogAuditStream logAuditStream;
     private QueueEventHandlers queueEventHandlers;
     private List<Object> capturedEvents = new ArrayList<>();
-    private long consumedMessagesCount;
-    private long receivesMessagesCount;
 
     public QueueSteps(SingletonTestBroker broker) {
         this.broker = broker;
@@ -174,7 +172,6 @@ public class QueueSteps {
         });
     }};
 
-
     private static UserImplementation asImplementation(String call) {
         if (USER_IMPLEMENTATIONS.containsKey(call)) {
             return USER_IMPLEMENTATIONS.get(call);
@@ -219,8 +216,6 @@ public class QueueSteps {
         queueBasedImplementationRunner.run();
         long timestampAfter = System.nanoTime();
         processingTimeMillis = (timestampAfter - timestampBefore) / 1000000;
-        consumedMessagesCount = queueBasedImplementationRunner.getConsumedMessagesCount();
-        receivesMessagesCount = queueBasedImplementationRunner.getReceivesMessagesCount();
     }
 
     //~~~~~ Assertions
@@ -234,7 +229,9 @@ public class QueueSteps {
 
     @Then("^the client should consume first request$")
     public void request_queue_less_than_one() {
-        assertThat("Wrong number of requests have been consumed", consumedMessagesCount, equalTo(asLong(initialRequestCount-1)));
+        assertThat("Wrong number of requests have been consumed",
+                requestQueue.getSize(),
+                equalTo(asLong(initialRequestCount-1)));
         queueBasedImplementationRunner.stop();
     }
 
@@ -278,7 +275,8 @@ public class QueueSteps {
     @Then("^the client should not consume any request$")
     public void request_queue_unchanged() throws Throwable {
         assertThat("The request queue has different size. The message has been consumed.",
-                receivesMessagesCount, equalTo(asLong(initialRequestCount)));
+                requestQueue.getSize(),
+                equalTo(asLong(initialRequestCount)));
     }
 
     @And("^the client should not publish any response$")

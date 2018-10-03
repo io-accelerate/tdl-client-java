@@ -21,8 +21,6 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
     private final Audit audit;
     private final ProcessingRules deployProcessingRules;
     private final ImplementationRunnerConfig config;
-    private long consumedMessages;
-    private long receivesMessages;
     private List<Response> responses;
     private List<Request> requests;
     private RemoteBroker remoteBroker;
@@ -38,14 +36,6 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
         requests = new ArrayList<>();
 
         logToConsole("        QueueBasedImplementationRunner creation [end]");
-    }
-
-    public long getConsumedMessagesCount() {
-        return consumedMessages;
-    }
-
-    public long getReceivesMessagesCount() {
-        return receivesMessages;
     }
 
     public List<String> getReceivedMessages() {
@@ -199,8 +189,6 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
             messageProcessingThread.join(750);
             audit.logLine("Waiting for requests");
             logToConsole("        QueueBasedImplementationRunner requests: " + requests.size());
-            receivesMessages = requests.size();
-            consumedMessages = 0;
 
             responses.clear();
             for (int requestIndex = requests.size() - 1; requestIndex >= 0; requestIndex--) {
@@ -230,9 +218,7 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
 
                 String simpleClientActionName = clientAction.getClass().getSimpleName();
                 if ("PublishAction".equals(simpleClientActionName)) {
-                    consumedMessages++;
                 } else if ("PublishAndStopAction".equals(simpleClientActionName)) {
-                    consumedMessages++;
                     break;
                 } else if ("StopAction".equals(simpleClientActionName)) {
                     break;
