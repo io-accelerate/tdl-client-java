@@ -5,8 +5,7 @@ import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
-import com.amazonaws.services.sqs.model.DeleteMessageBatchRequest;
-import com.amazonaws.services.sqs.model.DeleteMessageBatchRequestEntry;
+import com.amazonaws.services.sqs.model.DeleteMessageRequest;
 import com.amazonaws.services.sqs.model.Message;
 import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -43,10 +42,11 @@ public class RemoteBroker implements AutoCloseable {
     private String serviceEndpoint;
 
     private ReceiveMessageRequest receiveMessageRequest;
-    private DeleteMessageBatchRequest deleteMessageRequest = new DeleteMessageBatchRequest();
+    private DeleteMessageRequest deleteMessageRequest;
 
     private SqsEventQueue messageProducer;
     private final Gson gson;
+    private final String queueUrl;
 
     public RemoteBroker(String hostname, int port, String uniqueId, int requestTimeoutMillis) throws JMSException, EventProcessingException {
         logToConsole("     RemoteBroker creation [start]");
@@ -67,12 +67,10 @@ public class RemoteBroker implements AutoCloseable {
         String requestQueue = uniqueId + "-req";
         receiveMessageRequest = new ReceiveMessageRequest();
         receiveMessageRequest.setMaxNumberOfMessages(MAX_NUMBER_OF_MESSAGES);
-        String queueUrl = String.format("%s/queue/%s", serviceEndpoint, requestQueue);
+        queueUrl = String.format("%s/queue/%s", serviceEndpoint, requestQueue);
         receiveMessageRequest.setQueueUrl(queueUrl);
         receiveMessageRequest.setWaitTimeSeconds(MAX_AWS_WAIT);
         receiveMessageRequest.setMessageAttributeNames(Arrays.asList(ATTRIBUTE_EVENT_NAME, ATTRIBUTE_EVENT_VERSION));
-
-        deleteMessageRequest.setQueueUrl(queueUrl);
 
         String responseQueue = uniqueId + "-resp";
         messageProducer = new SqsEventQueue(client, serviceEndpoint, responseQueue);
@@ -108,22 +106,22 @@ public class RemoteBroker implements AutoCloseable {
             logToConsole("message: " + message);
             logToConsole("payload: " + message.getBody());
 
-            List<DeleteMessageBatchRequestEntry> deleteMessageEntries = new ArrayList<>();
             try {
                 JsonNode jsonNode = mapper.readValue(message.getBody(), JsonNode.class);
                 String payload = jsonNode.get("payload").asText();
                 JsonRpcRequest jsonRpcRequest = gson.fromJson(payload, JsonRpcRequest.class);
                 newResult.add(new Request(message, jsonRpcRequest));
-                deleteMessageEntries.add(new DeleteMessageBatchRequestEntry(message.getMessageId(), message.getReceiptHandle()));
             } catch (JsonSyntaxException e) {
                 logToConsole("     RemoteBroker did not complete reading all messages successfully, not deleting unsuccessful messages");
                 throw new DeserializationException("Invalid message format", e);
-            } finally {
-                logToConsole("     RemoteBroker deleting read messages");
-                deleteMessageRequest.setEntries(deleteMessageEntries);
             }
         }
         return newResult;
+    }
+
+    public void deleteMessage(Message message) {
+        deleteMessageRequest = new DeleteMessageRequest(queueUrl, message.getReceiptHandle());
+        client.deleteMessage(deleteMessageRequest);
     }
 
     public void respondTo(Request request, Response response) throws BrokerCommunicationException {

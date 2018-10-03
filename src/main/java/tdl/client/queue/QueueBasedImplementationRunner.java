@@ -225,6 +225,9 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
                 audit.endLine();
                 logToConsole("        QueueBasedImplementationRunner applyProcessingRules [end]");
 
+                remoteBroker.deleteMessage(request.getOriginalMessage());
+                logToConsole("        QueueBasedImplementationRunner deleting read message");
+
                 String simpleClientActionName = clientAction.getClass().getSimpleName();
                 if ("PublishAction".equals(simpleClientActionName)) {
                     consumedMessages++;
