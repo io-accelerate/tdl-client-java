@@ -1,11 +1,11 @@
 package tdl.client.runner.connector;
 
 public class EventSerializationException extends Exception {
-    EventSerializationException(String message, Exception e) {
+    public EventSerializationException(String message, Exception e) {
         super(message, e);
     }
 
-    EventSerializationException(String message) {
+    public EventSerializationException(String message) {
         super(message);
     }
 }

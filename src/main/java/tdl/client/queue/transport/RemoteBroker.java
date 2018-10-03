@@ -5,9 +5,12 @@ import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
+import com.amazonaws.services.sqs.model.CreateQueueRequest;
 import com.amazonaws.services.sqs.model.DeleteMessageRequest;
 import com.amazonaws.services.sqs.model.Message;
+import com.amazonaws.services.sqs.model.MessageAttributeValue;
 import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
+import com.amazonaws.services.sqs.model.SendMessageRequest;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
@@ -21,13 +24,16 @@ import tdl.client.queue.abstractions.response.Response;
 import tdl.client.queue.serialization.DeserializationException;
 import tdl.client.queue.serialization.JsonRpcRequest;
 import tdl.client.runner.connector.EventProcessingException;
-import tdl.client.runner.connector.SqsEventQueue;
+import tdl.client.runner.connector.EventSerializationException;
+import tdl.client.runner.connector.QueueEvent;
 import tdl.client.runner.events.ExecuteCommandEvent;
 
 import javax.jms.JMSException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class RemoteBroker implements AutoCloseable {
     private static final int MAX_NUMBER_OF_MESSAGES = 10;
@@ -44,9 +50,11 @@ public class RemoteBroker implements AutoCloseable {
     private ReceiveMessageRequest receiveMessageRequest;
     private DeleteMessageRequest deleteMessageRequest;
 
-    private SqsEventQueue messageProducer;
+    private final CreateQueueRequest messageConsumer;
+    private final String messageConsumerQueueUrl;
+    private final CreateQueueRequest messageProducer;
+    private final String messageProducerQueueUrl;
     private final Gson gson;
-    private final String queueUrl;
 
     public RemoteBroker(String hostname, int port, String uniqueId, int requestTimeoutMillis) throws JMSException, EventProcessingException {
         logToConsole("     RemoteBroker creation [start]");
@@ -64,16 +72,23 @@ public class RemoteBroker implements AutoCloseable {
 
         LoggerFactory.getLogger(RemoteBroker.class).debug("Connecting to the remote broker");
 
+        final Map<String, String> attributes = new HashMap<>();
+        attributes.put("FifoQueue", "true");
+        attributes.put("ContentBasedDeduplication", "true");
+
         String requestQueue = uniqueId + "-req";
+        messageConsumer = new CreateQueueRequest(requestQueue).withAttributes(attributes);
+        messageConsumerQueueUrl = client.createQueue(messageConsumer).getQueueUrl();
+
         receiveMessageRequest = new ReceiveMessageRequest();
         receiveMessageRequest.setMaxNumberOfMessages(MAX_NUMBER_OF_MESSAGES);
-        queueUrl = String.format("%s/queue/%s", serviceEndpoint, requestQueue);
-        receiveMessageRequest.setQueueUrl(queueUrl);
+        receiveMessageRequest.setQueueUrl(messageConsumerQueueUrl);
         receiveMessageRequest.setWaitTimeSeconds(MAX_AWS_WAIT);
         receiveMessageRequest.setMessageAttributeNames(Arrays.asList(ATTRIBUTE_EVENT_NAME, ATTRIBUTE_EVENT_VERSION));
 
         String responseQueue = uniqueId + "-resp";
-        messageProducer = new SqsEventQueue(client, serviceEndpoint, responseQueue);
+        messageProducer = new CreateQueueRequest(responseQueue).withAttributes(attributes);
+        messageProducerQueueUrl = client.createQueue(messageProducer).getQueueUrl();
 
         mapper = new ObjectMapper();
 
@@ -86,23 +101,23 @@ public class RemoteBroker implements AutoCloseable {
 
     public List<Request> receive() throws BrokerCommunicationException {
         logToConsole("     RemoteBroker receive [start]");
-            try {
-                List<Message> messages = client.receiveMessage(receiveMessageRequest).getMessages();
-                logToConsole("     RemoteBroker messages: " + messages);
+        try {
+            List<Message> messages = client.receiveMessage(receiveMessageRequest).getMessages();
+            logToConsole("     RemoteBroker messages: " + messages);
 
-                List<Request> successfulMessages = processRequests(messages);
+            List<Request> successfulMessages = processRequests(messages);
 
-                logToConsole("     RemoteBroker receive [end]");
-                return successfulMessages;
-            } catch (Exception ex) {
-                logToConsole("     RemoteBroker receive [error]");
-                throw new BrokerCommunicationException(ex);
-            }
+            logToConsole("     RemoteBroker receive [end]");
+            return successfulMessages;
+        } catch (Exception ex) {
+            logToConsole("     RemoteBroker receive [error]");
+            throw new BrokerCommunicationException(ex);
+        }
     }
 
     private List<Request> processRequests(List<Message> messages) throws java.io.IOException, DeserializationException {
         List<Request> newResult = new ArrayList<>();
-        for (Message message: messages) {
+        for (Message message : messages) {
             logToConsole("message: " + message);
             logToConsole("payload: " + message.getBody());
 
@@ -120,7 +135,7 @@ public class RemoteBroker implements AutoCloseable {
     }
 
     public void deleteMessage(Message message) {
-        deleteMessageRequest = new DeleteMessageRequest(queueUrl, message.getReceiptHandle());
+        deleteMessageRequest = new DeleteMessageRequest(messageProducerQueueUrl, message.getReceiptHandle());
         client.deleteMessage(deleteMessageRequest);
     }
 
@@ -128,12 +143,34 @@ public class RemoteBroker implements AutoCloseable {
         logToConsole("     RemoteBroker respondTo [start]");
         logToConsole("     response: " + response);
         try {
-            messageProducer.send(new ExecuteCommandEvent(response.toString()));
+            send(messageProducerQueueUrl, new ExecuteCommandEvent(response.toString()));
 
             logToConsole("     RemoteBroker respondTo [end]");
-        } catch (Exception  e) {
+        } catch (Exception e) {
             logToConsole("     RemoteBroker respondTo [error]");
             throw new BrokerCommunicationException(e);
+        }
+    }
+
+    private void send(String queueUrl, Object object) throws EventSerializationException {
+        QueueEvent annotation = object.getClass().getAnnotation(QueueEvent.class);
+        if (annotation == null) {
+            throw new EventSerializationException(object.getClass() + " not a QueueEvent");
+        }
+        String eventName = annotation.name();
+        String eventVersion = annotation.version();
+
+        try {
+            SendMessageRequest sendMessageRequest = new SendMessageRequest();
+            sendMessageRequest.setQueueUrl(queueUrl);
+            sendMessageRequest.setMessageBody(mapper.writeValueAsString(object));
+            sendMessageRequest.addMessageAttributesEntry(ATTRIBUTE_EVENT_NAME,
+                    new MessageAttributeValue().withDataType("String").withStringValue(eventName));
+            sendMessageRequest.addMessageAttributesEntry(ATTRIBUTE_EVENT_VERSION,
+                    new MessageAttributeValue().withDataType("String").withStringValue(eventVersion));
+            client.sendMessage(sendMessageRequest);
+        } catch (Exception e) {
+            throw new EventSerializationException("Failed to serialize event of type " + object.getClass(), e);
         }
     }
 

@@ -1,6 +1,7 @@
 package acceptance.queue;
 
 import acceptance.SingletonTestBroker;
+import com.amazonaws.services.sqs.model.CreateQueueRequest;
 import cucumber.api.java.en.And;
 import cucumber.api.java.en.But;
 import cucumber.api.java.en.Given;
@@ -14,7 +15,6 @@ import tdl.client.queue.actions.ClientAction;
 import tdl.client.queue.actions.ClientActions;
 import tdl.client.runner.connector.EventProcessingException;
 import tdl.client.runner.connector.QueueEventHandlers;
-import tdl.client.runner.connector.SqsEventQueue;
 import tdl.client.runner.events.ExecuteCommandEvent;
 import utils.logging.LogAuditStream;
 
@@ -38,8 +38,8 @@ public class QueueSteps {
     private static final int PORT = 28161; // 21616
 
     // Variables set by the background tasks
-    private SqsEventQueue requestQueue;
-    private SqsEventQueue responseQueue;
+    private CreateQueueRequest requestQueue;
+    private CreateQueueRequest responseQueue;
     private QueueBasedImplementationRunner queueBasedImplementationRunner;
     private QueueBasedImplementationRunner.Builder queueBasedImplementationRunnerBuilder;
 
@@ -49,6 +49,8 @@ public class QueueSteps {
     private final LogAuditStream logAuditStream;
     private QueueEventHandlers queueEventHandlers;
     private List<Object> capturedEvents = new ArrayList<>();
+    private String requestQueueUrl;
+    private String responseQueueUrl;
 
     public QueueSteps(SingletonTestBroker broker) {
         this.broker = broker;
@@ -69,11 +71,13 @@ public class QueueSteps {
 
     @Given("^I start with a clean broker and a client for user \"([^\"]*)\"$")
     public void create_the_queues(String username) throws Throwable {
-        requestQueue = broker.addQueue(username +"-req");
-        requestQueue.purge();
+        requestQueue = broker.addQueue(username + "-req");
+        requestQueueUrl = broker.createQueue(requestQueue);
+        broker.purgeQueue(requestQueue);
 
-        responseQueue = broker.addQueue(username +"-resp");
-        responseQueue.purge();
+        responseQueue = broker.addQueue(username + "-resp");
+        responseQueueUrl = broker.createQueue(responseQueue);
+        broker.purgeQueue(responseQueue);
 
         logAuditStream.clearLog();
         ImplementationRunnerConfig config = new ImplementationRunnerConfig().setHostname(HOSTNAME)
@@ -109,13 +113,13 @@ public class QueueSteps {
     @Then("^the request queue is \"([^\"]*)\"$")
     public void check_request_queue(String expectedValue) {
         assertThat("Request queue has a different value.",
-                requestQueue.getName(), equalTo(expectedValue));
+                requestQueue.getQueueName(), equalTo(expectedValue));
     }
 
     @Then("^the response queue is \"([^\"]*)\"$")
     public void check_response_queue(String expectedValue) {
         assertThat("Response queue has a different value.",
-                responseQueue.getName(), equalTo(expectedValue));
+                responseQueue.getQueueName(), equalTo(expectedValue));
     }
 
     class RequestRepresentation {
@@ -123,21 +127,23 @@ public class QueueSteps {
         String payload;
 
     }
+
     @Given("^I receive the following requests:$")
     public void initialize_request_queue(List<RequestRepresentation> requests) throws Throwable {
         for (RequestRepresentation request : requests) {
             logToConsole("payload: " + request.payload);
-            requestQueue.send(new ExecuteCommandEvent(request.payload));
+            broker.send(requestQueueUrl, new ExecuteCommandEvent(request.payload));
         }
         initialRequestCount = requests.size();
         logToConsole("initial requests sent: " + initialRequestCount);
     }
+
     @Given("^I receive (\\d+) identical requests like:$")
     public void sent_loads_of_requests(int number, List<RequestRepresentation> requests) throws Throwable {
         for (int i = 0; i < number; i++) {
             for (RequestRepresentation request : requests) {
                 logToConsole("payload: " + request.payload);
-                requestQueue.send(new ExecuteCommandEvent(request.payload));
+                broker.send(requestQueueUrl, new ExecuteCommandEvent(request.payload));
             }
         }
         initialRequestCount = requests.size() * number;
@@ -146,7 +152,7 @@ public class QueueSteps {
 
     //~~~~~ Implementations
 
-    private static final Map<String, UserImplementation> USER_IMPLEMENTATIONS = new HashMap<String, UserImplementation >() {{
+    private static final Map<String, UserImplementation> USER_IMPLEMENTATIONS = new HashMap<String, UserImplementation>() {{
         put("add two numbers", params -> {
             Integer x = Integer.parseInt(params[0]);
             Integer y = Integer.parseInt(params[1]);
@@ -176,11 +182,11 @@ public class QueueSteps {
         if (USER_IMPLEMENTATIONS.containsKey(call)) {
             return USER_IMPLEMENTATIONS.get(call);
         } else {
-            throw new IllegalArgumentException("Not a valid implementation reference: \"" + call+"\"");
+            throw new IllegalArgumentException("Not a valid implementation reference: \"" + call + "\"");
         }
     }
 
-    private static final Map<String, ClientAction> CLIENT_ACTIONS = new HashMap<String, ClientAction >() {{
+    private static final Map<String, ClientAction> CLIENT_ACTIONS = new HashMap<String, ClientAction>() {{
         put("publish", ClientActions.publish());
         put("stop", ClientActions.stop());
         put("publish and stop", ClientActions.publishAndStop());
@@ -190,7 +196,7 @@ public class QueueSteps {
         if (CLIENT_ACTIONS.containsKey(actionName)) {
             return CLIENT_ACTIONS.get(actionName);
         } else {
-            throw new IllegalArgumentException("Not a valid action reference: \"" + actionName+"\"");
+            throw new IllegalArgumentException("Not a valid action reference: \"" + actionName + "\"");
         }
     }
 
@@ -203,11 +209,11 @@ public class QueueSteps {
     @When("^I go live with the following processing rules:$")
     public void go_live(List<ProcessingRuleRepresentation> listOfRules) {
         listOfRules.forEach((ruleLine) ->
-            queueBasedImplementationRunnerBuilder.withSolutionFor(
-                    ruleLine.method,
-                    asImplementation(ruleLine.call),
-                    asAction(ruleLine.action)
-            )
+                queueBasedImplementationRunnerBuilder.withSolutionFor(
+                        ruleLine.method,
+                        asImplementation(ruleLine.call),
+                        asAction(ruleLine.action)
+                )
         );
         queueBasedImplementationRunner = queueBasedImplementationRunnerBuilder.create();
 
@@ -223,15 +229,15 @@ public class QueueSteps {
     @Then("^the client should consume all requests$")
     public void request_queue_empty() {
         assertThat("Requests have not been consumed",
-                requestQueue.getSize(), equalTo(asLong(0)));
+                broker.getSize(requestQueue), equalTo(asLong(0)));
         queueBasedImplementationRunner.stop();
     }
 
     @Then("^the client should consume first request$")
     public void request_queue_less_than_one() {
         assertThat("Wrong number of requests have been consumed",
-                requestQueue.getSize(),
-                equalTo(asLong(initialRequestCount-1)));
+                broker.getSize(requestQueue),
+                equalTo(asLong(initialRequestCount - 1)));
         queueBasedImplementationRunner.stop();
     }
 
@@ -275,14 +281,14 @@ public class QueueSteps {
     @Then("^the client should not consume any request$")
     public void request_queue_unchanged() throws Throwable {
         assertThat("The request queue has different size. The message has been consumed.",
-                requestQueue.getSize(),
+                broker.getSize(requestQueue),
                 equalTo(asLong(initialRequestCount)));
     }
 
     @And("^the client should not publish any response$")
     public void response_queue_unchanged() throws Throwable {
         assertThat("The response queue has different size. Messages have been published.",
-                responseQueue.getSize(), equalTo(asLong(0)));
+                broker.getSize(responseQueue), equalTo(asLong(0)));
         queueBasedImplementationRunner.stop();
     }
 
