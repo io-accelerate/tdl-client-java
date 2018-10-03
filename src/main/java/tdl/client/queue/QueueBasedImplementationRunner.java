@@ -12,7 +12,6 @@ import tdl.client.queue.transport.RemoteBroker;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import static tdl.client.queue.actions.ClientActions.publish;
 
@@ -24,7 +23,6 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
     private List<Response> responses;
     private List<Request> requests;
     private RemoteBroker remoteBroker;
-    private MessageProcessingThread messageProcessingThread;
 
     private QueueBasedImplementationRunner(ImplementationRunnerConfig config, ProcessingRules deployProcessingRules) {
         logToConsole("        QueueBasedImplementationRunner creation [start]");
@@ -60,40 +58,6 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
         responses.clear();
 
         return results;
-    }
-
-    public void start() {
-        try {
-            requests.clear();
-            remoteBroker = new RemoteBroker(config.getHostname(), config.getPort(), config.getUniqueId(), config.getRequestTimeoutMillis());
-            messageProcessingThread = new MessageProcessingThread(remoteBroker, audit, requests);
-            messageProcessingThread.start();
-        } catch (Exception e) {
-            logToConsole("        QueueBasedImplementationRunner start [error]");
-            String message = "There was a problem starting the SQS server";
-            LOGGER.error(message, e);
-            audit.logException(message, e);
-        }
-    }
-
-    public void stop() {
-        try {
-            if (messageProcessingThread != null) {
-                messageProcessingThread.signalStop();
-                messageProcessingThread.join();
-                messageProcessingThread = null;
-            }
-
-            if (remoteBroker != null) {
-                remoteBroker.close();
-                remoteBroker = null;
-            }
-        } catch (Exception e) {
-            logToConsole("        QueueBasedImplementationRunner start [error]");
-            String message = "There was a problem starting the SQS server";
-            LOGGER.error(message, e);
-            audit.logException(message, e);
-        }
     }
 
     public static class Builder {
@@ -147,46 +111,16 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
         }
     }
 
-    static class MessageProcessingThread extends Thread {
-        private final AtomicBoolean shouldContinue;
-        private final RemoteBroker remoteBroker;
-        private List<Request> requests;
-        private Audit audit;
-
-        MessageProcessingThread(RemoteBroker remoteBroker, Audit audit, List<Request> requests) {
-            this.remoteBroker = remoteBroker;
-            this.audit = audit;
-            this.requests = requests;
-
-            shouldContinue = new AtomicBoolean(true);
-        }
-
-        @Override
-        public void run() {
-            while (shouldContinue.get()) {
-                try {
-                    List<Request> requestsBatch = remoteBroker.receive();
-                    requests.addAll(requestsBatch);
-                } catch (Exception e) {
-                    logToConsole("        QueueBasedImplementationRunner run [error]");
-                    String message = "There was a problem processing messages";
-                    LOGGER.error(message, e);
-                    audit.logException(message, e);
-                }
-            }
-        }
-
-        void signalStop() {
-            shouldContinue.set(false);
-        }
-    }
-
     public void run() {
         logToConsole("        QueueBasedImplementationRunner run [start]");
         audit.logLine("Starting client");
         requests.clear();
         try {
-            messageProcessingThread.join(750);
+            requests.clear();
+            remoteBroker = new RemoteBroker(config.getHostname(), config.getPort(), config.getUniqueId(), config.getRequestTimeoutMillis());
+
+            requests.addAll(remoteBroker.receive());
+
             audit.logLine("Waiting for requests");
             logToConsole("        QueueBasedImplementationRunner requests: " + requests.size());
 

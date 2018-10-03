@@ -50,7 +50,6 @@ public class QueueSteps {
     private QueueEventHandlers queueEventHandlers;
     private List<Object> capturedEvents = new ArrayList<>();
     private String requestQueueUrl;
-    private String responseQueueUrl;
 
     public QueueSteps(SingletonTestBroker broker) {
         this.broker = broker;
@@ -76,7 +75,6 @@ public class QueueSteps {
         broker.purgeQueue(requestQueue);
 
         responseQueue = broker.addQueue(username + "-resp");
-        responseQueueUrl = broker.createQueue(responseQueue);
         broker.purgeQueue(responseQueue);
 
         logAuditStream.clearLog();
@@ -217,7 +215,6 @@ public class QueueSteps {
         );
         queueBasedImplementationRunner = queueBasedImplementationRunnerBuilder.create();
 
-        queueBasedImplementationRunner.start();
         long timestampBefore = System.nanoTime();
         queueBasedImplementationRunner.run();
         long timestampAfter = System.nanoTime();
@@ -230,7 +227,6 @@ public class QueueSteps {
     public void request_queue_empty() {
         assertThat("Requests have not been consumed",
                 broker.getSize(requestQueue), equalTo(asLong(0)));
-        queueBasedImplementationRunner.stop();
     }
 
     @Then("^the client should consume first request$")
@@ -238,7 +234,6 @@ public class QueueSteps {
         assertThat("Wrong number of requests have been consumed",
                 broker.getSize(requestQueue),
                 equalTo(asLong(initialRequestCount - 1)));
-        queueBasedImplementationRunner.stop();
     }
 
     class ResponseRepresentation {
@@ -253,7 +248,6 @@ public class QueueSteps {
 
         List<String> actualContents = queueBasedImplementationRunner.getReceivedMessages();
         assertThat("The responses are not correct", actualContents, equalTo(expectedContents));
-        queueBasedImplementationRunner.stop();
     }
 
     class OutputRepresentation {
@@ -267,7 +261,6 @@ public class QueueSteps {
             assertThat(output, containsString(expectedLine.output));
         }
         System.out.println(output);
-        queueBasedImplementationRunner.stop();
     }
 
     @But("^the client should not display to console:$")
@@ -289,7 +282,6 @@ public class QueueSteps {
     public void response_queue_unchanged() throws Throwable {
         assertThat("The response queue has different size. Messages have been published.",
                 broker.getSize(responseQueue), equalTo(asLong(0)));
-        queueBasedImplementationRunner.stop();
     }
 
     @Then("^I should get no exception$")

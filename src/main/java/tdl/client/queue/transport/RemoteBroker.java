@@ -102,10 +102,17 @@ public class RemoteBroker implements AutoCloseable {
     public List<Request> receive() throws BrokerCommunicationException {
         logToConsole("     RemoteBroker receive [start]");
         try {
-            List<Message> messages = client.receiveMessage(receiveMessageRequest).getMessages();
-            logToConsole("     RemoteBroker messages: " + messages);
-
-            List<Request> successfulMessages = processRequests(messages);
+            List<Message> messages;
+            List<Request> successfulMessages = new ArrayList<>();
+            boolean continueFetching;
+            do {
+                messages = client.receiveMessage(receiveMessageRequest).getMessages();
+                continueFetching = messages.size() > 0;
+                if (continueFetching) {
+                    logToConsole("     RemoteBroker messages: " + messages);
+                    successfulMessages.addAll(processRequests(messages));
+                }
+            } while (continueFetching);
 
             logToConsole("     RemoteBroker receive [end]");
             return successfulMessages;
