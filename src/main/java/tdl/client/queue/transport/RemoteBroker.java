@@ -29,7 +29,6 @@ import javax.jms.JMSException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class RemoteBroker implements AutoCloseable {
     private static final int MAX_NUMBER_OF_MESSAGES = 10;
@@ -44,7 +43,7 @@ public class RemoteBroker implements AutoCloseable {
     private String serviceEndpoint;
 
     private ReceiveMessageRequest receiveMessageRequest;
-    private DeleteMessageBatchRequest deleteMessageBatchRequest = new DeleteMessageBatchRequest();
+    private DeleteMessageBatchRequest deleteMessageRequest = new DeleteMessageBatchRequest();
 
     private SqsEventQueue messageProducer;
     private final Gson gson;
@@ -73,7 +72,7 @@ public class RemoteBroker implements AutoCloseable {
         receiveMessageRequest.setWaitTimeSeconds(MAX_AWS_WAIT);
         receiveMessageRequest.setMessageAttributeNames(Arrays.asList(ATTRIBUTE_EVENT_NAME, ATTRIBUTE_EVENT_VERSION));
 
-        deleteMessageBatchRequest.setQueueUrl(queueUrl);
+        deleteMessageRequest.setQueueUrl(queueUrl);
 
         String responseQueue = uniqueId + "-resp";
         messageProducer = new SqsEventQueue(client, serviceEndpoint, responseQueue);
@@ -95,13 +94,6 @@ public class RemoteBroker implements AutoCloseable {
 
                 List<Request> successfulMessages = processRequests(messages);
 
-                if (successfulMessages.size() > 0) {
-                    logToConsole("     RemoteBroker deleting read messages");
-                    deleteReadMessages(messages);
-                } else {
-                    logToConsole("     RemoteBroker did not complete reading all messages successfully, not deleting messages");
-                }
-
                 logToConsole("     RemoteBroker receive [end]");
                 return successfulMessages;
             } catch (Exception ex) {
@@ -110,27 +102,25 @@ public class RemoteBroker implements AutoCloseable {
             }
     }
 
-    public void deleteReadMessages(List<Message> messages) {
-        List<DeleteMessageBatchRequestEntry> deleteMessageEntries = messages.stream().map(message ->
-                new DeleteMessageBatchRequestEntry(message.getMessageId(), message.getReceiptHandle()))
-                .collect(Collectors.toList());
-
-        deleteMessageBatchRequest.setEntries(deleteMessageEntries);
-    }
-
     private List<Request> processRequests(List<Message> messages) throws java.io.IOException, DeserializationException {
         List<Request> newResult = new ArrayList<>();
         for (Message message: messages) {
             logToConsole("message: " + message);
             logToConsole("payload: " + message.getBody());
 
+            List<DeleteMessageBatchRequestEntry> deleteMessageEntries = new ArrayList<>();
             try {
                 JsonNode jsonNode = mapper.readValue(message.getBody(), JsonNode.class);
                 String payload = jsonNode.get("payload").asText();
                 JsonRpcRequest jsonRpcRequest = gson.fromJson(payload, JsonRpcRequest.class);
                 newResult.add(new Request(message, jsonRpcRequest));
+                deleteMessageEntries.add(new DeleteMessageBatchRequestEntry(message.getMessageId(), message.getReceiptHandle()));
             } catch (JsonSyntaxException e) {
+                logToConsole("     RemoteBroker did not complete reading all messages successfully, not deleting unsuccessful messages");
                 throw new DeserializationException("Invalid message format", e);
+            } finally {
+                logToConsole("     RemoteBroker deleting read messages");
+                deleteMessageRequest.setEntries(deleteMessageEntries);
             }
         }
         return newResult;
