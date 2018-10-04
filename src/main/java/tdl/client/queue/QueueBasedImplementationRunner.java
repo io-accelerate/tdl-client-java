@@ -291,7 +291,22 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
                 continueFetching = messages.size() > 0;
                 if (continueFetching) {
                     logToConsole("     QueueBasedImplementationRunner messages: " + messages);
-                    successfulMessages.addAll(processRequests(messages));
+                    List<Request> newResult = new ArrayList<>();
+                    for (Message message : messages) {
+                        logToConsole("message: " + message);
+                        logToConsole("payload: " + message.getBody());
+
+                        try {
+                            JsonNode jsonNode = mapper.readValue(message.getBody(), JsonNode.class);
+                            String payload = jsonNode.get("payload").asText();
+                            JsonRpcRequest jsonRpcRequest = gson.fromJson(payload, JsonRpcRequest.class);
+                            newResult.add(new Request(message, jsonRpcRequest));
+                        } catch (JsonSyntaxException e) {
+                            logToConsole("     QueueBasedImplementationRunner did not complete reading all messages successfully, not deleting unsuccessful messages");
+                            throw new DeserializationException("Invalid message format", e);
+                        }
+                    }
+                    successfulMessages.addAll(newResult);
                 }
             } while (continueFetching);
 
@@ -301,25 +316,6 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
             logToConsole("     QueueBasedImplementationRunner receive [error]");
             throw new BrokerCommunicationException(ex);
         }
-    }
-
-    private List<Request> processRequests(List<Message> messages) throws java.io.IOException, DeserializationException {
-        List<Request> newResult = new ArrayList<>();
-        for (Message message : messages) {
-            logToConsole("message: " + message);
-            logToConsole("payload: " + message.getBody());
-
-            try {
-                JsonNode jsonNode = mapper.readValue(message.getBody(), JsonNode.class);
-                String payload = jsonNode.get("payload").asText();
-                JsonRpcRequest jsonRpcRequest = gson.fromJson(payload, JsonRpcRequest.class);
-                newResult.add(new Request(message, jsonRpcRequest));
-            } catch (JsonSyntaxException e) {
-                logToConsole("     QueueBasedImplementationRunner did not complete reading all messages successfully, not deleting unsuccessful messages");
-                throw new DeserializationException("Invalid message format", e);
-            }
-        }
-        return newResult;
     }
 
     private void deleteMessage(Message message) {
@@ -376,7 +372,7 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
         attributes.put("FifoQueue", "true");
         attributes.put("ContentBasedDeduplication", "true");
 
-        logToConsole(" QueueBasedImplementationRunner createQueueRequest");
+        logToConsole(" QueueBasedImplementationRunner createQueueRequest: " + queueName);
         return new CreateQueueRequest(queueName)
                 .withAttributes(attributes);
     }
