@@ -1,10 +1,10 @@
 package tdl.client.queue.actions;
 
 import tdl.client.audit.Auditable;
+import tdl.client.queue.QueueBasedImplementationRunner;
 import tdl.client.queue.abstractions.Request;
 import tdl.client.queue.abstractions.response.Response;
 import tdl.client.queue.transport.BrokerCommunicationException;
-import tdl.client.queue.transport.RemoteBroker;
 
 import java.util.List;
 
@@ -13,9 +13,9 @@ import java.util.List;
  */
 public interface ClientAction extends Auditable {
 
-    void afterResponse(RemoteBroker remoteBroker, Request request, Response response) throws BrokerCommunicationException;
+    void afterResponse(QueueBasedImplementationRunner queueBasedImplementationRunner, Request request, Response response) throws BrokerCommunicationException;
 
-    List<Request> getNextRequest(RemoteBroker t) throws BrokerCommunicationException;
+    List<Request> getNextRequest(QueueBasedImplementationRunner q) throws BrokerCommunicationException;
 
 
     //~~~ Fluent API

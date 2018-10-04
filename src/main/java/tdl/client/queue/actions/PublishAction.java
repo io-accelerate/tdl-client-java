@@ -1,9 +1,9 @@
 package tdl.client.queue.actions;
 
+import tdl.client.queue.QueueBasedImplementationRunner;
 import tdl.client.queue.abstractions.Request;
 import tdl.client.queue.abstractions.response.Response;
 import tdl.client.queue.transport.BrokerCommunicationException;
-import tdl.client.queue.transport.RemoteBroker;
 
 import java.util.Collections;
 import java.util.List;
@@ -17,10 +17,10 @@ public class PublishAction implements ClientAction {
     }
 
     @Override
-    public void afterResponse(RemoteBroker remoteBroker, Request request, Response response)
+    public void afterResponse(QueueBasedImplementationRunner queueBasedImplementationRunner, Request request, Response response)
             throws BrokerCommunicationException {
         logToConsole("           PublishAction afterResponse");
-        remoteBroker.respondTo(request, with(response));
+        queueBasedImplementationRunner.respondTo(request, with(response));
     }
 
     private void logToConsole(String s) {
@@ -29,7 +29,7 @@ public class PublishAction implements ClientAction {
         }
     }
 
-    public List<Request> getNextRequest(RemoteBroker broker) throws BrokerCommunicationException {
+    public List<Request> getNextRequest(QueueBasedImplementationRunner queueBasedImplementationRunner) throws BrokerCommunicationException {
         logToConsole("           PublishAction getNextRequest");
         return Collections.emptyList();
     }

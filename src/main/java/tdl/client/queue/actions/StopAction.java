@@ -1,8 +1,8 @@
 package tdl.client.queue.actions;
 
+import tdl.client.queue.QueueBasedImplementationRunner;
 import tdl.client.queue.abstractions.Request;
 import tdl.client.queue.abstractions.response.Response;
-import tdl.client.queue.transport.RemoteBroker;
 
 import java.util.Collections;
 import java.util.List;
@@ -23,12 +23,12 @@ public class StopAction implements ClientAction {
     }
 
     @Override
-    public void afterResponse(RemoteBroker remoteBroker, Request request, Response response) {
+    public void afterResponse(QueueBasedImplementationRunner q, Request request, Response response) {
         logToConsole("           StopAction afterResponse");
         //Do nothing
     }
 
-    public List<Request> getNextRequest(RemoteBroker t) {
+    public List<Request> getNextRequest(QueueBasedImplementationRunner q) {
         logToConsole("           StopAction getNextRequest");
         return Collections.emptyList();
     }

@@ -1,9 +1,9 @@
 package tdl.client.queue.actions;
 
+import tdl.client.queue.QueueBasedImplementationRunner;
 import tdl.client.queue.abstractions.Request;
 import tdl.client.queue.abstractions.response.Response;
 import tdl.client.queue.transport.BrokerCommunicationException;
-import tdl.client.queue.transport.RemoteBroker;
 
 import java.util.Collections;
 import java.util.List;
@@ -24,13 +24,13 @@ public class PublishAndStopAction implements ClientAction {
     }
 
     @Override
-    public void afterResponse(RemoteBroker remoteBroker, Request request, Response response)
+    public void afterResponse(QueueBasedImplementationRunner q, Request request, Response response)
             throws BrokerCommunicationException {
         logToConsole("           PublishAndStopAction afterResponse");
-        remoteBroker.respondTo(request, with(response));
+        q.respondTo(request, with(response));
     }
 
-    public List<Request> getNextRequest(RemoteBroker t) {
+    public List<Request> getNextRequest(QueueBasedImplementationRunner q) {
         logToConsole("           PublishAndStopAction getNextRequest");
 //        return Optional.empty();
         return Collections.emptyList();
