@@ -7,8 +7,10 @@ import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
 import com.amazonaws.services.sqs.model.CreateQueueRequest;
 import com.amazonaws.services.sqs.model.DeleteMessageRequest;
+import com.amazonaws.services.sqs.model.GetQueueAttributesResult;
 import com.amazonaws.services.sqs.model.Message;
 import com.amazonaws.services.sqs.model.MessageAttributeValue;
+import com.amazonaws.services.sqs.model.PurgeQueueRequest;
 import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
 import com.amazonaws.services.sqs.model.SendMessageRequest;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -31,10 +33,12 @@ import tdl.client.queue.serialization.JsonRpcRequest;
 import tdl.client.queue.transport.BrokerCommunicationException;
 import tdl.client.runner.connector.EventSerializationException;
 import tdl.client.runner.connector.QueueEvent;
+import tdl.client.runner.connector.QueueSize;
 import tdl.client.runner.events.ExecuteCommandEvent;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -63,10 +67,10 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
     private ReceiveMessageRequest receiveMessageRequest;
     private DeleteMessageRequest deleteMessageRequest;
 
-    private final CreateQueueRequest messageConsumer;
-    private final String messageConsumerQueueUrl;
-    private final CreateQueueRequest messageProducer;
-    private final String messageProducerQueueUrl;
+    private CreateQueueRequest messageRequestQueue;
+    private String messageRequestQueueUrl;
+    private CreateQueueRequest messageResponse;
+    private String messageResponseQueueUrl;
     private final Gson gson;
 
     private QueueBasedImplementationRunner(ImplementationRunnerConfig config, ProcessingRules deployProcessingRules) {
@@ -96,23 +100,24 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
 
         LoggerFactory.getLogger(this.getClass()).debug("Connecting to the remote broker");
 
-        final Map<String, String> attributes = new HashMap<>();
-        attributes.put("FifoQueue", "true");
-        attributes.put("ContentBasedDeduplication", "true");
-
-        String requestQueue = uniqueId + "-req";
-        messageConsumer = new CreateQueueRequest(requestQueue).withAttributes(attributes);
-        messageConsumerQueueUrl = client.createQueue(messageConsumer).getQueueUrl();
+        try {
+            messageRequestQueue = createQueueRequest(uniqueId + "-req");
+            messageRequestQueueUrl = createQueue(messageRequestQueue);
+            messageResponse = createQueueRequest(uniqueId + "-resp");
+            messageResponseQueueUrl = createQueue(messageResponse);
+        } catch (Exception ex) {
+            logToConsole("        QueueBasedImplementationRunner [error]");
+            String message = "There was a problem creating the queue runner";
+            LOGGER.error(message, ex);
+            audit.logException(message, ex);
+            throw new RuntimeException(ex);
+        }
 
         receiveMessageRequest = new ReceiveMessageRequest();
         receiveMessageRequest.setMaxNumberOfMessages(MAX_NUMBER_OF_MESSAGES);
-        receiveMessageRequest.setQueueUrl(messageConsumerQueueUrl);
+        receiveMessageRequest.setQueueUrl(messageRequestQueueUrl);
         receiveMessageRequest.setWaitTimeSeconds(MAX_AWS_WAIT);
         receiveMessageRequest.setMessageAttributeNames(Arrays.asList(ATTRIBUTE_EVENT_NAME, ATTRIBUTE_EVENT_VERSION));
-
-        String responseQueue = uniqueId + "-resp";
-        messageProducer = new CreateQueueRequest(responseQueue).withAttributes(attributes);
-        messageProducerQueueUrl = client.createQueue(messageProducer).getQueueUrl();
 
         mapper = new ObjectMapper();
 
@@ -145,6 +150,30 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
         responses.clear();
 
         return results;
+    }
+
+    public CreateQueueRequest getRequestQueue() {
+        return messageRequestQueue;
+    }
+
+    public String getRequestQueueUrl() {
+        return messageRequestQueueUrl;
+    }
+
+    public void purgeRequestQueue() {
+        purgeQueue(messageRequestQueue);
+    }
+
+    public CreateQueueRequest getResponseQueue() {
+        return messageResponse;
+    }
+
+    public String getResponseQueueUrl() {
+        return messageResponseQueueUrl;
+    }
+
+    public void purgeResponseQueue() {
+        purgeQueue(messageResponse);
     }
 
     public static class Builder {
@@ -257,7 +286,7 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
         return config.getRequestTimeoutMillis();
     }
 
-    public List<Request> receive() throws BrokerCommunicationException {
+    private List<Request> receive() throws BrokerCommunicationException {
         logToConsole("     QueueBasedImplementationRunner receive [start]");
         try {
             List<Message> messages;
@@ -299,8 +328,8 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
         return newResult;
     }
 
-    public void deleteMessage(Message message) {
-        deleteMessageRequest = new DeleteMessageRequest(messageProducerQueueUrl, message.getReceiptHandle());
+    private void deleteMessage(Message message) {
+        deleteMessageRequest = new DeleteMessageRequest(messageResponseQueueUrl, message.getReceiptHandle());
         client.deleteMessage(deleteMessageRequest);
     }
 
@@ -308,7 +337,7 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
         logToConsole("     QueueBasedImplementationRunner respondTo [start]");
         logToConsole("     response: " + response);
         try {
-            send(messageProducerQueueUrl, new ExecuteCommandEvent(response.toString()));
+            send(messageResponseQueueUrl, new ExecuteCommandEvent(response.toString()));
 
             logToConsole("     QueueBasedImplementationRunner respondTo [end]");
         } catch (Exception e) {
@@ -317,7 +346,7 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
         }
     }
 
-    private void send(String queueUrl, Object object) throws EventSerializationException {
+    public void send(String queueUrl, Object object) throws EventSerializationException {
         QueueEvent annotation = object.getClass().getAnnotation(QueueEvent.class);
         if (annotation == null) {
             throw new EventSerializationException(object.getClass() + " not a QueueEvent");
@@ -346,6 +375,39 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
                 .withEndpointConfiguration(endpointConfiguration)
                 .withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials(accessKey, secretKey)))
                 .build();
+    }
+
+    private CreateQueueRequest createQueueRequest(String queueName) {
+        final Map<String, String> attributes = new HashMap<>();
+        attributes.put("FifoQueue", "true");
+        attributes.put("ContentBasedDeduplication", "true");
+
+        logToConsole(" QueueBasedImplementationRunner createQueueRequest");
+        return new CreateQueueRequest(queueName)
+                .withAttributes(attributes);
+    }
+
+    private String createQueue(CreateQueueRequest queue) {
+        return client.createQueue(queue).getQueueUrl();
+    }
+
+    private QueueSize getQueueSize(String queueUrl) {
+        GetQueueAttributesResult queueAttributes = client
+                .getQueueAttributes(queueUrl, Collections.singletonList("All"));
+        int available = Integer.parseInt(queueAttributes.getAttributes().get("ApproximateNumberOfMessages"));
+        int notVisible = Integer.parseInt(queueAttributes.getAttributes().get("ApproximateNumberOfMessagesNotVisible"));
+        int delayed = Integer.parseInt(queueAttributes.getAttributes().get("ApproximateNumberOfMessagesDelayed"));
+        return new QueueSize(available, notVisible, delayed);
+    }
+
+    public long getSize(CreateQueueRequest queue) {
+        String queueUrl = String.format("%s/queue/%s", serviceEndpoint, queue.getQueueName());
+        return getQueueSize(queueUrl).getAvailable();
+    }
+
+    private void purgeQueue(CreateQueueRequest requestQueue) {
+        String queueUrl = String.format("%s/queue/%s", serviceEndpoint, requestQueue.getQueueName());
+        client.purgeQueue(new PurgeQueueRequest(queueUrl));
     }
 
     //~~~~ Utils
