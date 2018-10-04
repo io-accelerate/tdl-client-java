@@ -113,7 +113,6 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
             String message = "There was a problem creating the queue runner";
             LOGGER.error(message, ex);
             audit.logException(message, ex);
-            throw new RuntimeException(ex);
         }
 
         receiveRequestQueueMessage = new ReceiveMessageRequest();
