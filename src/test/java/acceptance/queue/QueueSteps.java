@@ -15,6 +15,7 @@ import tdl.client.queue.actions.ClientActions;
 import tdl.client.runner.events.ExecuteCommandEvent;
 import utils.logging.LogAuditStream;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -283,7 +284,7 @@ public class QueueSteps {
     }
 
     private void logToConsole(String s) {
-        if ((System.getenv("DEBUG") != null) && System.getenv("DEBUG").contains("true")) {
+        if (new File("DEBUG").exists()) {
             System.out.println(s);
         }
     }

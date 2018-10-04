@@ -3,6 +3,8 @@ package tdl.client.queue.abstractions.response;
 import tdl.client.queue.actions.ClientAction;
 import tdl.client.audit.PresentationUtils;
 
+import java.io.File;
+
 /**
  * Created by julianghionoiu on 20/06/2015.
  */
@@ -19,7 +21,7 @@ public class ValidResponse implements Response {
     }
 
     public void logToConsole(String s) {
-        if ((System.getenv("DEBUG") != null) && System.getenv("DEBUG").contains("true")) {
+        if (new File("DEBUG").exists()) {
             System.out.println(s);
         }
     }
@@ -49,5 +51,4 @@ public class ValidResponse implements Response {
         logToConsole("     ValidResponse getAuditText");
         return String.format("resp = %s", PresentationUtils.toDisplayableString(result));
     }
-
 }

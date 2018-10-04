@@ -36,6 +36,7 @@ import tdl.client.runner.connector.QueueEvent;
 import tdl.client.runner.connector.QueueSize;
 import tdl.client.runner.events.ExecuteCommandEvent;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -96,8 +97,6 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
                 customConfig.getString("sqs.accessKey"),
                 customConfig.getString("sqs.secretKey")
         );
-
-        LoggerFactory.getLogger(this.getClass()).debug("Connecting to the remote broker");
 
         try {
             messageRequestQueue = createQueueRequest(uniqueId + "-req");
@@ -461,7 +460,7 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
     }
 
     private static void logToConsole(String s) {
-        if ((System.getenv("DEBUG") != null) && System.getenv("DEBUG").contains("true")) {
+        if (new File("DEBUG").exists()) {
             System.out.println(s);
         }
     }

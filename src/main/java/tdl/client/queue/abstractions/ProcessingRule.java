@@ -2,6 +2,8 @@ package tdl.client.queue.abstractions;
 
 import tdl.client.queue.actions.ClientAction;
 
+import java.io.File;
+
 /**
  * Created by julianghionoiu on 20/06/2015.
  */
@@ -17,7 +19,7 @@ public class ProcessingRule {
     }
 
     public void logToConsole(String s) {
-        if ((System.getenv("DEBUG") != null) && System.getenv("DEBUG").contains("true")) {
+        if (new File("DEBUG").exists()) {
             System.out.println(s);
         }
     }

@@ -5,6 +5,7 @@ import tdl.client.queue.abstractions.Request;
 import tdl.client.queue.abstractions.response.Response;
 import tdl.client.queue.transport.BrokerCommunicationException;
 
+import java.io.File;
 import java.util.Collections;
 import java.util.List;
 
@@ -24,7 +25,7 @@ public class PublishAction implements ClientAction {
     }
 
     private void logToConsole(String s) {
-        if ((System.getenv("DEBUG") != null) && System.getenv("DEBUG").contains("true")) {
+        if (new File("DEBUG").exists()) {
             System.out.println(s);
         }
     }

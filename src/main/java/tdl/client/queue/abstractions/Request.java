@@ -5,6 +5,8 @@ import tdl.client.audit.Auditable;
 import tdl.client.audit.PresentationUtils;
 import tdl.client.queue.serialization.JsonRpcRequest;
 
+import java.io.File;
+
 /**
  * Created by julianghionoiu on 20/06/2015.
  */
@@ -19,7 +21,7 @@ public class Request implements Auditable {
     }
 
     public void logToConsole(String s) {
-        if ((System.getenv("DEBUG") != null) && System.getenv("DEBUG").contains("true")) {
+        if (new File("DEBUG").exists()) {
             System.out.println(s);
         }
     }

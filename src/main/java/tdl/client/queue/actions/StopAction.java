@@ -4,6 +4,7 @@ import tdl.client.queue.QueueBasedImplementationRunner;
 import tdl.client.queue.abstractions.Request;
 import tdl.client.queue.abstractions.response.Response;
 
+import java.io.File;
 import java.util.Collections;
 import java.util.List;
 
@@ -17,7 +18,7 @@ public class StopAction implements ClientAction {
     }
 
     private void logToConsole(String s) {
-        if ((System.getenv("DEBUG") != null) && System.getenv("DEBUG").contains("true")) {
+        if (new File("DEBUG").exists()) {
             System.out.println(s);
         }
     }

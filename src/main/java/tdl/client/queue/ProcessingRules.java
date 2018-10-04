@@ -9,6 +9,7 @@ import tdl.client.queue.abstractions.response.Response;
 import tdl.client.queue.abstractions.response.ValidResponse;
 import tdl.client.queue.actions.ClientAction;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -31,7 +32,7 @@ public class ProcessingRules {
     }
 
     private static void logToConsole(String s) {
-        if ((System.getenv("DEBUG") != null) && System.getenv("DEBUG").contains("true")) {
+        if (new File("DEBUG").exists()) {
             System.out.println(s);
         }
     }
