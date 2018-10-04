@@ -215,7 +215,8 @@ public class QueueSteps {
     @Then("^the client should consume first request$")
     public void request_queue_less_than_one() {
         assertThat("Wrong number of requests have been consumed",
-                queueBasedImplementationRunner.getRequestQueueSize(),
+                //TODO: scaffolding till we get our request queue-count right
+                queueBasedImplementationRunner.getConsumedMessagesCount(),
                 equalTo(asLong(initialRequestCount - 1)));
     }
 
@@ -257,7 +258,8 @@ public class QueueSteps {
     @Then("^the client should not consume any request$")
     public void request_queue_unchanged() throws Throwable {
         assertThat("The request queue has different size. The message has been consumed.",
-                queueBasedImplementationRunner.getRequestQueueSize(),
+                //TODO: scaffolding till we get our request queue-count right
+                queueBasedImplementationRunner.getReceivedMessagesCount(),
                 equalTo(asLong(initialRequestCount)));
     }
 

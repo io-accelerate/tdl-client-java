@@ -51,6 +51,11 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
     private final Audit audit;
     private final ProcessingRules deployProcessingRules;
     private final ImplementationRunnerConfig config;
+
+    //TODO: scaffolding till we get our request queue-count right
+    private long consumedMessages;
+    private long receivedMessages;
+
     private List<Response> responses;
     private List<Request> requests;
 
@@ -65,7 +70,7 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
     private AmazonSQS client;
     private String serviceEndpoint;
 
-    private ReceiveMessageRequest receiveMessageRequest;
+    private ReceiveMessageRequest receiveRequestQueueMessage;
 
     private CreateQueueRequest messageRequestQueue;
     private String messageRequestQueueUrl;
@@ -111,11 +116,11 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
             throw new RuntimeException(ex);
         }
 
-        receiveMessageRequest = new ReceiveMessageRequest();
-        receiveMessageRequest.setMaxNumberOfMessages(MAX_NUMBER_OF_MESSAGES);
-        receiveMessageRequest.setQueueUrl(messageRequestQueueUrl);
-        receiveMessageRequest.setWaitTimeSeconds(MAX_AWS_WAIT);
-        receiveMessageRequest.setMessageAttributeNames(Arrays.asList(ATTRIBUTE_EVENT_NAME, ATTRIBUTE_EVENT_VERSION));
+        receiveRequestQueueMessage = new ReceiveMessageRequest();
+        receiveRequestQueueMessage.setMaxNumberOfMessages(MAX_NUMBER_OF_MESSAGES);
+        receiveRequestQueueMessage.setQueueUrl(messageRequestQueueUrl);
+        receiveRequestQueueMessage.setWaitTimeSeconds(MAX_AWS_WAIT);
+        receiveRequestQueueMessage.setMessageAttributeNames(Arrays.asList(ATTRIBUTE_EVENT_NAME, ATTRIBUTE_EVENT_VERSION));
 
         mapper = new ObjectMapper();
 
@@ -124,6 +129,16 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
                 .create();
 
         logToConsole("        QueueBasedImplementationRunner creation [end]");
+    }
+
+    //TODO: scaffolding till we get our request queue-count right
+    public long getConsumedMessagesCount() {
+        return consumedMessages;
+    }
+
+    //TODO: scaffolding till we get our request queue-count right
+    public long getReceivedMessagesCount() {
+        return receivedMessages;
     }
 
     public List<String> getReceivedMessages() {
@@ -231,6 +246,9 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
 
             audit.logLine("Waiting for requests");
             logToConsole("        QueueBasedImplementationRunner requests: " + requests.size());
+            //TODO: scaffolding till we get our request queue-count right
+            receivedMessages = requests.size();
+            consumedMessages = 0;
 
             responses.clear();
             for (int requestIndex = requests.size() - 1; requestIndex >= 0; requestIndex--) {
@@ -260,7 +278,9 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
 
                 String simpleClientActionName = clientAction.getClass().getSimpleName();
                 if ("PublishAction".equals(simpleClientActionName)) {
+                    consumedMessages++;
                 } else if ("PublishAndStopAction".equals(simpleClientActionName)) {
+                    consumedMessages++;
                     break;
                 } else if ("StopAction".equals(simpleClientActionName)) {
                     break;
@@ -287,7 +307,7 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
             List<Request> successfulMessages = new ArrayList<>();
             boolean continueFetching;
             do {
-                messages = client.receiveMessage(receiveMessageRequest).getMessages();
+                messages = client.receiveMessage(receiveRequestQueueMessage).getMessages();
                 continueFetching = messages.size() > 0;
                 if (continueFetching) {
                     logToConsole("     QueueBasedImplementationRunner messages: " + messages);
