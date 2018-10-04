@@ -65,7 +65,6 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
     private String serviceEndpoint;
 
     private ReceiveMessageRequest receiveMessageRequest;
-    private DeleteMessageRequest deleteMessageRequest;
 
     private CreateQueueRequest messageRequestQueue;
     private String messageRequestQueueUrl;
@@ -156,10 +155,6 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
         return messageRequestQueue;
     }
 
-    public String getRequestQueueUrl() {
-        return messageRequestQueueUrl;
-    }
-
     public void purgeRequestQueue() {
         purgeQueue(messageRequestQueue);
     }
@@ -168,12 +163,12 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
         return messageResponse;
     }
 
-    public String getResponseQueueUrl() {
-        return messageResponseQueueUrl;
-    }
-
     public void purgeResponseQueue() {
         purgeQueue(messageResponse);
+    }
+
+    public void sendRequest(ExecuteCommandEvent executeCommandEvent) throws EventSerializationException {
+        send(messageRequestQueueUrl, executeCommandEvent);
     }
 
     public static class Builder {
@@ -329,7 +324,7 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
     }
 
     private void deleteMessage(Message message) {
-        deleteMessageRequest = new DeleteMessageRequest(messageResponseQueueUrl, message.getReceiptHandle());
+        DeleteMessageRequest deleteMessageRequest = new DeleteMessageRequest(messageResponseQueueUrl, message.getReceiptHandle());
         client.deleteMessage(deleteMessageRequest);
     }
 
@@ -346,7 +341,7 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
         }
     }
 
-    public void send(String queueUrl, Object object) throws EventSerializationException {
+    private void send(String queueUrl, Object object) throws EventSerializationException {
         QueueEvent annotation = object.getClass().getAnnotation(QueueEvent.class);
         if (annotation == null) {
             throw new EventSerializationException(object.getClass() + " not a QueueEvent");
@@ -400,9 +395,17 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
         return new QueueSize(available, notVisible, delayed);
     }
 
-    public long getSize(CreateQueueRequest queue) {
+    private long getSize(CreateQueueRequest queue) {
         String queueUrl = String.format("%s/queue/%s", serviceEndpoint, queue.getQueueName());
         return getQueueSize(queueUrl).getAvailable();
+    }
+
+    public long getRequestQueueSize() {
+        return getSize(messageRequestQueue);
+    }
+
+    public long getResponseQueueSize() {
+        return getSize(messageRequestQueue);
     }
 
     private void purgeQueue(CreateQueueRequest requestQueue) {

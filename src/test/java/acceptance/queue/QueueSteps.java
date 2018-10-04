@@ -12,12 +12,9 @@ import tdl.client.queue.QueueBasedImplementationRunner;
 import tdl.client.queue.abstractions.UserImplementation;
 import tdl.client.queue.actions.ClientAction;
 import tdl.client.queue.actions.ClientActions;
-import tdl.client.runner.connector.EventProcessingException;
-import tdl.client.runner.connector.QueueEventHandlers;
 import tdl.client.runner.events.ExecuteCommandEvent;
 import utils.logging.LogAuditStream;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,23 +42,11 @@ public class QueueSteps {
     private int initialRequestCount;
     private long processingTimeMillis;
     private final LogAuditStream logAuditStream;
-    private QueueEventHandlers queueEventHandlers;
-    private List<Object> capturedEvents = new ArrayList<>();
-    private String requestQueueUrl;
-    private String responseQueueUrl;
 
     public QueueSteps() {
         this.logAuditStream = new LogAuditStream(new StdoutAuditStream());
         this.initialRequestCount = 0;
         this.processingTimeMillis = 0;
-
-        queueEventHandlers = new QueueEventHandlers();
-
-        try {
-            queueEventHandlers.put(ExecuteCommandEvent.class, capturedEvents::add);
-        } catch (EventProcessingException e) {
-            throw new IllegalArgumentException("Could not create queue handlers");
-        }
     }
 
     //~~~~~ Setup
@@ -80,11 +65,9 @@ public class QueueSteps {
         queueBasedImplementationRunner = queueBasedImplementationRunnerBuilder.create();
 
         requestQueue = queueBasedImplementationRunner.getRequestQueue();
-        requestQueueUrl = queueBasedImplementationRunner.getRequestQueueUrl();
         queueBasedImplementationRunner.purgeRequestQueue();
 
         responseQueue = queueBasedImplementationRunner.getResponseQueue();
-        responseQueueUrl = queueBasedImplementationRunner.getResponseQueueUrl();
         queueBasedImplementationRunner.purgeResponseQueue();
     }
 
@@ -129,7 +112,7 @@ public class QueueSteps {
     public void initialize_request_queue(List<RequestRepresentation> requests) throws Throwable {
         for (RequestRepresentation request : requests) {
             logToConsole("payload: " + request.payload);
-            queueBasedImplementationRunner.send(requestQueueUrl, new ExecuteCommandEvent(request.payload));
+            queueBasedImplementationRunner.sendRequest(new ExecuteCommandEvent(request.payload));
         }
         initialRequestCount = requests.size();
         logToConsole("initial requests sent: " + initialRequestCount);
@@ -140,7 +123,7 @@ public class QueueSteps {
         for (int i = 0; i < number; i++) {
             for (RequestRepresentation request : requests) {
                 logToConsole("payload: " + request.payload);
-                queueBasedImplementationRunner.send(requestQueueUrl, new ExecuteCommandEvent(request.payload));
+                queueBasedImplementationRunner.sendRequest(new ExecuteCommandEvent(request.payload));
             }
         }
         initialRequestCount = requests.size() * number;
@@ -225,13 +208,13 @@ public class QueueSteps {
     @Then("^the client should consume all requests$")
     public void request_queue_empty() {
         assertThat("Requests have not been consumed",
-                queueBasedImplementationRunner.getSize(requestQueue), equalTo(asLong(0)));
+                queueBasedImplementationRunner.getRequestQueueSize(), equalTo(asLong(0)));
     }
 
     @Then("^the client should consume first request$")
     public void request_queue_less_than_one() {
         assertThat("Wrong number of requests have been consumed",
-                queueBasedImplementationRunner.getSize(requestQueue),
+                queueBasedImplementationRunner.getRequestQueueSize(),
                 equalTo(asLong(initialRequestCount - 1)));
     }
 
@@ -273,14 +256,14 @@ public class QueueSteps {
     @Then("^the client should not consume any request$")
     public void request_queue_unchanged() throws Throwable {
         assertThat("The request queue has different size. The message has been consumed.",
-                queueBasedImplementationRunner.getSize(requestQueue),
+                queueBasedImplementationRunner.getRequestQueueSize(),
                 equalTo(asLong(initialRequestCount)));
     }
 
     @And("^the client should not publish any response$")
     public void response_queue_unchanged() throws Throwable {
         assertThat("The response queue has different size. Messages have been published.",
-                queueBasedImplementationRunner.getSize(responseQueue), equalTo(asLong(0)));
+                queueBasedImplementationRunner.getResponseQueueSize(), equalTo(asLong(0)));
     }
 
     @Then("^I should get no exception$")
