@@ -12,11 +12,14 @@ import com.amazonaws.services.sqs.model.Message;
 import com.amazonaws.services.sqs.model.MessageAttributeValue;
 import com.amazonaws.services.sqs.model.PurgeQueueRequest;
 import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
+import com.amazonaws.services.sqs.model.ReceiveMessageResult;
 import com.amazonaws.services.sqs.model.SendMessageRequest;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonSerializer;
 import com.google.gson.JsonSyntaxException;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
@@ -30,6 +33,7 @@ import tdl.client.queue.abstractions.response.Response;
 import tdl.client.queue.actions.ClientAction;
 import tdl.client.queue.serialization.DeserializationException;
 import tdl.client.queue.serialization.JsonRpcRequest;
+import tdl.client.queue.serialization.JsonRpcResponse;
 import tdl.client.queue.transport.BrokerCommunicationException;
 import tdl.client.runner.connector.EventSerializationException;
 import tdl.client.runner.connector.QueueEvent;
@@ -37,6 +41,7 @@ import tdl.client.runner.connector.QueueSize;
 import tdl.client.runner.events.ExecuteCommandEvent;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -56,7 +61,6 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
     private long consumedMessages;
     private long receivedMessages;
 
-    private List<Response> responses;
     private List<Request> requests;
 
     private static final int MAX_NUMBER_OF_MESSAGES = 10;
@@ -84,7 +88,6 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
         this.deployProcessingRules = deployProcessingRules;
         audit = new Audit(config.getAuditStream());
 
-        responses = new ArrayList<>();
         requests = new ArrayList<>();
 
         logToConsole("     QueueBasedImplementationRunner creation [start]");
@@ -119,9 +122,14 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
 
         mapper = new ObjectMapper();
 
-        gson = new GsonBuilder()
-                .serializeNulls()
-                .create();
+        GsonBuilder gsonBuilder = new GsonBuilder();
+        gsonBuilder.registerTypeAdapter(Double.class,
+                (JsonSerializer<Double>) (src, typeOfSrc, context) -> {
+                    Integer value = (int) Math.round(src);
+                    return new JsonPrimitive(value);
+                });
+
+        gson = gsonBuilder.serializeNulls().create();
 
         logToConsole("        QueueBasedImplementationRunner creation [end]");
     }
@@ -144,17 +152,33 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
         return receivedMessages;
     }
 
-    public List<String> getResponseQueueMessages() {
+    public List<String> getResponseQueueMessages() throws IOException {
         List<String> results = new ArrayList<>();
 
-        for (Response response : responses) {
+        ReceiveMessageRequest receiveMessageRequest = createReceiveRequest(messageResponseQueueUrl);
+        ReceiveMessageResult batch;
+        final List<Message> messages = new ArrayList<>();
+        do {
+            batch = client.receiveMessage(receiveMessageRequest);
+            messages.addAll(batch.getMessages());
+        } while (batch.getMessages().size() > 0);
 
-            String result;
+        for (int index = messages.size() - 1; index >= 0; index--) {
+            Message message = messages.get(index);
+            JsonNode jsonNode = mapper.readValue(message.getBody(), JsonNode.class);
+            String payload = jsonNode.get("payload").asText();
+            JsonRpcResponse jsonRpcResponse = gson.fromJson(payload, JsonRpcResponse.class);
+            Response response = jsonRpcResponse.toResponse();
+
+            //TODO: implementation needs replacing, for some reason GSon is converting all int values into double
+            String result = "";
             if ((response.getResult() == null) ||
                     isNumeric(response.getResult())) {
+
+                Object resultAsInt = integerValueOf(response.getResult());
                 result = String.format(
                         "{\"result\":%s,\"error\":null,\"id\":\"%s\"}",
-                        response.getResult(), response.getId());
+                        resultAsInt, response.getId());
             } else {
                 result = String.format(
                         "{\"result\":\"%s\",\"error\":null,\"id\":\"%s\"}",
@@ -163,9 +187,15 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
 
             results.add(result);
         }
-        responses.clear();
 
         return results;
+    }
+
+    private Object integerValueOf(Object value) {
+        if (value instanceof Double) {
+            return ((Double) value).intValue();
+        }
+        return value;
     }
 
     public CreateQueueRequest getRequestQueue() {
@@ -253,7 +283,6 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
             receivedMessages = requests.size();
             consumedMessages = 0;
 
-            responses.clear();
             for (int requestIndex = requests.size() - 1; requestIndex >= 0; requestIndex--) {
                 Request request = requests.get(requestIndex);
                 logToConsole("        QueueBasedImplementationRunner applyProcessingRules [start]");
@@ -264,7 +293,6 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
                 //Obtain response from user
                 Response response = deployProcessingRules.getResponseFor(request);
                 audit.log(response);
-                responses.add(response);
 
                 //Obtain action
                 ClientAction clientAction = response.getClientAction();
@@ -349,7 +377,7 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
         logToConsole("     QueueBasedImplementationRunner respondTo [start]");
         logToConsole("     response: " + response);
         try {
-            send(messageResponseQueueUrl, new ExecuteCommandEvent(response.toString()));
+            send(messageResponseQueueUrl, new ExecuteCommandEvent(gson.toJson(response)));
 
             logToConsole("     QueueBasedImplementationRunner respondTo [end]");
         } catch (Exception e) {
@@ -431,8 +459,9 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
     }
 
     //~~~~ Utils
-    private boolean isNumeric(Object result) {
-        return result.toString().chars().allMatch(Character::isDigit);
+    private boolean isNumeric(Object value) {
+        if (value == null) return false;
+        return ((value instanceof Integer) || (value instanceof Double));
     }
 
     private static class Audit {
