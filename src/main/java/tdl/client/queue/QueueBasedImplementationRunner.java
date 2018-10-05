@@ -267,13 +267,12 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
 
                 //Act
                 clientAction.afterResponse(this, request, response);
-                logToConsole("        QueueBasedImplementationRunner applyProcessingRules clientAction: " + clientAction);
+                logToConsole("        QueueBasedImplementationRunner run clientAction: " + clientAction);
                 audit.log(clientAction);
                 audit.endLine();
-                logToConsole("        QueueBasedImplementationRunner applyProcessingRules [end]");
 
+                logToConsole("        QueueBasedImplementationRunner deleting consumed message");
                 deleteMessage(request.getOriginalMessage());
-                logToConsole("        QueueBasedImplementationRunner deleting read message");
 
                 String simpleClientActionName = clientAction.getClass().getSimpleName();
                 if ("PublishAction".equals(simpleClientActionName)) {

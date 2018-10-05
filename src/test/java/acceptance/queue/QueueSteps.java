@@ -169,8 +169,6 @@ public class QueueSteps {
 
     private static final Map<String, ClientAction> CLIENT_ACTIONS = new HashMap<String, ClientAction>() {{
         put("publish", ClientActions.publish());
-        put("stop", ClientActions.stop());
-        put("publish and stop", ClientActions.publishAndStop());
     }};
 
     private static ClientAction asAction(String actionName) {
@@ -217,7 +215,7 @@ public class QueueSteps {
         assertThat("Wrong number of requests have been consumed",
                 //TODO: scaffolding till we get our request queue-count right
                 queueBasedImplementationRunner.getConsumedMessagesCount(),
-                equalTo(asLong(initialRequestCount - 1)));
+                equalTo(asLong(initialRequestCount)));
     }
 
     class ResponseRepresentation {

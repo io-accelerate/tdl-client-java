@@ -16,9 +16,4 @@ public final class ClientActions {
     public static ClientAction stop() {
         return new StopAction();
     }
-
-    public static ClientAction publishAndStop() {
-        return new PublishAndStopAction();
-    }
-
 }
