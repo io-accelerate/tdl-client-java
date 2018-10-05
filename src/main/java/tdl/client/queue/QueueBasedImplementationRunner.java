@@ -115,11 +115,7 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
             audit.logException(message, ex);
         }
 
-        receiveRequestQueueMessage = new ReceiveMessageRequest();
-        receiveRequestQueueMessage.setMaxNumberOfMessages(MAX_NUMBER_OF_MESSAGES);
-        receiveRequestQueueMessage.setQueueUrl(messageRequestQueueUrl);
-        receiveRequestQueueMessage.setWaitTimeSeconds(MAX_AWS_WAIT);
-        receiveRequestQueueMessage.setMessageAttributeNames(Arrays.asList(ATTRIBUTE_EVENT_NAME, ATTRIBUTE_EVENT_VERSION));
+        receiveRequestQueueMessage = createReceiveRequest(messageRequestQueueUrl);
 
         mapper = new ObjectMapper();
 
@@ -128,6 +124,14 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
                 .create();
 
         logToConsole("        QueueBasedImplementationRunner creation [end]");
+    }
+
+    private ReceiveMessageRequest createReceiveRequest(String queueUrl) {
+        return new ReceiveMessageRequest()
+                .withMaxNumberOfMessages(MAX_NUMBER_OF_MESSAGES)
+                .withQueueUrl(queueUrl)
+                .withWaitTimeSeconds(MAX_AWS_WAIT)
+                .withMessageAttributeNames(Arrays.asList(ATTRIBUTE_EVENT_NAME, ATTRIBUTE_EVENT_VERSION));
     }
 
     //TODO: scaffolding till we get our request queue-count right
@@ -140,7 +144,7 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
         return receivedMessages;
     }
 
-    public List<String> getReceivedMessages() {
+    public List<String> getResponseQueueMessages() {
         List<String> results = new ArrayList<>();
 
         for (Response response : responses) {

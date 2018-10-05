@@ -228,7 +228,7 @@ public class QueueSteps {
                 .map(responseRepresentation -> responseRepresentation.payload)
                 .collect(Collectors.toList());
 
-        List<String> actualContents = queueBasedImplementationRunner.getReceivedMessages();
+        List<String> actualContents = queueBasedImplementationRunner.getResponseQueueMessages();
         assertThat("The responses are not correct", actualContents, equalTo(expectedContents));
     }
 
