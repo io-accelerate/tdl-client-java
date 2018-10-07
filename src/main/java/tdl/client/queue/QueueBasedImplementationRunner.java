@@ -63,7 +63,7 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
 
     private List<Request> requests;
 
-    private static final int MAX_NUMBER_OF_MESSAGES = 10;
+    private static final int MAX_NUMBER_OF_MESSAGES = 1;
     private static final int MAX_AWS_WAIT = 1;
 
     private static final String ATTRIBUTE_EVENT_NAME = "name";
