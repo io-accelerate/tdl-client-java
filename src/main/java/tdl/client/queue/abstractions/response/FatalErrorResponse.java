@@ -1,8 +1,5 @@
 package tdl.client.queue.abstractions.response;
 
-import tdl.client.queue.actions.ClientAction;
-import tdl.client.queue.actions.ClientActions;
-
 /**
  * Created by julianghionoiu on 20/06/2015.
  */
@@ -24,12 +21,6 @@ public class FatalErrorResponse implements Response {
     }
 
     //~~~ Pretty print
-
-    @Override
-    public ClientAction getClientAction() {
-        return ClientActions.stop();
-    }
-
     @Override
     public String getAuditText() {
         return String.format("%s = \"%s\"",  getId(), getResult() );

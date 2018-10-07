@@ -1,13 +1,15 @@
 package acceptance.queue;
 
-import cucumber.api.java.en.*;
 import acceptance.SingletonTestBroker;
+import cucumber.api.java.en.And;
+import cucumber.api.java.en.But;
+import cucumber.api.java.en.Given;
+import cucumber.api.java.en.Then;
+import cucumber.api.java.en.When;
+import tdl.client.audit.StdoutAuditStream;
 import tdl.client.queue.ImplementationRunnerConfig;
 import tdl.client.queue.QueueBasedImplementationRunner;
 import tdl.client.queue.abstractions.UserImplementation;
-import tdl.client.queue.actions.ClientAction;
-import tdl.client.queue.actions.ClientActions;
-import tdl.client.audit.StdoutAuditStream;
 import utils.jmx.broker.RemoteJmxQueue;
 import utils.logging.LogAuditStream;
 
@@ -16,7 +18,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.lessThan;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
 
 public class QueueSteps {
@@ -157,24 +162,9 @@ public class QueueSteps {
         }
     }
 
-    private static final Map<String, ClientAction> CLIENT_ACTIONS = new HashMap<String, ClientAction >() {{
-        put("publish", ClientActions.publish());
-        put("stop", ClientActions.stop());
-        put("publish and stop", ClientActions.publishAndStop());
-    }};
-
-    private static ClientAction asAction(String actionName) {
-        if (CLIENT_ACTIONS.containsKey(actionName)) {
-            return CLIENT_ACTIONS.get(actionName);
-        } else {
-            throw new IllegalArgumentException("Not a valid action reference: \"" + actionName+"\"");
-        }
-    }
-
     class ProcessingRuleRepresentation {
         String method;
         String call;
-        String action;
     }
 
     @When("^I go live with the following processing rules:$")
@@ -182,8 +172,7 @@ public class QueueSteps {
         listOfRules.forEach((ruleLine) ->
             queueBasedImplementationRunnerBuilder.withSolutionFor(
                     ruleLine.method,
-                    asImplementation(ruleLine.call),
-                    asAction(ruleLine.action)
+                    asImplementation(ruleLine.call)
             )
         );
         queueBasedImplementationRunner = queueBasedImplementationRunnerBuilder.create();
@@ -203,7 +192,7 @@ public class QueueSteps {
 
     @Then("^the client should consume first request$")
     public void request_queue_less_than_one() throws Throwable {
-        assertThat("Wrong number of requests have been consumed",requestQueue.getSize(), equalTo(asLong(initialRequestCount-1)));
+        assertThat("Wrong number of requests have been consumed",requestQueue.getSize(), equalTo(asLong(initialRequestCount)));
     }
 
     class ResponseRepresentation {

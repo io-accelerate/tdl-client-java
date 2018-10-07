@@ -32,7 +32,9 @@ class Version {
 
     static Version fromString(versionString) {
         def (String major, String minor, String patch) = versionString.tokenize( '.' )
-        new Version(major.toInteger(), minor.toInteger(), patch.toInteger())
+        new Version(major.toInteger(),
+                    minor.isNumber() ? minor.toInteger() : 0,
+                    patch.toInteger())
     }
 
     boolean higherThan(Version otherVersion) {

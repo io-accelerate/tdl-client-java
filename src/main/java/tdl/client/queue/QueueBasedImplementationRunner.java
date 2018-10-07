@@ -2,17 +2,16 @@ package tdl.client.queue;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import tdl.client.queue.abstractions.Request;
-import tdl.client.queue.abstractions.UserImplementation;
-import tdl.client.queue.abstractions.response.Response;
-import tdl.client.queue.actions.ClientAction;
 import tdl.client.audit.AuditStream;
 import tdl.client.audit.Auditable;
+import tdl.client.queue.abstractions.Request;
+import tdl.client.queue.abstractions.UserImplementation;
+import tdl.client.queue.abstractions.response.FatalErrorResponse;
+import tdl.client.queue.abstractions.response.Response;
 import tdl.client.queue.transport.BrokerCommunicationException;
 import tdl.client.queue.transport.RemoteBroker;
-import java.util.Optional;
 
-import static tdl.client.queue.actions.ClientActions.publish;
+import java.util.Optional;
 
 public class QueueBasedImplementationRunner implements ImplementationRunner {
     private static final Logger LOGGER = LoggerFactory.getLogger(QueueBasedImplementationRunner.class);
@@ -44,15 +43,7 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
             deployProcessingRules
                     .on(methodName)
                     .call(userImplementation)
-                    .then(publish());
-            return this;
-        }
-
-        public Builder withSolutionFor(String methodName, UserImplementation userImplementation, ClientAction action) {
-            deployProcessingRules
-                    .on(methodName)
-                    .call(userImplementation)
-                    .then(action);
+                    .then();
             return this;
         }
 
@@ -67,7 +58,7 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
             deployProcessingRules
                     .on("display_description")
                     .call(params -> "OK")
-                    .then(publish());
+                    .then();
 
             return deployProcessingRules;
         }
@@ -75,7 +66,7 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
 
     public void run() {
         audit.logLine("Starting client");
-        try (RemoteBroker remoteBroker = new RemoteBroker(config.getHostname(), config.getPort(), config.getUniqueId(), config.getRequestTimeoutMillis())){
+        try (RemoteBroker remoteBroker = new RemoteBroker(config.getHostname(), config.getPort(), config.getUniqueId(), config.getRequestTimeoutMillis())) {
             //Design: We use a while loop instead of an ActiveMQ MessageListener to process the messages in order
             audit.logLine("Waiting for requests");
             Optional<Request> request = remoteBroker.receive();
@@ -104,16 +95,21 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
         Response response = processingRules.getResponseFor(request);
         audit.log(response);
 
-        //Obtain action
-        ClientAction clientAction = response.getClientAction();
-
         //Act
-        clientAction.afterResponse(remoteBroker, request, response);
-        audit.log(clientAction);
+        if (response instanceof FatalErrorResponse) {
+            audit.endLine();
+            return Optional.empty();
+        }
+
+        remoteBroker.respondTo(request, with(response));
         audit.endLine();
-        return clientAction.getNextRequest(remoteBroker);
+
+        return remoteBroker.receive();
     }
 
+    <T> T with(T obj) {
+        return obj;
+    }
 
     //~~~~ Utils
 

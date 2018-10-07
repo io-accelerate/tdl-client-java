@@ -1,6 +1,5 @@
 package tdl.client.queue.abstractions.response;
 
-import tdl.client.queue.actions.ClientAction;
 import tdl.client.audit.PresentationUtils;
 
 /**
@@ -9,12 +8,10 @@ import tdl.client.audit.PresentationUtils;
 public class ValidResponse implements Response {
     private final String id;
     private final Object result;
-    private final ClientAction clientAction;
 
-    public ValidResponse(String id, Object result, ClientAction clientAction) {
+    public ValidResponse(String id, Object result) {
         this.id = id;
         this.result = result;
-        this.clientAction = clientAction;
     }
 
     @Override
@@ -28,13 +25,6 @@ public class ValidResponse implements Response {
     }
 
     //~~~ Pretty print
-
-
-    @Override
-    public ClientAction getClientAction() {
-        return clientAction;
-    }
-
     @Override
     public String getAuditText() {
         return String.format("resp = %s", PresentationUtils.toDisplayableString(result));
