@@ -1,7 +1,6 @@
 package tdl.client.queue.serialization;
 
 import tdl.client.queue.abstractions.response.Response;
-import tdl.client.queue.actions.ClientAction;
 
 /**
  * Created by julianghionoiu on 10/01/2016.
@@ -33,11 +32,6 @@ public final class JsonRpcResponse {
             @Override
             public Object getResult() {
                 return result;
-            }
-
-            @Override
-            public ClientAction getClientAction() {
-                return null;
             }
 
             @Override

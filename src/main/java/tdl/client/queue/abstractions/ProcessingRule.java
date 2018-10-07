@@ -1,7 +1,5 @@
 package tdl.client.queue.abstractions;
 
-import tdl.client.queue.actions.ClientAction;
-
 import java.io.File;
 
 /**
@@ -10,12 +8,10 @@ import java.io.File;
 
 public class ProcessingRule {
     private final UserImplementation userImplementation;
-    private final ClientAction clientAction;
 
-    public ProcessingRule(UserImplementation userImplementation, ClientAction clientAction) {
+    public ProcessingRule(UserImplementation userImplementation) {
         logToConsole("           ProcessingRule creation");
         this.userImplementation = userImplementation;
-        this.clientAction = clientAction;
     }
 
     public void logToConsole(String s) {
@@ -29,16 +25,10 @@ public class ProcessingRule {
         return userImplementation;
     }
 
-    public ClientAction getClientAction() {
-        logToConsole("           ProcessingRule getClientAction");
-        return clientAction;
-    }
-
     @Override
     public String toString() {
         return "ProcessingRule{" +
                 "userImplementation=" + userImplementation +
-                ", clientAction=" + clientAction +
                 '}';
     }
 }

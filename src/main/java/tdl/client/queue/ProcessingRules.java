@@ -7,7 +7,6 @@ import tdl.client.queue.abstractions.UserImplementation;
 import tdl.client.queue.abstractions.response.FatalErrorResponse;
 import tdl.client.queue.abstractions.response.Response;
 import tdl.client.queue.abstractions.response.ValidResponse;
-import tdl.client.queue.actions.ClientAction;
 
 import java.io.File;
 import java.util.HashMap;
@@ -26,9 +25,9 @@ public class ProcessingRules {
         rules = new HashMap<>();
     }
 
-    private void add(String methodName, UserImplementation userImplementation, ClientAction clientAction) {
+    private void add(String methodName, UserImplementation userImplementation) {
         logToConsole("           ProcessingRules add");
-        rules.put(methodName, new ProcessingRule(userImplementation, clientAction));
+        rules.put(methodName, new ProcessingRule(userImplementation));
     }
 
     private static void logToConsole(String s) {
@@ -60,9 +59,9 @@ public class ProcessingRules {
             return this;
         }
 
-        void then(ClientAction clientAction) {
-            logToConsole("           ProcessingRuleBuilder then");
-            instance.add(methodName, userImplementation, clientAction);
+        void build() {
+            logToConsole("           ProcessingRuleBuilder build");
+            instance.add(methodName, userImplementation);
         }
     }
     //~~~ Accessors
@@ -81,7 +80,7 @@ public class ProcessingRules {
         Response response;
         try {
             Object result = rule.getUserImplementation().process(request.getParams());
-            response = new ValidResponse(request.getId(), result, rule.getClientAction());
+            response = new ValidResponse(request.getId(), result);
         } catch (Exception e) {
             String message = "user implementation raised exception";
             LoggerFactory.getLogger(ProcessingRules.class).warn(message, e);

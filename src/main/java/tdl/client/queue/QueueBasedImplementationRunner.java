@@ -29,8 +29,8 @@ import tdl.client.audit.AuditStream;
 import tdl.client.audit.Auditable;
 import tdl.client.queue.abstractions.Request;
 import tdl.client.queue.abstractions.UserImplementation;
+import tdl.client.queue.abstractions.response.FatalErrorResponse;
 import tdl.client.queue.abstractions.response.Response;
-import tdl.client.queue.actions.ClientAction;
 import tdl.client.queue.serialization.DeserializationException;
 import tdl.client.queue.serialization.JsonRpcRequest;
 import tdl.client.queue.serialization.JsonRpcResponse;
@@ -48,8 +48,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static tdl.client.queue.actions.ClientActions.publish;
 
 public class QueueBasedImplementationRunner implements ImplementationRunner {
     private static final Logger LOGGER = LoggerFactory.getLogger(QueueBasedImplementationRunner.class);
@@ -157,7 +155,7 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
             Response response = jsonRpcResponse.toResponse();
 
             //TODO: implementation needs replacing, for some reason GSon is converting all int values into double
-            String result = "";
+            String result;
             if ((response.getResult() == null) ||
                     isNumeric(response.getResult())) {
 
@@ -222,15 +220,7 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
             deployProcessingRules
                     .on(methodName)
                     .call(userImplementation)
-                    .then(publish());
-            return this;
-        }
-
-        public Builder withSolutionFor(String methodName, UserImplementation userImplementation, ClientAction action) {
-            deployProcessingRules
-                    .on(methodName)
-                    .call(userImplementation)
-                    .then(action);
+                    .build();
             return this;
         }
 
@@ -248,7 +238,7 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
             deployProcessingRules
                     .on("display_description")
                     .call(params -> "OK")
-                    .then(publish());
+                    .build();
 
             logToConsole("        QueueBasedImplementationRunner.Builder createDeployProcessingRules [end]");
             return deployProcessingRules;
@@ -277,17 +267,16 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
                 Response response = deployProcessingRules.getResponseFor(request);
                 audit.log(response);
 
-                //Obtain action
-                ClientAction clientAction = response.getClientAction();
-
                 //Act
-                clientAction.afterResponse(this, request, response);
-                logToConsole("        QueueBasedImplementationRunner run clientAction: " + clientAction);
-                audit.log(clientAction);
-                audit.endLine();
+                if (response instanceof FatalErrorResponse) {
+                    audit.endLine();
+                } else {
+                    respondTo(request, with(response));
+                    audit.endLine();
 
-                logToConsole("        QueueBasedImplementationRunner deleting consumed message");
-                deleteMessage(request.getOriginalMessage());
+                    logToConsole("        QueueBasedImplementationRunner deleting consumed message");
+                    deleteMessage(request.getOriginalMessage());
+                }
             }
         } catch (Exception e) {
             logToConsole("        QueueBasedImplementationRunner run [error]");
@@ -297,6 +286,10 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
         }
         audit.logLine("Stopping client");
         logToConsole("        QueueBasedImplementationRunner run [end]");
+    }
+
+    <T> T with(T obj) {
+        return obj;
     }
 
     public int getRequestTimeoutMillis() {
@@ -346,7 +339,7 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
         client.deleteMessage(deleteMessageRequest);
     }
 
-    public void respondTo(Request request, Response response) throws BrokerCommunicationException {
+    private void respondTo(Request request, Response response) throws BrokerCommunicationException {
         logToConsole("     QueueBasedImplementationRunner respondTo [start]");
         logToConsole("     response: " + response);
         try {

@@ -10,8 +10,6 @@ import tdl.client.audit.StdoutAuditStream;
 import tdl.client.queue.ImplementationRunnerConfig;
 import tdl.client.queue.QueueBasedImplementationRunner;
 import tdl.client.queue.abstractions.UserImplementation;
-import tdl.client.queue.actions.ClientAction;
-import tdl.client.queue.actions.ClientActions;
 import tdl.client.runner.events.ExecuteCommandEvent;
 import utils.logging.LogAuditStream;
 
@@ -167,22 +165,9 @@ public class QueueSteps {
         }
     }
 
-    private static final Map<String, ClientAction> CLIENT_ACTIONS = new HashMap<String, ClientAction>() {{
-        put("publish", ClientActions.publish());
-    }};
-
-    private static ClientAction asAction(String actionName) {
-        if (CLIENT_ACTIONS.containsKey(actionName)) {
-            return CLIENT_ACTIONS.get(actionName);
-        } else {
-            throw new IllegalArgumentException("Not a valid action reference: \"" + actionName + "\"");
-        }
-    }
-
     class ProcessingRuleRepresentation {
         String method;
         String call;
-        String action;
     }
 
     @When("^I go live with the following processing rules:$")
@@ -190,8 +175,7 @@ public class QueueSteps {
         listOfRules.forEach((ruleLine) ->
                 queueBasedImplementationRunnerBuilder.withSolutionFor(
                         ruleLine.method,
-                        asImplementation(ruleLine.call),
-                        asAction(ruleLine.action)
+                        asImplementation(ruleLine.call)
                 )
         );
         queueBasedImplementationRunner = queueBasedImplementationRunnerBuilder.create();
