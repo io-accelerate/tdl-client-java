@@ -207,14 +207,13 @@ public class QueueSteps {
     @Then("^the client should consume all requests$")
     public void request_queue_empty() {
         assertThat("Requests have not been consumed",
-                queueBasedImplementationRunner.getRequestQueueSize(), equalTo(asLong(0)));
+                queueBasedImplementationRunner.getRequestQueueMessagesAvailableCount(), equalTo(asLong(0)));
     }
 
     @Then("^the client should consume first request$")
     public void request_queue_less_than_one() {
         assertThat("Wrong number of requests have been consumed",
-                //TODO: scaffolding till we get our request queue-count right
-                queueBasedImplementationRunner.getConsumedMessagesCount(),
+                queueBasedImplementationRunner.getRequestQueueMessagesConsumedCount(),
                 equalTo(asLong(initialRequestCount)));
     }
 
@@ -256,15 +255,14 @@ public class QueueSteps {
     @Then("^the client should not consume any request$")
     public void request_queue_unchanged() throws Throwable {
         assertThat("The request queue has different size. The message has been consumed.",
-                //TODO: scaffolding till we get our request queue-count right
-                queueBasedImplementationRunner.getReceivedMessagesCount(),
+                queueBasedImplementationRunner.getRequestQueueMessagesConsumedCount(),
                 equalTo(asLong(initialRequestCount)));
     }
 
     @And("^the client should not publish any response$")
     public void response_queue_unchanged() throws Throwable {
         assertThat("The response queue has different size. Messages have been published.",
-                queueBasedImplementationRunner.getResponseQueueSize(), equalTo(asLong(0)));
+                queueBasedImplementationRunner.getResponseQueueMessagesConsumedCount(), equalTo(asLong(0)));
     }
 
     @Then("^I should get no exception$")

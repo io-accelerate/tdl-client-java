@@ -57,10 +57,6 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
     private final ProcessingRules deployProcessingRules;
     private final ImplementationRunnerConfig config;
 
-    //TODO: scaffolding till we get our request queue-count right
-    private long consumedMessages;
-    private long receivedMessages;
-
     private List<Request> requests;
 
     private static final int MAX_NUMBER_OF_MESSAGES = 1;
@@ -140,16 +136,6 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
                 .withQueueUrl(queueUrl)
                 .withWaitTimeSeconds(MAX_AWS_WAIT)
                 .withMessageAttributeNames(Arrays.asList(ATTRIBUTE_EVENT_NAME, ATTRIBUTE_EVENT_VERSION));
-    }
-
-    //TODO: scaffolding till we get our request queue-count right
-    public long getConsumedMessagesCount() {
-        return consumedMessages;
-    }
-
-    //TODO: scaffolding till we get our request queue-count right
-    public long getReceivedMessagesCount() {
-        return receivedMessages;
     }
 
     public List<String> getResponseQueueMessages() throws IOException {
@@ -279,9 +265,6 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
 
             audit.logLine("Waiting for requests");
             logToConsole("        QueueBasedImplementationRunner requests: " + requests.size());
-            //TODO: scaffolding till we get our request queue-count right
-            receivedMessages = requests.size();
-            consumedMessages = 0;
 
             for (int requestIndex = requests.size() - 1; requestIndex >= 0; requestIndex--) {
                 Request request = requests.get(requestIndex);
@@ -305,16 +288,6 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
 
                 logToConsole("        QueueBasedImplementationRunner deleting consumed message");
                 deleteMessage(request.getOriginalMessage());
-
-                String simpleClientActionName = clientAction.getClass().getSimpleName();
-                if ("PublishAction".equals(simpleClientActionName)) {
-                    consumedMessages++;
-                } else if ("PublishAndStopAction".equals(simpleClientActionName)) {
-                    consumedMessages++;
-                    break;
-                } else if ("StopAction".equals(simpleClientActionName)) {
-                    break;
-                }
             }
         } catch (Exception e) {
             logToConsole("        QueueBasedImplementationRunner run [error]");
@@ -431,26 +404,25 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
         return client.createQueue(queue).getQueueUrl();
     }
 
-    private QueueSize getQueueSize(String queueUrl) {
+    public long getRequestQueueMessagesAvailableCount() {
+        return getQueueSizeAttributes(messageRequestQueueUrl).getAvailable();
+    }
+
+    public long getRequestQueueMessagesConsumedCount() {
+        return getQueueSizeAttributes(messageRequestQueueUrl).getNotVisible();
+    }
+
+    public long getResponseQueueMessagesConsumedCount() {
+        return getQueueSizeAttributes(messageResponseQueueUrl).getNotVisible();
+    }
+
+    private QueueSize getQueueSizeAttributes(String queueUrl) {
         GetQueueAttributesResult queueAttributes = client
                 .getQueueAttributes(queueUrl, Collections.singletonList("All"));
         int available = Integer.parseInt(queueAttributes.getAttributes().get("ApproximateNumberOfMessages"));
         int notVisible = Integer.parseInt(queueAttributes.getAttributes().get("ApproximateNumberOfMessagesNotVisible"));
         int delayed = Integer.parseInt(queueAttributes.getAttributes().get("ApproximateNumberOfMessagesDelayed"));
         return new QueueSize(available, notVisible, delayed);
-    }
-
-    private long getSize(CreateQueueRequest queue) {
-        String queueUrl = String.format("%s/queue/%s", serviceEndpoint, queue.getQueueName());
-        return getQueueSize(queueUrl).getAvailable();
-    }
-
-    public long getRequestQueueSize() {
-        return getSize(messageRequestQueue);
-    }
-
-    public long getResponseQueueSize() {
-        return getSize(messageRequestQueue);
     }
 
     private void purgeQueue(CreateQueueRequest requestQueue) {
