@@ -43,7 +43,7 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
             deployProcessingRules
                     .on(methodName)
                     .call(userImplementation)
-                    .then();
+                    .build();
             return this;
         }
 
@@ -58,7 +58,7 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
             deployProcessingRules
                     .on("display_description")
                     .call(params -> "OK")
-                    .then();
+                    .build();
 
             return deployProcessingRules;
         }

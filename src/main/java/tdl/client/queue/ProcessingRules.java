@@ -47,7 +47,7 @@ public class ProcessingRules {
             return this;
         }
 
-        void then() {
+        void build() {
             instance.add(methodName, userImplementation);
         }
     }
