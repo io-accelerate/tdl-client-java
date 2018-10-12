@@ -248,36 +248,53 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
     public void run() {
         logToConsole("        QueueBasedImplementationRunner run [start]");
         audit.logLine("Starting client");
-        requests.clear();
         try {
-            requests.clear();
-            requests.addAll(receive());
-
             audit.logLine("Waiting for requests");
-            logToConsole("        QueueBasedImplementationRunner requests: " + requests.size());
+            logToConsole("     QueueBasedImplementationRunner receive [start]");
+            List<Message> messages;
+            boolean continueFetching;
+            do {
+                messages = client.receiveMessage(receiveRequestQueueMessage).getMessages();
+                continueFetching = messages.size() > 0;
+                if (continueFetching) {
+                    logToConsole("     QueueBasedImplementationRunner messages: " + messages);
+                    for (Message message : messages) {
+                        logToConsole("message: " + message);
+                        logToConsole("payload: " + message.getBody());
 
-            for (int requestIndex = requests.size() - 1; requestIndex >= 0; requestIndex--) {
-                Request request = requests.get(requestIndex);
-                logToConsole("        QueueBasedImplementationRunner applyProcessingRules [start]");
-                audit.startLine();
-                audit.log(request);
-                requests.add(request);
+                        try {
+                            logToConsole("        QueueBasedImplementationRunner applyProcessingRules [start]");
+                            JsonNode jsonNode = mapper.readValue(message.getBody(), JsonNode.class);
+                            String payload = jsonNode.get("payload").asText();
+                            JsonRpcRequest jsonRpcRequest = gson.fromJson(payload, JsonRpcRequest.class);
 
-                //Obtain response from user
-                Response response = deployProcessingRules.getResponseFor(request);
-                audit.log(response);
+                            Request request = new Request(message, jsonRpcRequest);
+                            audit.startLine();
+                            audit.log(request);
+                            requests.add(request);
 
-                //Act
-                if (response instanceof FatalErrorResponse) {
-                    audit.endLine();
-                } else {
-                    respondTo(request, with(response));
-                    audit.endLine();
+                            //Obtain response from user
+                            Response response = deployProcessingRules.getResponseFor(request);
+                            audit.log(response);
 
-                    logToConsole("        QueueBasedImplementationRunner deleting consumed message");
-                    deleteMessage(request.getOriginalMessage());
+                            //Act
+                            if (response instanceof FatalErrorResponse) {
+                                audit.endLine();
+                            } else {
+                                respondTo(request, with(response));
+                                audit.endLine();
+
+                                logToConsole("        QueueBasedImplementationRunner deleting consumed message");
+                                deleteMessage(request.getOriginalMessage());
+                            }
+                        } catch (JsonSyntaxException e) {
+                            logToConsole("     QueueBasedImplementationRunner did not complete reading all messages successfully, not deleting unsuccessful messages");
+                            throw new DeserializationException("Invalid message format", e);
+                        }
+                    }
                 }
-            }
+            } while (continueFetching);
+            logToConsole("        QueueBasedImplementationRunner run finished receiving and processing message");
         } catch (Exception e) {
             logToConsole("        QueueBasedImplementationRunner run [error]");
             String message = "There was a problem processing messages";
@@ -294,44 +311,6 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
 
     public int getRequestTimeoutMillis() {
         return config.getRequestTimeoutMillis();
-    }
-
-    private List<Request> receive() throws BrokerCommunicationException {
-        logToConsole("     QueueBasedImplementationRunner receive [start]");
-        try {
-            List<Message> messages;
-            List<Request> successfulMessages = new ArrayList<>();
-            boolean continueFetching;
-            do {
-                messages = client.receiveMessage(receiveRequestQueueMessage).getMessages();
-                continueFetching = messages.size() > 0;
-                if (continueFetching) {
-                    logToConsole("     QueueBasedImplementationRunner messages: " + messages);
-                    List<Request> newResult = new ArrayList<>();
-                    for (Message message : messages) {
-                        logToConsole("message: " + message);
-                        logToConsole("payload: " + message.getBody());
-
-                        try {
-                            JsonNode jsonNode = mapper.readValue(message.getBody(), JsonNode.class);
-                            String payload = jsonNode.get("payload").asText();
-                            JsonRpcRequest jsonRpcRequest = gson.fromJson(payload, JsonRpcRequest.class);
-                            newResult.add(new Request(message, jsonRpcRequest));
-                        } catch (JsonSyntaxException e) {
-                            logToConsole("     QueueBasedImplementationRunner did not complete reading all messages successfully, not deleting unsuccessful messages");
-                            throw new DeserializationException("Invalid message format", e);
-                        }
-                    }
-                    successfulMessages.addAll(newResult);
-                }
-            } while (continueFetching);
-
-            logToConsole("     QueueBasedImplementationRunner receive [end]");
-            return successfulMessages;
-        } catch (Exception ex) {
-            logToConsole("     QueueBasedImplementationRunner receive [error]");
-            throw new BrokerCommunicationException(ex);
-        }
     }
 
     private void deleteMessage(Message message) {

@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.lessThan;
@@ -212,7 +213,7 @@ public class QueueSteps {
                 .collect(Collectors.toList());
 
         List<String> actualContents = queueBasedImplementationRunner.getResponseQueueMessages();
-        assertThat("The responses are not correct", actualContents, equalTo(expectedContents));
+        assertThat("The responses are not correct", actualContents, containsInAnyOrder(expectedContents.toArray()));
     }
 
     class OutputRepresentation {
