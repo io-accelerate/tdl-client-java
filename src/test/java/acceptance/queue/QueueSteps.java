@@ -53,13 +53,8 @@ public class QueueSteps {
 
     @Given("^I start with a clean broker and a client for user \"([^\"]*)\"$")
     public void create_the_queues(String username) throws Throwable {
-        requestQueue = broker.addQueue(username +".req");
-        requestQueue.purge();
-
-        responseQueue = broker.addQueue(username +".resp");
-        responseQueue.purge();
-
         logAuditStream.clearLog();
+
         ImplementationRunnerConfig config = new ImplementationRunnerConfig().setHostname(HOSTNAME)
                 .setPort(PORT)
                 .setUniqueId(username)
@@ -69,6 +64,12 @@ public class QueueSteps {
                 .setConfig(config);
 
         queueBasedImplementationRunner = queueBasedImplementationRunnerBuilder.create();
+
+        requestQueue = broker.addQueue(config.getRequestQueueName());
+        requestQueue.purge();
+
+        responseQueue = broker.addQueue(config.getResponseQueueName());
+        responseQueue.purge();
     }
 
     @Given("^the broker is not available$")

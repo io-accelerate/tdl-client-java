@@ -53,11 +53,15 @@ public class ImplementationRunnerConfig {
         return port;
     }
 
-    public String getUniqueId() {
-        return uniqueId;
-    }
-
     public int getRequestTimeoutMillis() {
         return requestTimeoutMillis;
+    }
+
+    public String getRequestQueueName() {
+        return uniqueId + ".req";
+    }
+
+    public String getResponseQueueName() {
+        return uniqueId + ".resp";
     }
 }

@@ -66,7 +66,12 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
 
     public void run() {
         audit.logLine("Starting client");
-        try (RemoteBroker remoteBroker = new RemoteBroker(config.getHostname(), config.getPort(), config.getUniqueId(), config.getRequestTimeoutMillis())) {
+        try (RemoteBroker remoteBroker = new RemoteBroker(
+                config.getHostname(),
+                config.getPort(),
+                config.getRequestTimeoutMillis(),
+                config.getRequestQueueName(),
+                config.getResponseQueueName())) {
             //Design: We use a while loop instead of an ActiveMQ MessageListener to process the messages in order
             audit.logLine("Waiting for requests");
             Optional<Request> request = remoteBroker.receive();
