@@ -23,7 +23,7 @@ public class FatalErrorResponse implements Response {
     //~~~ Pretty print
     @Override
     public String getAuditText() {
-        return String.format("%s = \"%s\"",  getId(), getResult() );
+        return String.format("%s = \"%s\", %s",  getId(), getResult(), "(NOT PUBLISHED)" );
     }
 
 }
