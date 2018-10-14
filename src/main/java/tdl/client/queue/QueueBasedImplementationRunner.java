@@ -88,7 +88,6 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
 
         String hostname = config.getHostname();
         int port = config.getPort();
-        String uniqueId = config.getUniqueId();
 
         Config customConfig = ConfigFactory.load();
         customConfig.checkValid(ConfigFactory.defaultReference());
@@ -101,9 +100,9 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
         );
 
         try {
-            messageRequestQueue = createQueueRequest(uniqueId + "-req");
+            messageRequestQueue = createQueueRequest(customConfig.getString("sqs.requestQueueName"));
             messageRequestQueueUrl = createQueue(messageRequestQueue);
-            messageResponse = createQueueRequest(uniqueId + "-resp");
+            messageResponse = createQueueRequest(customConfig.getString("sqs.responseQueueName"));
             messageResponseQueueUrl = createQueue(messageResponse);
         } catch (Exception ex) {
             logToConsole("        QueueBasedImplementationRunner [error]");

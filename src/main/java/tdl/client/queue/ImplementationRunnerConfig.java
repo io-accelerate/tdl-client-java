@@ -6,7 +6,6 @@ import tdl.client.audit.StdoutAuditStream;
 public class ImplementationRunnerConfig {
     private String hostname;
     private int port;
-    private String uniqueId;
     private AuditStream auditStream;
     private int requestTimeoutMillis;
 
@@ -18,11 +17,6 @@ public class ImplementationRunnerConfig {
 
     public ImplementationRunnerConfig setHostname(String hostname) {
         this.hostname = hostname;
-        return this;
-    }
-
-    public ImplementationRunnerConfig setUniqueId(String uniqueId) {
-        this.uniqueId = uniqueId;
         return this;
     }
 
@@ -51,10 +45,6 @@ public class ImplementationRunnerConfig {
 
     public int getPort() {
         return port;
-    }
-
-    public String getUniqueId() {
-        return uniqueId;
     }
 
     public int getRequestTimeoutMillis() {

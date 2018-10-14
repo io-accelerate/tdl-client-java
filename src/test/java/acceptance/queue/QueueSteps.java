@@ -56,7 +56,6 @@ public class QueueSteps {
         logAuditStream.clearLog();
         ImplementationRunnerConfig config = new ImplementationRunnerConfig().setHostname(HOSTNAME)
                 .setPort(PORT)
-                .setUniqueId(username)
                 .setAuditStream(logAuditStream);
 
         queueBasedImplementationRunnerBuilder = new QueueBasedImplementationRunner.Builder()
@@ -77,7 +76,6 @@ public class QueueSteps {
         ImplementationRunnerConfig config = new ImplementationRunnerConfig()
                 .setHostname("111")
                 .setPort(PORT)
-                .setUniqueId("X")
                 .setAuditStream(logAuditStream)
                 .setRequestTimeoutMillis(200);
         queueBasedImplementationRunnerBuilder = new QueueBasedImplementationRunner.Builder()
