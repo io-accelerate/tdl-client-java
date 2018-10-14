@@ -88,18 +88,6 @@ public class QueueSteps {
                 queueBasedImplementationRunner.getRequestTimeoutMillis(), equalTo(expectedTimeout));
     }
 
-    @Then("^the request queue is \"([^\"]*)\"$")
-    public void check_request_queue(String expectedValue) {
-        assertThat("Request queue has a different value.",
-                requestQueue.getQueueName(), equalTo(expectedValue));
-    }
-
-    @Then("^the response queue is \"([^\"]*)\"$")
-    public void check_response_queue(String expectedValue) {
-        assertThat("Response queue has a different value.",
-                responseQueue.getQueueName(), equalTo(expectedValue));
-    }
-
     class RequestRepresentation {
 
         String payload;
