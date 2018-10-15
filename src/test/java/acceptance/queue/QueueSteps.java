@@ -51,7 +51,7 @@ public class QueueSteps {
 
     //~~~~~ Setup
 
-    @Given("^I start with a clean broker and a client for user \"([^\"]*)\"$")
+    @Given("^I start with a clean broker having a request and a response queue and a client that connects to the queues$")
     public void create_the_queues(String username) throws Throwable {
         logAuditStream.clearLog();
 
