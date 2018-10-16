@@ -51,8 +51,9 @@ public class QueueSteps {
 
     //~~~~~ Setup
 
-    @Given("^I start with a clean broker for user \"([^\"]*)\" having a request and a response queue and a client that connects to the queues$")
-    public void create_the_queues(String username) {
+
+    @Given("^I start with a clean broker having a request and a response queue$")
+    public void queue_setup() {
         logAuditStream.clearLog();
         ImplementationRunnerConfig config = new ImplementationRunnerConfig().setHostname(HOSTNAME)
                 .setPort(PORT)
@@ -61,6 +62,10 @@ public class QueueSteps {
         queueBasedImplementationRunnerBuilder = new QueueBasedImplementationRunner.Builder()
                 .setConfig(config);
 
+    }
+
+    @And("^a client that connects to the queues$")
+    public void create_the_queues() {
         queueBasedImplementationRunner = queueBasedImplementationRunnerBuilder.create();
 
         requestQueue = queueBasedImplementationRunner.getRequestQueue();
