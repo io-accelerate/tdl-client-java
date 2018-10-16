@@ -1,13 +1,16 @@
 package acceptance.queue;
 
-import cucumber.api.java.en.*;
 import acceptance.SingletonTestBroker;
+import cucumber.api.PendingException;
+import cucumber.api.java.en.And;
+import cucumber.api.java.en.But;
+import cucumber.api.java.en.Given;
+import cucumber.api.java.en.Then;
+import cucumber.api.java.en.When;
+import tdl.client.audit.StdoutAuditStream;
 import tdl.client.queue.ImplementationRunnerConfig;
 import tdl.client.queue.QueueBasedImplementationRunner;
 import tdl.client.queue.abstractions.UserImplementation;
-import tdl.client.queue.actions.ClientAction;
-import tdl.client.queue.actions.ClientActions;
-import tdl.client.audit.StdoutAuditStream;
 import utils.jmx.broker.RemoteJmxQueue;
 import utils.logging.LogAuditStream;
 
@@ -16,7 +19,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.lessThan;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
 
 public class QueueSteps {
@@ -29,7 +35,6 @@ public class QueueSteps {
     // Variables set by the background tasks
     private RemoteJmxQueue requestQueue;
     private RemoteJmxQueue responseQueue;
-    private QueueBasedImplementationRunner queueBasedImplementationRunner;
     private QueueBasedImplementationRunner.Builder queueBasedImplementationRunnerBuilder;
 
     //Testing utils
@@ -46,24 +51,27 @@ public class QueueSteps {
 
     //~~~~~ Setup
 
-    @Given("^I start with a clean broker and a client for user \"([^\"]*)\"$")
-    public void create_the_queues(String username) throws Throwable {
-        requestQueue = broker.addQueue(username +".req");
+    @Given("^I start with a clean broker having a request and a response queue$")
+    public void broker_setup() throws Throwable {
+        logAuditStream.clearLog();
+
+        requestQueue = broker.addQueue("some-user-req");
         requestQueue.purge();
 
-        responseQueue = broker.addQueue(username +".resp");
+        responseQueue = broker.addQueue("some-user-resp");
         responseQueue.purge();
+    }
 
+    @And("^a client that connects to the queues$")
+    public void client_setup() {
         logAuditStream.clearLog();
         ImplementationRunnerConfig config = new ImplementationRunnerConfig().setHostname(HOSTNAME)
                 .setPort(PORT)
-                .setUniqueId(username)
+                .setRequestQueueName(requestQueue.getName())
+                .setResponseQueueName(responseQueue.getName())
                 .setAuditStream(logAuditStream);
-
         queueBasedImplementationRunnerBuilder = new QueueBasedImplementationRunner.Builder()
                 .setConfig(config);
-
-        queueBasedImplementationRunner = queueBasedImplementationRunnerBuilder.create();
     }
 
     @Given("^the broker is not available$")
@@ -72,7 +80,8 @@ public class QueueSteps {
         ImplementationRunnerConfig config = new ImplementationRunnerConfig()
                 .setHostname("111")
                 .setPort(PORT)
-                .setUniqueId("X")
+                .setRequestQueueName("X")
+                .setRequestQueueName("Y")
                 .setAuditStream(logAuditStream)
                 .setRequestTimeoutMillis(200);
         queueBasedImplementationRunnerBuilder = new QueueBasedImplementationRunner.Builder()
@@ -82,19 +91,7 @@ public class QueueSteps {
     @Then("^the time to wait for requests is (\\d+)ms$")
     public void check_time(int expectedTimeout) {
         assertThat("The client request timeout has a different value.",
-                queueBasedImplementationRunner.getRequestTimeoutMillis(), equalTo(expectedTimeout));
-    }
-
-    @Then("^the request queue is \"([^\"]*)\"$")
-    public void check_request_queue(String expectedValue) {
-        assertThat("Request queue has a different value.",
-                requestQueue.getName(), equalTo(expectedValue));
-    }
-
-    @Then("^the response queue is \"([^\"]*)\"$")
-    public void check_response_queue(String expectedValue) {
-        assertThat("Response queue has a different value.",
-                responseQueue.getName(), equalTo(expectedValue));
+                queueBasedImplementationRunnerBuilder.create().getRequestTimeoutMillis(), equalTo(expectedTimeout));
     }
 
     class RequestRepresentation {
@@ -157,24 +154,9 @@ public class QueueSteps {
         }
     }
 
-    private static final Map<String, ClientAction> CLIENT_ACTIONS = new HashMap<String, ClientAction >() {{
-        put("publish", ClientActions.publish());
-        put("stop", ClientActions.stop());
-        put("publish and stop", ClientActions.publishAndStop());
-    }};
-
-    private static ClientAction asAction(String actionName) {
-        if (CLIENT_ACTIONS.containsKey(actionName)) {
-            return CLIENT_ACTIONS.get(actionName);
-        } else {
-            throw new IllegalArgumentException("Not a valid action reference: \"" + actionName+"\"");
-        }
-    }
-
     class ProcessingRuleRepresentation {
         String method;
         String call;
-        String action;
     }
 
     @When("^I go live with the following processing rules:$")
@@ -182,11 +164,10 @@ public class QueueSteps {
         listOfRules.forEach((ruleLine) ->
             queueBasedImplementationRunnerBuilder.withSolutionFor(
                     ruleLine.method,
-                    asImplementation(ruleLine.call),
-                    asAction(ruleLine.action)
+                    asImplementation(ruleLine.call)
             )
         );
-        queueBasedImplementationRunner = queueBasedImplementationRunnerBuilder.create();
+        QueueBasedImplementationRunner queueBasedImplementationRunner = queueBasedImplementationRunnerBuilder.create();
 
         long timestampBefore = System.nanoTime();
         queueBasedImplementationRunner.run();
@@ -203,7 +184,7 @@ public class QueueSteps {
 
     @Then("^the client should consume first request$")
     public void request_queue_less_than_one() throws Throwable {
-        assertThat("Wrong number of requests have been consumed",requestQueue.getSize(), equalTo(asLong(initialRequestCount-1)));
+        assertThat("Wrong number of requests have been consumed",requestQueue.getSize(), equalTo(asLong(initialRequestCount)));
     }
 
     class ResponseRepresentation {

@@ -5,10 +5,6 @@ buildscript {
     repositories {
         mavenCentral()
     }
-    dependencies {
-        classpath "net.saliman:gradle-cobertura-plugin:2.2.8"
-        classpath 'org.kt3k.gradle.plugin:coveralls-gradle-plugin:2.4.0'
-    }
 }
 
 //~~~~ Settings for the source code
@@ -32,7 +28,9 @@ class Version {
 
     static Version fromString(versionString) {
         def (String major, String minor, String patch) = versionString.tokenize( '.' )
-        new Version(major.toInteger(), minor.toInteger(), patch.toInteger())
+        new Version(major.toInteger(),
+                    minor.isNumber() ? minor.toInteger() : 0,
+                    patch.toInteger())
     }
 
     boolean higherThan(Version otherVersion) {
@@ -117,19 +115,6 @@ dependencies {
     testCompile 'net.trajano.commons:commons-testing:1.0.1'
     testCompile 'com.github.stefanbirkner:system-rules:1.11.0'
 }
-
-// ~~~~~ Gather coverage
-
-apply plugin: "net.saliman.cobertura"
-apply plugin: 'com.github.kt3k.coveralls'
-
-cobertura {
-    coverageFormats = ['html', 'xml']
-    coverageIncludes = ['.*tdl.client.*']
-    coverageExcludes = ['.*tdl.examples.*']
-    coverageIgnores = ['.*org.slf4j.Logger.*']
-}
-test.finalizedBy(project.tasks.cobertura)
 
 //~~~~~ Making the library deployable
 

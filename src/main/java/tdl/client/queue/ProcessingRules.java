@@ -7,7 +7,6 @@ import tdl.client.queue.abstractions.UserImplementation;
 import tdl.client.queue.abstractions.response.FatalErrorResponse;
 import tdl.client.queue.abstractions.response.Response;
 import tdl.client.queue.abstractions.response.ValidResponse;
-import tdl.client.queue.actions.ClientAction;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -24,8 +23,8 @@ public class ProcessingRules {
         rules = new HashMap<>();
     }
 
-    private void add(String methodName, UserImplementation userImplementation, ClientAction clientAction) {
-        rules.put(methodName, new ProcessingRule(userImplementation, clientAction));
+    private void add(String methodName, UserImplementation userImplementation) {
+        rules.put(methodName, new ProcessingRule(userImplementation));
     }
 
     public ProcessingRuleBuilder on(String methodName) {
@@ -48,8 +47,8 @@ public class ProcessingRules {
             return this;
         }
 
-        void then(ClientAction clientAction) {
-            instance.add(methodName, userImplementation, clientAction);
+        void build() {
+            instance.add(methodName, userImplementation);
         }
     }
     //~~~ Accessors
@@ -67,7 +66,7 @@ public class ProcessingRules {
         Response response;
         try {
             Object result = rule.getUserImplementation().process(request.getParams());
-            response = new ValidResponse(request.getId(), result, rule.getClientAction());
+            response = new ValidResponse(request.getId(), result);
         } catch (Exception e) {
             String message = "user implementation raised exception";
             LoggerFactory.getLogger(ProcessingRules.class).warn(message, e);

@@ -1,6 +1,5 @@
 package tdl.client.queue.abstractions.response;
 
-import tdl.client.queue.actions.ClientAction;
 import tdl.client.audit.Auditable;
 
 /**
@@ -10,6 +9,4 @@ public interface Response extends Auditable {
     String getId();
 
     Object getResult();
-
-    ClientAction getClientAction();
 }
