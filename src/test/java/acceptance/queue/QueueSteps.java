@@ -34,7 +34,6 @@ public class QueueSteps {
     // Variables set by the background tasks
     private RemoteJmxQueue requestQueue;
     private RemoteJmxQueue responseQueue;
-    private QueueBasedImplementationRunner queueBasedImplementationRunner;
     private QueueBasedImplementationRunner.Builder queueBasedImplementationRunnerBuilder;
 
     //Testing utils
@@ -51,25 +50,28 @@ public class QueueSteps {
 
     //~~~~~ Setup
 
-    @Given("^I start with a clean broker for user \"([^\"]*)\" having a request and a response queue and a client that connects to the queues$")
-    public void create_the_queues(String username) throws Throwable {
+    @Given("^I start with a clean broker having a request and a response queue$")
+    public void broker_setup() throws Throwable {
+        logAuditStream.clearLog();
+
+        requestQueue = broker.addQueue("some-user-req");
+        requestQueue.purge();
+
+        responseQueue = broker.addQueue("some-user-resp");
+        responseQueue.purge();
+    }
+
+    @And("^a client that connects to the queues$")
+    public void client_setup() {
         logAuditStream.clearLog();
 
         ImplementationRunnerConfig config = new ImplementationRunnerConfig().setHostname(HOSTNAME)
                 .setPort(PORT)
-                .setUniqueId(username)
+                .setRequestQueueName(requestQueue.getName())
+                .setResponseQueueName(responseQueue.getName())
                 .setAuditStream(logAuditStream);
-
         queueBasedImplementationRunnerBuilder = new QueueBasedImplementationRunner.Builder()
                 .setConfig(config);
-
-        queueBasedImplementationRunner = queueBasedImplementationRunnerBuilder.create();
-
-        requestQueue = broker.addQueue(config.getRequestQueueName());
-        requestQueue.purge();
-
-        responseQueue = broker.addQueue(config.getResponseQueueName());
-        responseQueue.purge();
     }
 
     @Given("^the broker is not available$")
@@ -78,7 +80,8 @@ public class QueueSteps {
         ImplementationRunnerConfig config = new ImplementationRunnerConfig()
                 .setHostname("111")
                 .setPort(PORT)
-                .setUniqueId("X")
+                .setRequestQueueName("X")
+                .setRequestQueueName("Y")
                 .setAuditStream(logAuditStream)
                 .setRequestTimeoutMillis(200);
         queueBasedImplementationRunnerBuilder = new QueueBasedImplementationRunner.Builder()
@@ -88,7 +91,7 @@ public class QueueSteps {
     @Then("^the time to wait for requests is (\\d+)ms$")
     public void check_time(int expectedTimeout) {
         assertThat("The client request timeout has a different value.",
-                queueBasedImplementationRunner.getRequestTimeoutMillis(), equalTo(expectedTimeout));
+                queueBasedImplementationRunnerBuilder.create().getRequestTimeoutMillis(), equalTo(expectedTimeout));
     }
 
     class RequestRepresentation {
@@ -164,7 +167,7 @@ public class QueueSteps {
                     asImplementation(ruleLine.call)
             )
         );
-        queueBasedImplementationRunner = queueBasedImplementationRunnerBuilder.create();
+        QueueBasedImplementationRunner queueBasedImplementationRunner = queueBasedImplementationRunnerBuilder.create();
 
         long timestampBefore = System.nanoTime();
         queueBasedImplementationRunner.run();
