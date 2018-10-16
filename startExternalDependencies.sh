@@ -5,7 +5,7 @@ set -u
 set -o pipefail
 
 BROKER_TYPE=${BROKER_TYPE:-"activemq"}
-SQS_PORT=28161
+SQS_PORT=9324
 
 startWiremocks() {
     echo "~~~~~~~~~~ Starting Wiremocks on ports 41375 and 8222 ~~~~~~~~~"

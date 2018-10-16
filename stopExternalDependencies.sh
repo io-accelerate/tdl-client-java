@@ -5,7 +5,7 @@ set -u
 set -o pipefail
 
 BROKER_TYPE=${BROKER_TYPE:-"activemq"}
-SQS_PORT=28161
+SQS_PORT=9324
 
 stopProcessAtPort() {
     PORT=$1

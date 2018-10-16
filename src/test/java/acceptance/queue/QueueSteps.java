@@ -30,7 +30,7 @@ public class QueueSteps {
 
     // Test broker location
     private static final String HOSTNAME = "localhost";
-    private static final int PORT = 28161;
+    private static final int PORT = 9324;
 
     // Variables set by the background tasks
     private CreateQueueRequest requestQueue;
