@@ -1,7 +1,6 @@
 package acceptance.queue;
 
 import acceptance.SingletonTestBroker;
-import cucumber.api.PendingException;
 import cucumber.api.java.en.And;
 import cucumber.api.java.en.But;
 import cucumber.api.java.en.Given;
@@ -65,6 +64,7 @@ public class QueueSteps {
     @And("^a client that connects to the queues$")
     public void client_setup() {
         logAuditStream.clearLog();
+
         ImplementationRunnerConfig config = new ImplementationRunnerConfig().setHostname(HOSTNAME)
                 .setPort(PORT)
                 .setRequestQueueName(requestQueue.getName())
