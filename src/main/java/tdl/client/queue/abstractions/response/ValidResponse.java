@@ -17,7 +17,7 @@ public class ValidResponse implements Response {
         this.result = result;
     }
 
-    public void logToConsole(String s) {
+    private void logToConsole(String s) {
         if (new File("DEBUG").exists()) {
             System.out.println(s);
         }

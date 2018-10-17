@@ -57,8 +57,6 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
     private final ProcessingRules deployProcessingRules;
     private final ImplementationRunnerConfig config;
 
-    private List<Request> requests;
-
     private static final int MAX_NUMBER_OF_MESSAGES = 1;
     private static final int MAX_AWS_WAIT = 1;
 
@@ -89,8 +87,6 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
         this.config = config;
         this.deployProcessingRules = deployProcessingRules;
         audit = new Audit(config.getAuditStream());
-
-        requests = new ArrayList<>();
 
         logToConsole("     QueueBasedImplementationRunner creation [start]");
 
@@ -195,16 +191,8 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
         return value;
     }
 
-    public CreateQueueRequest getRequestQueue() {
-        return messageRequestQueue;
-    }
-
     public void purgeRequestQueue() {
         purgeQueue(messageRequestQueue);
-    }
-
-    public CreateQueueRequest getResponseQueue() {
-        return messageResponse;
     }
 
     public void purgeResponseQueue() {
@@ -288,7 +276,6 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
                             Request request = new Request(message, jsonRpcRequest);
                             audit.startLine();
                             audit.log(request);
-                            requests.add(request);
 
                             //Obtain response from user
                             Response response = deployProcessingRules.getResponseFor(request);

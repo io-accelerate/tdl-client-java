@@ -8,18 +8,12 @@ import tdl.client.queue.abstractions.response.Response;
 @SuppressWarnings("FieldCanBeLocal")
 public final class JsonRpcResponse {
     private final Object result;
-    private final String error;
     private final String id;
 
     @SuppressWarnings("SameParameterValue")
-    private JsonRpcResponse(Object result, String error, String id) {
+    private JsonRpcResponse(Object result, String id) {
         this.result = result;
-        this.error = error;
         this.id = id;
-    }
-
-    static JsonRpcResponse from(Response response) {
-        return new JsonRpcResponse(response.getResult(), null, response.getId());
     }
 
     public Response toResponse() {

@@ -18,7 +18,7 @@ public final class JsonRpcRequest {
         this.id = "";
     }
 
-    public void logToConsole(String s) {
+    private void logToConsole(String s) {
         if (new File("DEBUG").exists()) {
             System.out.println(s);
         }

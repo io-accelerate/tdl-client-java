@@ -1,6 +1,5 @@
 package acceptance.queue;
 
-import com.amazonaws.services.sqs.model.CreateQueueRequest;
 import cucumber.api.java.en.And;
 import cucumber.api.java.en.But;
 import cucumber.api.java.en.Given;
@@ -65,10 +64,7 @@ public class QueueSteps {
         queueBasedImplementationRunner = queueBasedImplementationRunnerBuilder.create();
 
         // Variables set by the background tasks
-        CreateQueueRequest requestQueue = queueBasedImplementationRunner.getRequestQueue();
         queueBasedImplementationRunner.purgeRequestQueue();
-
-        CreateQueueRequest responseQueue = queueBasedImplementationRunner.getResponseQueue();
         queueBasedImplementationRunner.purgeResponseQueue();
     }
 

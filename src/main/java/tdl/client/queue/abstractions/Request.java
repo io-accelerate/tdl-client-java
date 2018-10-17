@@ -20,7 +20,7 @@ public class Request implements Auditable {
         this.requestData = requestData;
     }
 
-    public void logToConsole(String s) {
+    private void logToConsole(String s) {
         if (new File("DEBUG").exists()) {
             System.out.println(s);
         }
