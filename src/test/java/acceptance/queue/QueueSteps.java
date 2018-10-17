@@ -31,9 +31,6 @@ public class QueueSteps {
     private static final String HOSTNAME = "localhost";
     private static final int PORT = 9324;
 
-    // Variables set by the background tasks
-    private CreateQueueRequest requestQueue;
-    private CreateQueueRequest responseQueue;
     private QueueBasedImplementationRunner queueBasedImplementationRunner;
     private QueueBasedImplementationRunner.Builder queueBasedImplementationRunnerBuilder;
 
@@ -67,10 +64,11 @@ public class QueueSteps {
     public void create_the_queues() {
         queueBasedImplementationRunner = queueBasedImplementationRunnerBuilder.create();
 
-        requestQueue = queueBasedImplementationRunner.getRequestQueue();
+        // Variables set by the background tasks
+        CreateQueueRequest requestQueue = queueBasedImplementationRunner.getRequestQueue();
         queueBasedImplementationRunner.purgeRequestQueue();
 
-        responseQueue = queueBasedImplementationRunner.getResponseQueue();
+        CreateQueueRequest responseQueue = queueBasedImplementationRunner.getResponseQueue();
         queueBasedImplementationRunner.purgeResponseQueue();
     }
 
@@ -228,14 +226,14 @@ public class QueueSteps {
     }
 
     @Then("^the client should not consume any request$")
-    public void request_queue_unchanged() throws Throwable {
+    public void request_queue_unchanged() {
         assertThat("The request queue has different size. The message has been consumed.",
                 queueBasedImplementationRunner.getRequestQueueMessagesConsumedCount(),
                 equalTo(asLong(initialRequestCount)));
     }
 
     @And("^the client should not publish any response$")
-    public void response_queue_unchanged() throws Throwable {
+    public void response_queue_unchanged() {
         assertThat("The response queue has different size. Messages have been published.",
                 queueBasedImplementationRunner.getResponseQueueMessagesConsumedCount(), equalTo(asLong(0)));
     }
