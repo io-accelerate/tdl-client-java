@@ -247,6 +247,7 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
     public void run() {
         logToConsole("        QueueBasedImplementationRunner run [start]");
         audit.logLine("Starting client");
+        List<Message> batchOfMessagesToDelete = new ArrayList<>();
         try {
             audit.logLine("Waiting for requests");
             logToConsole("     QueueBasedImplementationRunner receive [start]");
@@ -284,7 +285,7 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
                                 audit.endLine();
 
                                 logToConsole("        QueueBasedImplementationRunner deleting consumed message");
-                                deleteMessage(request.getOriginalMessage());
+                                batchOfMessagesToDelete.add(request.getOriginalMessage());
                             }
                         } catch (JsonSyntaxException e) {
                             logToConsole("     QueueBasedImplementationRunner did not complete reading all messages successfully, not deleting unsuccessful messages");
@@ -299,6 +300,8 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
             String message = "There was a problem processing messages";
             LOGGER.error(message, e);
             audit.logException(message, e);
+        } finally {
+            deleteMessages(batchOfMessagesToDelete);
         }
         audit.logLine("Stopping client");
         logToConsole("        QueueBasedImplementationRunner run [end]");
@@ -312,9 +315,12 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
         return config.getRequestTimeoutMillis();
     }
 
-    private void deleteMessage(Message message) {
-        DeleteMessageRequest deleteMessageRequest = new DeleteMessageRequest(messageResponseQueueUrl, message.getReceiptHandle());
-        client.deleteMessage(deleteMessageRequest);
+    private void deleteMessages(List<Message> messages) {
+        for (Message message: messages) {
+            client.deleteMessage(
+                    new DeleteMessageRequest(messageResponseQueueUrl, message.getReceiptHandle())
+            );
+        }
     }
 
     private void respondTo(Request request, Response response) throws BrokerCommunicationException {
