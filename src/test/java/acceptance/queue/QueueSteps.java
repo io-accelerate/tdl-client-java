@@ -10,7 +10,6 @@ import tdl.client.audit.StdoutAuditStream;
 import tdl.client.queue.ImplementationRunnerConfig;
 import tdl.client.queue.QueueBasedImplementationRunner;
 import tdl.client.queue.abstractions.UserImplementation;
-import tdl.client.runner.events.ExecuteCommandEvent;
 import utils.logging.LogAuditStream;
 
 import java.io.File;
@@ -103,7 +102,7 @@ public class QueueSteps {
     public void initialize_request_queue(List<RequestRepresentation> requests) throws Throwable {
         for (RequestRepresentation request : requests) {
             logToConsole("payload: " + request.payload);
-            queueBasedImplementationRunner.sendRequest(new ExecuteCommandEvent(request.payload));
+            queueBasedImplementationRunner.sendRequest(request.payload);
         }
         initialRequestCount = requests.size();
         logToConsole("initial requests sent: " + initialRequestCount);
@@ -114,7 +113,7 @@ public class QueueSteps {
         for (int i = 0; i < number; i++) {
             for (RequestRepresentation request : requests) {
                 logToConsole("payload: " + request.payload);
-                queueBasedImplementationRunner.sendRequest(new ExecuteCommandEvent(request.payload));
+                queueBasedImplementationRunner.sendRequest(request.payload);
             }
         }
         initialRequestCount = requests.size() * number;

@@ -12,11 +12,11 @@ import com.amazonaws.services.sqs.model.DeleteMessageBatchRequestEntry;
 import com.amazonaws.services.sqs.model.DeleteMessageBatchResult;
 import com.amazonaws.services.sqs.model.GetQueueAttributesResult;
 import com.amazonaws.services.sqs.model.Message;
-import com.amazonaws.services.sqs.model.MessageAttributeValue;
 import com.amazonaws.services.sqs.model.PurgeQueueRequest;
 import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
 import com.amazonaws.services.sqs.model.ReceiveMessageResult;
-import com.amazonaws.services.sqs.model.SendMessageRequest;
+import com.amazonaws.services.sqs.model.SendMessageBatchRequest;
+import com.amazonaws.services.sqs.model.SendMessageBatchRequestEntry;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
@@ -38,10 +38,8 @@ import tdl.client.queue.serialization.DeserializationException;
 import tdl.client.queue.serialization.JsonRpcRequest;
 import tdl.client.queue.serialization.JsonRpcResponse;
 import tdl.client.queue.transport.BrokerCommunicationException;
-import tdl.client.runner.connector.EventSerializationException;
-import tdl.client.runner.connector.QueueEvent;
+import tdl.client.runner.connector.EventSendingFailureException;
 import tdl.client.runner.connector.QueueSize;
-import tdl.client.runner.events.ExecuteCommandEvent;
 
 import java.io.File;
 import java.io.IOException;
@@ -82,6 +80,9 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
 
     private DeleteMessageBatchRequest batchOfMessagesToDeleteRequest;
     private List<DeleteMessageBatchRequestEntry> deleteMessageBatchRequestEntries;
+
+    private SendMessageBatchRequest batchOfResponsesSendRequest;
+    private List<SendMessageBatchRequestEntry> sendMessageBatchRequestEntries;
 
     private QueueBasedImplementationRunner(ImplementationRunnerConfig config, ProcessingRules deployProcessingRules) {
         logToConsole("        QueueBasedImplementationRunner creation [start]");
@@ -133,7 +134,10 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
 
         batchOfMessagesToDeleteRequest = new DeleteMessageBatchRequest().withQueueUrl(messageResponseQueueUrl);
         deleteMessageBatchRequestEntries = batchOfMessagesToDeleteRequest.getEntries();
-        
+
+        batchOfResponsesSendRequest = new SendMessageBatchRequest().withQueueUrl(messageResponseQueueUrl);
+        sendMessageBatchRequestEntries = batchOfResponsesSendRequest.getEntries();
+
         logToConsole("        QueueBasedImplementationRunner creation [end]");
     }
 
@@ -159,7 +163,7 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
         for (int index = messages.size() - 1; index >= 0; index--) {
             Message message = messages.get(index);
             JsonNode jsonNode = mapper.readValue(message.getBody(), JsonNode.class);
-            String payload = jsonNode.get("payload").asText();
+            String payload = jsonNode.toString();
             JsonRpcResponse jsonRpcResponse = gson.fromJson(payload, JsonRpcResponse.class);
             Response response = jsonRpcResponse.toResponse();
 
@@ -207,8 +211,8 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
         purgeQueue(messageResponse);
     }
 
-    public void sendRequest(ExecuteCommandEvent executeCommandEvent) throws EventSerializationException {
-        send(messageRequestQueueUrl, executeCommandEvent);
+    public void sendRequest(String event) throws EventSendingFailureException {
+        send(messageRequestQueueUrl, event);
     }
 
     public static class Builder {
@@ -257,8 +261,10 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
     public void run() {
         logToConsole("        QueueBasedImplementationRunner run [start]");
         audit.logLine("Starting client");
+
         batchOfMessagesToDeleteRequest.setEntries(Collections.emptyList());
-        List<Response> batchOfResponses = new ArrayList<>();
+        batchOfResponsesSendRequest.setEntries(Collections.emptyList());
+
         try {
             audit.logLine("Waiting for requests");
             logToConsole("     QueueBasedImplementationRunner receive [start]");
@@ -276,7 +282,7 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
                         try {
                             logToConsole("        QueueBasedImplementationRunner applyProcessingRules [start]");
                             JsonNode jsonNode = mapper.readValue(message.getBody(), JsonNode.class);
-                            String payload = jsonNode.get("payload").asText();
+                            String payload = jsonNode.asText();
                             JsonRpcRequest jsonRpcRequest = gson.fromJson(payload, JsonRpcRequest.class);
 
                             Request request = new Request(message, jsonRpcRequest);
@@ -292,7 +298,7 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
                             if (response instanceof FatalErrorResponse) {
                                 audit.endLine();
                             } else {
-                                batchOfResponses.add(response);
+                                addResponseToBatch(response);
                                 audit.endLine();
 
                                 logToConsole("        QueueBasedImplementationRunner deleting consumed message");
@@ -307,7 +313,7 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
             } while (continueFetching);
             logToConsole("        QueueBasedImplementationRunner run finished receiving and processing message");
 
-            respondToRequests(with(batchOfResponses));
+            respondToRequests();
             deleteMessages();
         } catch (Exception e) {
             logToConsole("        QueueBasedImplementationRunner run [error]");
@@ -321,32 +327,35 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
 
     private void addMessageToDeleteBatch(Message message) {
         deleteMessageBatchRequestEntries.add(
-                        new DeleteMessageBatchRequestEntry()
-                                .withId(message.getMessageId()).withReceiptHandle(message.getReceiptHandle())
+                new DeleteMessageBatchRequestEntry()
+                        .withId(message.getMessageId()).withReceiptHandle(message.getReceiptHandle())
         );
-    }
-
-    <T> T with(T obj) {
-        return obj;
     }
 
     public int getRequestTimeoutMillis() {
         return config.getRequestTimeoutMillis();
     }
 
-    private void respondToRequests(List<Response> responses) throws BrokerCommunicationException {
-        for (Response response: responses) {
-            logToConsole("     QueueBasedImplementationRunner respondToRequest [start]");
-            logToConsole("     response: " + response);
-            try {
-                send(messageResponseQueueUrl, new ExecuteCommandEvent(gson.toJson(response)));
+    private void addResponseToBatch(Response response) {
+        logToConsole("     response: " + response);
 
-                logToConsole("     QueueBasedImplementationRunner respondToRequest [end]");
-            } catch (Exception e) {
-                logToConsole("     QueueBasedImplementationRunner respondToRequest [error]");
-                throw new BrokerCommunicationException(e);
-            }
+        sendMessageBatchRequestEntries.add(
+                new SendMessageBatchRequestEntry()
+                        .withId(response.getId())
+                        .withMessageBody(gson.toJson(response))
+        );
+    }
+
+    private void respondToRequests() throws BrokerCommunicationException {
+        logToConsole("     QueueBasedImplementationRunner respondToRequest [start]");
+        try {
+            batchOfResponsesSendRequest.setEntries(sendMessageBatchRequestEntries);
+            client.sendMessageBatch(batchOfResponsesSendRequest);
+        } catch (Exception ex) {
+            logToConsole("     QueueBasedImplementationRunner respondToRequest [error]");
+            throw new BrokerCommunicationException(ex);
         }
+        logToConsole("     QueueBasedImplementationRunner respondToRequest [end]");
     }
 
     private void deleteMessages() {
@@ -355,29 +364,21 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
         List<String> failures = result.getFailed().stream().map(
                 BatchResultErrorEntry::getId
         ).collect(Collectors.toList());
-        
+
         audit.logLine("failed to delete: " + failures.toArray().toString());
     }
 
-    private void send(String queueUrl, Object object) throws EventSerializationException {
-        QueueEvent annotation = object.getClass().getAnnotation(QueueEvent.class);
-        if (annotation == null) {
-            throw new EventSerializationException(object.getClass() + " not a QueueEvent");
-        }
-        String eventName = annotation.name();
-        String eventVersion = annotation.version();
-
+    private void send(String queueUrl, Object object) throws EventSendingFailureException {
         try {
-            SendMessageRequest sendMessageRequest = new SendMessageRequest();
-            sendMessageRequest.setQueueUrl(queueUrl);
-            sendMessageRequest.setMessageBody(mapper.writeValueAsString(object));
-            sendMessageRequest.addMessageAttributesEntry(ATTRIBUTE_EVENT_NAME,
-                    new MessageAttributeValue().withDataType("String").withStringValue(eventName));
-            sendMessageRequest.addMessageAttributesEntry(ATTRIBUTE_EVENT_VERSION,
-                    new MessageAttributeValue().withDataType("String").withStringValue(eventVersion));
-            client.sendMessage(sendMessageRequest);
-        } catch (Exception e) {
-            throw new EventSerializationException("Failed to serialize event of type " + object.getClass(), e);
+            SendMessageBatchRequest batchOfResponsesSendRequest = new SendMessageBatchRequest().withQueueUrl(queueUrl);
+            List<SendMessageBatchRequestEntry> sendMessageBatchRequestEntries = batchOfResponsesSendRequest.getEntries();
+
+            sendMessageBatchRequestEntries.add(new SendMessageBatchRequestEntry(String.valueOf(object.hashCode()), mapper.writeValueAsString(object)));
+
+            batchOfResponsesSendRequest.setEntries(sendMessageBatchRequestEntries);
+            client.sendMessageBatch(batchOfResponsesSendRequest);
+        } catch (Exception ex) {
+            throw new EventSendingFailureException("Failed to send event " + object, ex);
         }
     }
 
@@ -476,6 +477,7 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
             this.line.append(text);
             endLine();
         }
+
     }
 
     private static void logToConsole(String s) {
