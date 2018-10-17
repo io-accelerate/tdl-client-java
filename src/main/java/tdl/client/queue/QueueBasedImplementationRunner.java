@@ -336,7 +336,16 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
 
     private void respondToRequests(List<Response> responses) throws BrokerCommunicationException {
         for (Response response: responses) {
-            respondToRequest(with(response));
+            logToConsole("     QueueBasedImplementationRunner respondToRequest [start]");
+            logToConsole("     response: " + response);
+            try {
+                send(messageResponseQueueUrl, new ExecuteCommandEvent(gson.toJson(response)));
+
+                logToConsole("     QueueBasedImplementationRunner respondToRequest [end]");
+            } catch (Exception e) {
+                logToConsole("     QueueBasedImplementationRunner respondToRequest [error]");
+                throw new BrokerCommunicationException(e);
+            }
         }
     }
 
@@ -348,19 +357,6 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
         ).collect(Collectors.toList());
         
         audit.logLine("failed to delete: " + failures.toArray().toString());
-    }
-
-    private void respondToRequest(Response response) throws BrokerCommunicationException {
-        logToConsole("     QueueBasedImplementationRunner respondToRequest [start]");
-        logToConsole("     response: " + response);
-        try {
-            send(messageResponseQueueUrl, new ExecuteCommandEvent(gson.toJson(response)));
-
-            logToConsole("     QueueBasedImplementationRunner respondToRequest [end]");
-        } catch (Exception e) {
-            logToConsole("     QueueBasedImplementationRunner respondToRequest [error]");
-            throw new BrokerCommunicationException(e);
-        }
     }
 
     private void send(String queueUrl, Object object) throws EventSerializationException {
