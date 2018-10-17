@@ -5,8 +5,11 @@ import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
+import com.amazonaws.services.sqs.model.BatchResultErrorEntry;
 import com.amazonaws.services.sqs.model.CreateQueueRequest;
-import com.amazonaws.services.sqs.model.DeleteMessageRequest;
+import com.amazonaws.services.sqs.model.DeleteMessageBatchRequest;
+import com.amazonaws.services.sqs.model.DeleteMessageBatchRequestEntry;
+import com.amazonaws.services.sqs.model.DeleteMessageBatchResult;
 import com.amazonaws.services.sqs.model.GetQueueAttributesResult;
 import com.amazonaws.services.sqs.model.Message;
 import com.amazonaws.services.sqs.model.MessageAttributeValue;
@@ -48,6 +51,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class QueueBasedImplementationRunner implements ImplementationRunner {
     private static final Logger LOGGER = LoggerFactory.getLogger(QueueBasedImplementationRunner.class);
@@ -75,6 +79,9 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
     private CreateQueueRequest messageResponse;
     private String messageResponseQueueUrl;
     private final Gson gson;
+
+    private DeleteMessageBatchRequest batchOfMessagesToDeleteRequest;
+    private List<DeleteMessageBatchRequestEntry> deleteMessageBatchRequestEntries;
 
     private QueueBasedImplementationRunner(ImplementationRunnerConfig config, ProcessingRules deployProcessingRules) {
         logToConsole("        QueueBasedImplementationRunner creation [start]");
@@ -124,6 +131,9 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
 
         gson = gsonBuilder.serializeNulls().create();
 
+        batchOfMessagesToDeleteRequest = new DeleteMessageBatchRequest().withQueueUrl(messageResponseQueueUrl);
+        deleteMessageBatchRequestEntries = batchOfMessagesToDeleteRequest.getEntries();
+        
         logToConsole("        QueueBasedImplementationRunner creation [end]");
     }
 
@@ -247,7 +257,7 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
     public void run() {
         logToConsole("        QueueBasedImplementationRunner run [start]");
         audit.logLine("Starting client");
-        List<Message> batchOfMessagesToDelete = new ArrayList<>();
+        batchOfMessagesToDeleteRequest.setEntries(Collections.emptyList());
         List<Response> batchOfResponses = new ArrayList<>();
         try {
             audit.logLine("Waiting for requests");
@@ -286,7 +296,7 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
                                 audit.endLine();
 
                                 logToConsole("        QueueBasedImplementationRunner deleting consumed message");
-                                batchOfMessagesToDelete.add(request.getOriginalMessage());
+                                addMessageToDeleteBatch(request.getOriginalMessage());
                             }
                         } catch (JsonSyntaxException e) {
                             logToConsole("     QueueBasedImplementationRunner did not complete reading all messages successfully, not deleting unsuccessful messages");
@@ -298,7 +308,7 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
             logToConsole("        QueueBasedImplementationRunner run finished receiving and processing message");
 
             respondToRequests(with(batchOfResponses));
-            deleteMessages(batchOfMessagesToDelete);
+            deleteMessages();
         } catch (Exception e) {
             logToConsole("        QueueBasedImplementationRunner run [error]");
             String message = "There was a problem processing messages";
@@ -307,6 +317,13 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
         }
         audit.logLine("Stopping client");
         logToConsole("        QueueBasedImplementationRunner run [end]");
+    }
+
+    private void addMessageToDeleteBatch(Message message) {
+        deleteMessageBatchRequestEntries.add(
+                        new DeleteMessageBatchRequestEntry()
+                                .withId(message.getMessageId()).withReceiptHandle(message.getReceiptHandle())
+        );
     }
 
     <T> T with(T obj) {
@@ -323,12 +340,14 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
         }
     }
 
-    private void deleteMessages(List<Message> messages) {
-        for (Message message: messages) {
-            client.deleteMessage(
-                    new DeleteMessageRequest(messageResponseQueueUrl, message.getReceiptHandle())
-            );
-        }
+    private void deleteMessages() {
+        DeleteMessageBatchResult result = client.deleteMessageBatch(batchOfMessagesToDeleteRequest);
+
+        List<String> failures = result.getFailed().stream().map(
+                BatchResultErrorEntry::getId
+        ).collect(Collectors.toList());
+        
+        audit.logLine("failed to delete: " + failures.toArray().toString());
     }
 
     private void respondToRequest(Response response) throws BrokerCommunicationException {
