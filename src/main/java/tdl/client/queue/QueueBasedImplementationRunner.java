@@ -248,6 +248,7 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
         logToConsole("        QueueBasedImplementationRunner run [start]");
         audit.logLine("Starting client");
         List<Message> batchOfMessagesToDelete = new ArrayList<>();
+        List<Response> batchOfResponses = new ArrayList<>();
         try {
             audit.logLine("Waiting for requests");
             logToConsole("     QueueBasedImplementationRunner receive [start]");
@@ -281,7 +282,7 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
                             if (response instanceof FatalErrorResponse) {
                                 audit.endLine();
                             } else {
-                                respondToRequest(with(response));
+                                batchOfResponses.add(response);
                                 audit.endLine();
 
                                 logToConsole("        QueueBasedImplementationRunner deleting consumed message");
@@ -295,13 +296,14 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
                 }
             } while (continueFetching);
             logToConsole("        QueueBasedImplementationRunner run finished receiving and processing message");
+
+            respondToRequests(with(batchOfResponses));
+            deleteMessages(batchOfMessagesToDelete);
         } catch (Exception e) {
             logToConsole("        QueueBasedImplementationRunner run [error]");
             String message = "There was a problem processing messages";
             LOGGER.error(message, e);
             audit.logException(message, e);
-        } finally {
-            deleteMessages(batchOfMessagesToDelete);
         }
         audit.logLine("Stopping client");
         logToConsole("        QueueBasedImplementationRunner run [end]");
@@ -313,6 +315,12 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
 
     public int getRequestTimeoutMillis() {
         return config.getRequestTimeoutMillis();
+    }
+
+    private void respondToRequests(List<Response> responses) throws BrokerCommunicationException {
+        for (Response response: responses) {
+            respondToRequest(with(response));
+        }
     }
 
     private void deleteMessages(List<Message> messages) {
