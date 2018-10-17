@@ -281,7 +281,7 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
                             if (response instanceof FatalErrorResponse) {
                                 audit.endLine();
                             } else {
-                                respondTo(request, with(response));
+                                respondToRequest(with(response));
                                 audit.endLine();
 
                                 logToConsole("        QueueBasedImplementationRunner deleting consumed message");
@@ -323,15 +323,15 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
         }
     }
 
-    private void respondTo(Request request, Response response) throws BrokerCommunicationException {
-        logToConsole("     QueueBasedImplementationRunner respondTo [start]");
+    private void respondToRequest(Response response) throws BrokerCommunicationException {
+        logToConsole("     QueueBasedImplementationRunner respondToRequest [start]");
         logToConsole("     response: " + response);
         try {
             send(messageResponseQueueUrl, new ExecuteCommandEvent(gson.toJson(response)));
 
-            logToConsole("     QueueBasedImplementationRunner respondTo [end]");
+            logToConsole("     QueueBasedImplementationRunner respondToRequest [end]");
         } catch (Exception e) {
-            logToConsole("     QueueBasedImplementationRunner respondTo [error]");
+            logToConsole("     QueueBasedImplementationRunner respondToRequest [error]");
             throw new BrokerCommunicationException(e);
         }
     }
