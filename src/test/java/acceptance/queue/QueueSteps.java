@@ -187,6 +187,19 @@ public class QueueSteps {
         assertThat("Wrong number of requests have been consumed",requestQueue.getSize(), equalTo(asLong(initialRequestCount)));
     }
 
+    @Then("^the client should consume one request$")
+    public void request_queue_with_one_message() throws Exception {
+        assertThat("The request queue has different size. The message has been consumed.",
+                requestQueue.getSize(),
+                equalTo(asLong(initialRequestCount - 1)));
+    }
+
+    @And("^the client should publish one response$")
+    public void response_queue_with_one_message() throws Exception {
+        assertThat("The response queue has different size. Messages have been published.",
+                responseQueue.getSize(), equalTo(asLong(1)));
+    }
+
     class ResponseRepresentation {
         String payload;
     }
