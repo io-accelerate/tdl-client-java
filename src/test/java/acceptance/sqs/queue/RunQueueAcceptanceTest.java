@@ -1,0 +1,10 @@
+package acceptance.sqs.queue;
+
+import cucumber.api.CucumberOptions;
+import cucumber.api.junit.Cucumber;
+import org.junit.runner.RunWith;
+
+@RunWith(Cucumber.class)
+@CucumberOptions(plugin = {"pretty"}, glue = {"acceptance.sqs.queue"})
+public class RunQueueAcceptanceTest {
+}
