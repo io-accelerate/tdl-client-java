@@ -1,6 +1,6 @@
 package utils.logging;
 
-import tdl.client.audit.AuditStream;
+import audit.AuditStream;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
