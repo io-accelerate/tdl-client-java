@@ -284,6 +284,8 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
                             //Act
                             if (response instanceof FatalErrorResponse) {
                                 audit.endLine();
+                                continueFetching = false;
+                                break;
                             } else {
                                 addResponseToBatch(response);
                                 audit.endLine();
@@ -309,6 +311,7 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
             audit.logException(message, e);
         }
         audit.logLine("Stopping client");
+        audit.endLine();
         logToConsole("        QueueBasedImplementationRunner run [end]");
     }
 
@@ -352,15 +355,22 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
                 BatchResultErrorEntry::getId
         ).collect(Collectors.toList());
 
-        audit.logLine("failed to delete: " + failures.toArray().toString());
+        if (failures.size() > 0) {
+            audit.logLine("failed to delete: " + failures.toArray().toString());
+        }
     }
 
     private void send(String queueUrl, Object object) throws EventSendingFailureException {
         try {
-            SendMessageBatchRequest batchOfResponsesSendRequest = new SendMessageBatchRequest().withQueueUrl(queueUrl);
+            SendMessageBatchRequest batchOfResponsesSendRequest =
+                    new SendMessageBatchRequest().withQueueUrl(queueUrl);
             List<SendMessageBatchRequestEntry> sendMessageBatchRequestEntries = batchOfResponsesSendRequest.getEntries();
 
-            sendMessageBatchRequestEntries.add(new SendMessageBatchRequestEntry(String.valueOf(object.hashCode()), mapper.writeValueAsString(object)));
+            sendMessageBatchRequestEntries.add(
+                    new SendMessageBatchRequestEntry(
+                            String.valueOf(object.hashCode()), mapper.writeValueAsString(object)
+                    )
+            );
 
             batchOfResponsesSendRequest.setEntries(sendMessageBatchRequestEntries);
             client.sendMessageBatch(batchOfResponsesSendRequest);
@@ -402,6 +412,10 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
 
     public long getResponseQueueMessagesConsumedCount() {
         return getQueueSizeAttributes(messageResponseQueueUrl).getNotVisible();
+    }
+
+    public long getResponseQueueMessagesReceivedCount() {
+        return getQueueSizeAttributes(messageResponseQueueUrl).getAvailable();
     }
 
     private QueueSize getQueueSizeAttributes(String queueUrl) {

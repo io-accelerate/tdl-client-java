@@ -86,6 +86,19 @@ public class QueueSteps {
                 queueBasedImplementationRunner.getRequestTimeoutMillis(), equalTo(expectedTimeout));
     }
 
+    @Then("^the client should consume one request$")
+    public void request_queue_with_one_message() {
+        assertThat("The request queue has different size. The message has been consumed.",
+                queueBasedImplementationRunner.getRequestQueueMessagesConsumedCount(),
+                equalTo(asLong(initialRequestCount - 1)));
+    }
+
+    @And("^the client should publish one response$")
+    public void response_queue_with_one_message() {
+        assertThat("The response queue has different size. Messages have been published.",
+                queueBasedImplementationRunner.getResponseQueueMessagesReceivedCount(), equalTo(asLong(1)));
+    }
+
     class RequestRepresentation {
 
         String payload;
