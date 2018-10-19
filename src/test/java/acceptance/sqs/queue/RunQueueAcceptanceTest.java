@@ -5,6 +5,6 @@ import cucumber.api.junit.Cucumber;
 import org.junit.runner.RunWith;
 
 @RunWith(Cucumber.class)
-@CucumberOptions(plugin = {"pretty"}, glue = {"acceptance.sqs.queue"})
+@CucumberOptions(plugin = {"pretty"}, features = {"src/test/resources/acceptance/queue"}, glue = {"acceptance.sqs.queue"})
 public class RunQueueAcceptanceTest {
 }
