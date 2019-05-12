@@ -1,12 +1,8 @@
 package acceptance.queue;
 
 import acceptance.SingletonTestBroker;
-import cucumber.api.PendingException;
-import cucumber.api.java.en.And;
-import cucumber.api.java.en.But;
-import cucumber.api.java.en.Given;
-import cucumber.api.java.en.Then;
-import cucumber.api.java.en.When;
+import com.google.gson.JsonElement;
+import cucumber.api.java.en.*;
 import tdl.client.audit.StdoutAuditStream;
 import tdl.client.queue.ImplementationRunnerConfig;
 import tdl.client.queue.QueueBasedImplementationRunner;
@@ -18,11 +14,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.lessThan;
-import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertThat;
 
 public class QueueSteps {
@@ -135,8 +129,18 @@ public class QueueSteps {
             throw new IllegalStateException("faulty user code");
         });
         put("replay the value", params -> params[0]);
-        put("sum the elements of an array", params -> params[0]);
-        put("generate array of integers", params -> params[0]);
+        put("sum the elements of an array", params -> {
+            int sum = 0;
+            for (JsonElement jsonElement : params[0].getAsJsonArray()) {
+                sum += jsonElement.getAsInt();
+            }
+            return sum;
+        });
+        put("generate array of integers", params -> {
+            int start_incl = params[0].getAsInt();
+            int end_excl = params[1].getAsInt();
+            return IntStream.range(start_incl,end_excl).boxed().collect(Collectors.toList());
+        });
         put("some logic", params -> "ok");
         put("work for 600ms", params -> {
             try {

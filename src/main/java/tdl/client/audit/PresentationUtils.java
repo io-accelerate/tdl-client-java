@@ -23,8 +23,17 @@ public final class PresentationUtils {
         return sb.toString();
     }
 
-    public static String toDisplayableString(Object item) {
-        String representation = asString(item);
+    private static String toDisplayableString(JsonElement item) {
+        String representation = item.toString();
+
+        if (item.isJsonArray()) {
+            representation = representation.replaceAll(",", ", ");
+        }
+
+        return toDisplayableString(representation);
+    }
+
+    public static String toDisplayableString(String representation) {
 
         if (isMultilineString(representation)) {
             representation = suppressExtraLines(representation);
@@ -34,10 +43,6 @@ public final class PresentationUtils {
     }
 
     //~~~ Handle individual item
-
-    private static String asString(Object item) {
-        return ""+item;
-    }
 
     private static boolean isMultilineString(String representation) {
         return representation.contains("\\n");

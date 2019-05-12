@@ -27,7 +27,7 @@ public class ValidResponse implements Response {
     //~~~ Pretty print
     @Override
     public String getAuditText() {
-        return String.format("resp = %s", PresentationUtils.toDisplayableString(result));
+        return String.format("resp = %s", PresentationUtils.toDisplayableString(""+result));
     }
 
 }
