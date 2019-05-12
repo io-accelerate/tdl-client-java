@@ -1,5 +1,6 @@
 package tdl.client.queue.abstractions;
 
+import com.google.gson.JsonElement;
 import tdl.client.audit.Auditable;
 import tdl.client.audit.PresentationUtils;
 import tdl.client.queue.serialization.JsonRpcRequest;
@@ -29,7 +30,7 @@ public class Request implements Auditable {
         return requestData.getMethod();
     }
 
-    public String[] getParams() {
+    public JsonElement[] getParams() {
         return requestData.getParams();
     }
 

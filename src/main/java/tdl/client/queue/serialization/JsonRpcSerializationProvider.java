@@ -2,6 +2,7 @@ package tdl.client.queue.serialization;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
 import tdl.client.queue.abstractions.Request;
 import tdl.client.queue.abstractions.response.Response;
@@ -28,6 +29,7 @@ public class JsonRpcSerializationProvider implements SerializationProvider {
 
         if (messageText.isValid()) {
             try {
+
                 JsonRpcRequest jsonRpcRequest = gson.fromJson(messageText.getContent(), JsonRpcRequest.class);
                 request = Optional.of(new Request(messageText, jsonRpcRequest));
             } catch (JsonSyntaxException e) {

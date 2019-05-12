@@ -1,16 +1,18 @@
 package tdl.client.queue.serialization;
 
+import com.google.gson.JsonElement;
+
 /**
  * Created by julianghionoiu on 10/01/2016.
  */
 public final class JsonRpcRequest {
     private final String method;
-    private final String[] params;
+    private final JsonElement[] params;
     private final String id;
 
     public JsonRpcRequest() {
         this.method = "";
-        this.params = new String[] {};
+        this.params = new JsonElement[] {};
         this.id = "";
     }
 
@@ -18,7 +20,7 @@ public final class JsonRpcRequest {
         return method;
     }
 
-    public String[] getParams() {
+    public JsonElement[] getParams() {
         return params;
     }
 

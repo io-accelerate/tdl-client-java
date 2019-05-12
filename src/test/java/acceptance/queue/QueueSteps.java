@@ -1,6 +1,7 @@
 package acceptance.queue;
 
 import acceptance.SingletonTestBroker;
+import cucumber.api.PendingException;
 import cucumber.api.java.en.And;
 import cucumber.api.java.en.But;
 import cucumber.api.java.en.Given;
@@ -121,19 +122,21 @@ public class QueueSteps {
 
     private static final Map<String, UserImplementation> USER_IMPLEMENTATIONS = new HashMap<String, UserImplementation >() {{
         put("add two numbers", params -> {
-            Integer x = Integer.parseInt(params[0]);
-            Integer y = Integer.parseInt(params[1]);
+            Integer x = params[0].getAsInt();
+            Integer y = params[1].getAsInt();
             return x + y;
         });
         put("increment number", params -> {
-            Integer x = Integer.parseInt(params[0]);
+            Integer x = params[0].getAsInt();
             return x + 1;
         });
         put("return null", params -> null);
         put("throw exception", param -> {
             throw new IllegalStateException("faulty user code");
         });
-        put("echo the request", params -> params[0]);
+        put("replay the value", params -> params[0]);
+        put("sum the elements of an array", params -> params[0]);
+        put("generate array of integers", params -> params[0]);
         put("some logic", params -> "ok");
         put("work for 600ms", params -> {
             try {
@@ -182,13 +185,20 @@ public class QueueSteps {
         assertThat("Requests have not been consumed",requestQueue.getSize(), equalTo(asLong(0)));
     }
 
-    @Then("^the client should consume first request$")
+    @Then("^the client should consume one request$")
     public void request_queue_less_than_one() throws Throwable {
-        assertThat("Wrong number of requests have been consumed",requestQueue.getSize(), equalTo(asLong(initialRequestCount)));
+        assertThat("Wrong number of requests have been consumed",requestQueue.getSize(),
+                equalTo(asLong(initialRequestCount-1)));
     }
 
     class ResponseRepresentation {
         String payload;
+    }
+
+    @And("^the client should publish one response$")
+    public void response_queue_is_one() throws Throwable {
+        assertThat("Wrong number of responses have been received",responseQueue.getSize(),
+                equalTo(asLong(1)));
     }
 
     @And("^the client should publish the following responses:$")
