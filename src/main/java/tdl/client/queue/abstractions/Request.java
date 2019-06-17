@@ -40,7 +40,7 @@ public class Request implements Auditable {
     @Override
     public String getAuditText() {
         return String.format("id = %s, req = %s(%s)",
-                getId(), getMethodName(), PresentationUtils.toDisplayableString(getParams()));
+                getId(), getMethodName(), PresentationUtils.toDisplayableRequest(getParams()));
     }
 
 

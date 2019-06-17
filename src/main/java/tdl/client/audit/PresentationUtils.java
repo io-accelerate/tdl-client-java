@@ -11,29 +11,37 @@ public final class PresentationUtils {
         //Utility class
     }
 
-    public static String toDisplayableString(JsonElement[] items) {
+    public static String toDisplayableRequest(JsonElement[] items) {
         StringBuilder sb = new StringBuilder();
         for (JsonElement item : items) {
             if (sb.length() > 0) {
                 sb.append(", ");
             }
 
-            sb.append(toDisplayableString(item));
+            String representation;
+
+            if (item.isJsonArray()) {
+                representation = item.toString();
+                representation = representation.replaceAll(",", ", ");
+            } else {
+                representation = item.toString();
+
+                if (isMultilineString(representation)) {
+                    representation = suppressExtraLines(representation);
+                }
+            }
+
+            sb.append(representation);
         }
         return sb.toString();
     }
 
-    private static String toDisplayableString(JsonElement item) {
-        String representation = item.toString();
-
-        if (item.isJsonArray()) {
-            representation = representation.replaceAll(",", ", ");
+    public static String toDisplayableResponse(Object item) {
+        if (item == null) {
+            return "null";
         }
 
-        return toDisplayableString(representation);
-    }
-
-    public static String toDisplayableString(String representation) {
+        String representation = item.toString();
 
         if (isMultilineString(representation)) {
             representation = suppressExtraLines(representation);
