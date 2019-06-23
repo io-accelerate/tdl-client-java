@@ -116,29 +116,29 @@ public class QueueSteps {
 
     private static final Map<String, UserImplementation> USER_IMPLEMENTATIONS = new HashMap<String, UserImplementation >() {{
         put("add two numbers", params -> {
-            Integer x = params[0].getAsInt();
-            Integer y = params[1].getAsInt();
+            Integer x = params.get(0).getAsInt();
+            Integer y = params.get(1).getAsInt();
             return x + y;
         });
         put("increment number", params -> {
-            Integer x = params[0].getAsInt();
+            Integer x = params.get(0).getAsInt();
             return x + 1;
         });
         put("return null", params -> null);
         put("throw exception", param -> {
             throw new IllegalStateException("faulty user code");
         });
-        put("replay the value", params -> params[0]);
+        put("replay the value", params -> params.get(0));
         put("sum the elements of an array", params -> {
             int sum = 0;
-            for (JsonElement jsonElement : params[0].getAsJsonArray()) {
+            for (JsonElement jsonElement : params.get(0).getAsJsonArray()) {
                 sum += jsonElement.getAsInt();
             }
             return sum;
         });
         put("generate array of integers", params -> {
-            int start_incl = params[0].getAsInt();
-            int end_excl = params[1].getAsInt();
+            int start_incl = params.get(0).getAsInt();
+            int end_excl = params.get(1).getAsInt();
             return IntStream.range(start_incl,end_excl).boxed().collect(Collectors.toList());
         });
         put("some logic", params -> "ok");

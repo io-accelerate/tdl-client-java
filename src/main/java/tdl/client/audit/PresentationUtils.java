@@ -2,6 +2,8 @@ package tdl.client.audit;
 
 import com.google.gson.JsonElement;
 
+import java.util.List;
+
 /**
  * Created by julianghionoiu on 03/02/2016.
  */
@@ -11,7 +13,7 @@ public final class PresentationUtils {
         //Utility class
     }
 
-    public static String toDisplayableRequest(JsonElement[] items) {
+    public static String toDisplayableRequest(List<JsonElement> items) {
         StringBuilder sb = new StringBuilder();
         for (JsonElement item : items) {
             if (sb.length() > 0) {

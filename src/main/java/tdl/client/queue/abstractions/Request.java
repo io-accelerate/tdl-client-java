@@ -6,6 +6,8 @@ import tdl.client.audit.PresentationUtils;
 import tdl.client.queue.serialization.JsonRpcRequest;
 import tdl.client.queue.transport.StringMessage;
 
+import java.util.List;
+
 /**
  * Created by julianghionoiu on 20/06/2015.
  */
@@ -30,7 +32,7 @@ public class Request implements Auditable {
         return requestData.getMethod();
     }
 
-    public JsonElement[] getParams() {
+    public List<JsonElement> getParams() {
         return requestData.getParams();
     }
 
