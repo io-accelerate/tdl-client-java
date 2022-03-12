@@ -170,10 +170,8 @@ artifacts {
 uploadArchives {
     repositories.mavenDeployer {
         name = 'bintray-julianghionoiu-tdl-client-java'
-        repository(id: 'bintray-julianghionoiu-tdl-client-java',
-                url: 'https://api.bintray.com/maven/julianghionoiu/maven/tdl-client-java') {
-            authentication(userName: readSystem("BINTRAY_USER"), password: readSystem("BINTRAY_KEY"))
-        }
+//      Publish to local repo then upload artifact to Maven Central's staging repo
+        repository(url: "file:///Users/julianghionoiu/.m2/repository")
 
         pom.project {
             name 'Java client for TDL system'
