@@ -1,10 +1,16 @@
 package acceptance;
 
-import cucumber.api.CucumberOptions;
-import cucumber.api.junit.Cucumber;
-import org.junit.runner.RunWith;
 
-@RunWith(Cucumber.class)
-@CucumberOptions(plugin = {"pretty"}, glue = {"acceptance"})
+import org.junit.platform.suite.api.ConfigurationParameter;
+import org.junit.platform.suite.api.IncludeEngines;
+import org.junit.platform.suite.api.SelectClasspathResource;
+import org.junit.platform.suite.api.Suite;
+
+import static io.cucumber.junit.platform.engine.Constants.GLUE_PROPERTY_NAME;
+
+@Suite
+@IncludeEngines("cucumber")
+@SelectClasspathResource("acceptance")
+@ConfigurationParameter(key = GLUE_PROPERTY_NAME, value = "acceptance")
 public class RunAllAcceptanceTest {
 }

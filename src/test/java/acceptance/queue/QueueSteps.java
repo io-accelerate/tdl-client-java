@@ -2,7 +2,8 @@ package acceptance.queue;
 
 import acceptance.SingletonTestBroker;
 import com.google.gson.JsonElement;
-import cucumber.api.java.en.*;
+import io.cucumber.java.DataTableType;
+import io.cucumber.java.en.*;
 import tdl.client.audit.StdoutAuditStream;
 import tdl.client.queue.ImplementationRunnerConfig;
 import tdl.client.queue.QueueBasedImplementationRunner;
@@ -89,11 +90,13 @@ public class QueueSteps {
                 queueBasedImplementationRunnerBuilder.create().getRequestTimeoutMillis(), equalTo(expectedTimeout));
     }
 
-    class RequestRepresentation {
+    record RequestRepresentation (String payload) {}
 
-        String payload;
-
+    @DataTableType
+    public RequestRepresentation requestRepresentation(Map<String, String> entry) {
+        return new RequestRepresentation(entry.get("payload"));
     }
+
     @Given("^I receive the following requests:$")
     public void initialize_request_queue(List<RequestRepresentation> requests) throws Throwable {
         for (RequestRepresentation request : requests) {
@@ -114,7 +117,7 @@ public class QueueSteps {
 
     //~~~~~ Implementations
 
-    private static final Map<String, UserImplementation> USER_IMPLEMENTATIONS = new HashMap<String, UserImplementation >() {{
+    private static final Map<String, UserImplementation> USER_IMPLEMENTATIONS = new HashMap<>() {{
         put("add two numbers", params -> {
             Integer x = params.get(0).getAsInt();
             Integer y = params.get(1).getAsInt();
@@ -139,7 +142,7 @@ public class QueueSteps {
         put("generate array of integers", params -> {
             int start_incl = params.get(0).getAsInt();
             int end_excl = params.get(1).getAsInt();
-            return IntStream.range(start_incl,end_excl).boxed().collect(Collectors.toList());
+            return IntStream.range(start_incl, end_excl).boxed().collect(Collectors.toList());
         });
         put("some logic", params -> "ok");
         put("work for 600ms", params -> {
@@ -161,9 +164,11 @@ public class QueueSteps {
         }
     }
 
-    class ProcessingRuleRepresentation {
-        String method;
-        String call;
+    record ProcessingRuleRepresentation(String method, String call) {}
+
+    @DataTableType
+    public ProcessingRuleRepresentation processingRuleRepresentation(Map<String, String> entry) {
+        return new ProcessingRuleRepresentation(entry.get("method"), entry.get("call"));
     }
 
     @When("^I go live with the following processing rules:$")
@@ -195,8 +200,11 @@ public class QueueSteps {
                 equalTo(asLong(initialRequestCount-1)));
     }
 
-    class ResponseRepresentation {
-        String payload;
+    record ResponseRepresentation(String payload) {}
+
+    @DataTableType
+    public ResponseRepresentation responseRepresentation(Map<String, String> entry) {
+        return new ResponseRepresentation(entry.get("payload"));
     }
 
     @And("^the client should publish one response$")
@@ -213,8 +221,11 @@ public class QueueSteps {
         assertThat("The responses are not correct",responseQueue.getMessageContents(), equalTo(expectedContents));
     }
 
-    class OutputRepresentation {
-        String output;
+    record OutputRepresentation(String output) {}
+
+    @DataTableType
+    public OutputRepresentation outputRepresentation(Map<String, String> entry) {
+        return new OutputRepresentation(entry.get("output"));
     }
 
     @Then("^the client should display to console:$")

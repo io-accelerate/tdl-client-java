@@ -2,10 +2,7 @@ package acceptance.runner;
 
 import acceptance.queue.NoisyImplementationRunner;
 import com.mashape.unirest.http.exceptions.UnirestException;
-import cucumber.api.java.en.And;
-import cucumber.api.java.en.Given;
-import cucumber.api.java.en.Then;
-import cucumber.api.java.en.When;
+import io.cucumber.java.en.*;
 import tdl.client.audit.AuditStream;
 import tdl.client.queue.ImplementationRunner;
 import acceptance.queue.QuietImplementationRunner;
@@ -54,7 +51,7 @@ public class RunnerSteps {
         recordingServerStub.reset();
     }
 
-    class ServerConfig {
+    static class ServerConfig {
         String verb;
         String endpointEquals;
         String endpointMatches;
