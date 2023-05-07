@@ -1,6 +1,5 @@
-[![Java Version](http://img.shields.io/badge/Java-1.8-blue.svg)](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html)
+[![Java Version](http://img.shields.io/badge/Java-17-blue.svg)](http://docs.aws.amazon.com/corretto/latest/corretto-17-ug/downloads-list.html)
 [![Maven Version](http://img.shields.io/maven-central/v/ro.ghionoiu/tdl-client-java.svg)](http://search.maven.org/#search%7Cgav%7C1%7Cg%3A%22ro.ghionoiu%22%20AND%20a%3A%22tdl-client-java%22)
-[![Codeship Status for julianghionoiu/tdl-client-java](https://img.shields.io/codeship/da7ca170-097e-0133-70b1-36ea30c979a9.svg)](https://codeship.com/projects/90604)
 
 ### Submodules
 
@@ -23,13 +22,13 @@ Java client to connect to the central kata server.
 #### Manual 
 To run the acceptance tests, start the WireMock servers:
 ```
-python wiremock/fetch-wiremock-and-run.py start 41375
-python wiremock/fetch-wiremock-and-run.py start 8222
+python3 wiremock/wiremock-wrapper.py start 41375
+python3 wiremock/wiremock-wrapper.py start 8222
 ```
 
 And the broker, with:
 ```
-python broker/activemq-wrapper.py start
+python3 broker/activemq-wrapper.py start
 ```
 
 Stopping the above services would be the same, using the `stop` command instead of the `start` command.
@@ -60,5 +59,7 @@ How to release a new version:
 ```bash
 ./release.sh
 ```
+
+### Publish to Maven Central
 
 After Codeship build finishes, go to http://bintray.com and publish the new version then sync to Maven Central.
