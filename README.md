@@ -55,11 +55,30 @@ Or via the IDE
 
 ### Release
 
-How to release a new version:
+Configure the version inside the "gradle.properties" file
+
+Create publishing bundle into Maven Local
 ```bash
-./release.sh
+./gradlew publishToMavenLocal
 ```
+
+Check Maven Local contains release version:
+```
+ls -l /Users/julianghionoiu/.m2/repository/ro/ghionoiu/tdl-client-java/$(cat gradle.properties | grep version | cut -d "=" -f2)
+```
+
+Publish to Maven Central Staging repo
 
 ### Publish to Maven Central
 
-After Codeship build finishes, go to http://bintray.com and publish the new version then sync to Maven Central.
+Publish to Maven Central Staging repo
+```bash
+./gradlew publish
+```
+
+A Staging repository is created automatically:
+https://oss.sonatype.org/#stagingRepositories
+
+To promote to the Live repo, do the following:
+- "Close" the Staging repo
+- "Refresh" the Staging repos

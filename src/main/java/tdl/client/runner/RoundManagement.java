@@ -1,13 +1,13 @@
 package tdl.client.runner;
 
-import com.google.common.io.Files;
 import tdl.client.audit.AuditStream;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.Charset;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.stream.Stream;
 
 class RoundManagement {
     private static final Path CHALLENGES_FOLDER = Paths.get("challenges");
@@ -36,7 +36,7 @@ class RoundManagement {
 
         Path descriptionPath = CHALLENGES_FOLDER.resolve(label + ".txt");
         try {
-            Files.write(description.getBytes(), descriptionPath.toFile());
+            Files.write(descriptionPath, description.getBytes());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -44,7 +44,7 @@ class RoundManagement {
 
         //Save round label
         try {
-            Files.write(label.getBytes(), LAST_FETCHED_ROUND_PATH.toFile());
+            Files.write(LAST_FETCHED_ROUND_PATH, label.getBytes());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -53,7 +53,9 @@ class RoundManagement {
 
     static String getLastFetchedRound() {
         try {
-            return Files.readFirstLine(LAST_FETCHED_ROUND_PATH.toFile(), Charset.defaultCharset());
+            try (Stream<String> s = Files.lines(LAST_FETCHED_ROUND_PATH)) {
+                return s.findFirst().orElse("noRound");
+            }
         } catch (IOException e) {
             return "noRound";
         }
