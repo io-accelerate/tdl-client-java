@@ -94,34 +94,34 @@ class WiremockProcess {
         @Override
         public JsonElement serialize(final RunnerSteps.ServerConfig data, final Type typeOfSrc, final JsonSerializationContext context) {
             final JsonObject requestJsonObj = new JsonObject();
-            if (data.endpointMatches != null) {
-                requestJsonObj.addProperty("urlPattern", data.endpointMatches);
+            if (data.endpointMatches() != null) {
+                requestJsonObj.addProperty("urlPattern", data.endpointMatches());
             }
-            if (data.endpointEquals != null) {
-                requestJsonObj.addProperty("url", data.endpointEquals);
+            if (data.endpointEquals() != null) {
+                requestJsonObj.addProperty("url", data.endpointEquals());
             }
 
-            requestJsonObj.addProperty("method", data.verb);
+            requestJsonObj.addProperty("method", data.verb());
 
-            if (data.acceptHeader != null) {
+            if (data.acceptHeader() != null) {
                 final JsonObject headerJsonObj = new JsonObject();
                 final JsonObject acceptJsonObj = new JsonObject();
-                acceptJsonObj.addProperty("contains", data.acceptHeader);
+                acceptJsonObj.addProperty("contains", data.acceptHeader());
                 headerJsonObj.add("Accept", acceptJsonObj);
                 requestJsonObj.add("headers", headerJsonObj);
             }
 
             final JsonObject responseJsonObj = new JsonObject();
 
-            if (data.responseBody != null) {
-                responseJsonObj.addProperty("body", data.responseBody);
+            if (data.responseBody() != null) {
+                responseJsonObj.addProperty("body", data.responseBody());
             }
 
-            if (data.statusMessage != null) {
-                responseJsonObj.addProperty("statusMessage", data.statusMessage);
+            if (data.statusMessage() != null) {
+                responseJsonObj.addProperty("statusMessage", data.statusMessage());
             }
 
-            responseJsonObj.addProperty("status", data.status);
+            responseJsonObj.addProperty("status", data.status());
 
             final JsonObject completeJson = new JsonObject();
             completeJson.add("response", responseJsonObj);

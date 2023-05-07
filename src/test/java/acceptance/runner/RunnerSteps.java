@@ -2,6 +2,7 @@ package acceptance.runner;
 
 import acceptance.queue.NoisyImplementationRunner;
 import com.mashape.unirest.http.exceptions.UnirestException;
+import io.cucumber.java.DataTableType;
 import io.cucumber.java.en.*;
 import tdl.client.audit.AuditStream;
 import tdl.client.queue.ImplementationRunner;
@@ -17,6 +18,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Map;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -51,15 +53,29 @@ public class RunnerSteps {
         recordingServerStub.reset();
     }
 
-    static class ServerConfig {
-        String verb;
-        String endpointEquals;
-        String endpointMatches;
-        int status;
-        String responseBody;
-        String acceptHeader;
-        String statusMessage;
+    record ServerConfig (
+        String verb,
+        String endpointEquals,
+        String endpointMatches,
+        int status,
+        String responseBody,
+        String acceptHeader,
+        String statusMessage
+    ) {}
+
+    @DataTableType
+    public ServerConfig serverConfig(Map<String, String> entry) {
+        return new ServerConfig(
+                entry.getOrDefault("verb", null),
+                entry.getOrDefault("endpointEquals", null),
+                entry.getOrDefault("endpointMatches", null),
+                Integer.parseInt(entry.getOrDefault("status", "0")),
+                entry.getOrDefault("responseBody", null),
+                entry.getOrDefault("acceptHeader", null),
+                entry.getOrDefault("statusMessage", null)
+                );
     }
+
 
     @And("the challenge server exposes the following endpoints$")
     public void configureChallengeServerEndpoint(List<ServerConfig> configs) throws UnirestException {
@@ -77,20 +93,27 @@ public class RunnerSteps {
 
     @Given("^the challenge server returns (\\d+) for all requests$")
     public void the_challenge_server_returns_for_all_requests(int returnCode) throws Throwable {
-        ServerConfig config = new ServerConfig();
-        config.endpointMatches = "^(.*)";
-        config.status = returnCode;
-        config.verb = "ANY";
+        ServerConfig config = new ServerConfig(
+                "ANY",
+                null,
+                "^(.*)",
+                returnCode,
+                null,
+                null,
+                null);
         challengeServerStub.createNewMapping(config);
     }
 
     @Given("^the challenge server returns (\\d+), response body \"([^\"]*)\" for all requests$")
     public void the_challenge_server_returns_response_body_for_all_requests(int returnCode, String body) throws Throwable {
-        ServerConfig config = new ServerConfig();
-        config.endpointMatches = "^(.*)";
-        config.status = returnCode;
-        config.verb = "ANY";
-        config.responseBody = body;
+        ServerConfig config = new ServerConfig(
+                "ANY",
+                null,
+                "^(.*)",
+                returnCode,
+                body,
+                null,
+                null);
         challengeServerStub.createNewMapping(config);
     }
 
