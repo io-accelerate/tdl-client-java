@@ -80,5 +80,8 @@ A Staging repository is created automatically:
 https://oss.sonatype.org/#stagingRepositories
 
 To promote to the Live repo, do the following:
-- "Close" the Staging repo
+- "Close" the Staging repo, Sonatype Lift will scan the repo for vuln, check the email
 - "Refresh" the Staging repos
+- "Release" the repo
+- wait between 15 mins and up to 2 hours for the new version to appear in Central
+- check: https://repo1.maven.org/maven2/ro/ghionoiu/tdl-client-java/
