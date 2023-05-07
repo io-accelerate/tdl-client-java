@@ -1,7 +1,6 @@
 package acceptance.runner;
 
 import acceptance.queue.NoisyImplementationRunner;
-import com.mashape.unirest.http.exceptions.UnirestException;
 import io.cucumber.java.DataTableType;
 import io.cucumber.java.en.*;
 import tdl.client.audit.AuditStream;
@@ -40,7 +39,7 @@ public class RunnerSteps {
     // Given
 
     @Given("There is a challenge server running on \"([^\"]*)\" port (\\d+)$")
-    public void setupServerWithSetup(String hostname, int port) throws UnirestException {
+    public void setupServerWithSetup(String hostname, int port) throws IOException, InterruptedException {
         this.challengeHostname = hostname;
         this.port = port;
         challengeServerStub = new WiremockProcess(hostname, port);
@@ -48,7 +47,7 @@ public class RunnerSteps {
     }
 
     @And("There is a recording server running on \"([^\"]*)\" port (\\d+)$")
-    public void setupRecordingServerWithSetup(String hostname, int port) throws UnirestException {
+    public void setupRecordingServerWithSetup(String hostname, int port) throws IOException, InterruptedException {
         recordingServerStub = new WiremockProcess(hostname, port);
         recordingServerStub.reset();
     }
@@ -59,8 +58,7 @@ public class RunnerSteps {
         String endpointMatches,
         int status,
         String responseBody,
-        String acceptHeader,
-        String statusMessage
+        String acceptHeader
     ) {}
 
     @DataTableType
@@ -71,21 +69,20 @@ public class RunnerSteps {
                 entry.getOrDefault("endpointMatches", null),
                 Integer.parseInt(entry.getOrDefault("status", "0")),
                 entry.getOrDefault("responseBody", null),
-                entry.getOrDefault("acceptHeader", null),
-                entry.getOrDefault("statusMessage", null)
+                entry.getOrDefault("acceptHeader", null)
                 );
     }
 
 
     @And("the challenge server exposes the following endpoints$")
-    public void configureChallengeServerEndpoint(List<ServerConfig> configs) throws UnirestException {
+    public void configureChallengeServerEndpoint(List<ServerConfig> configs) throws IOException, InterruptedException {
         for (ServerConfig config : configs) {
             challengeServerStub.createNewMapping(config);
         }
     }
 
     @And("the recording server exposes the following endpoints$")
-    public void configureRecordingServerEndpoint(List<ServerConfig> configs) throws UnirestException {
+    public void configureRecordingServerEndpoint(List<ServerConfig> configs) throws IOException, InterruptedException {
         for (ServerConfig config : configs) {
             recordingServerStub.createNewMapping(config);
         }
@@ -99,7 +96,6 @@ public class RunnerSteps {
                 "^(.*)",
                 returnCode,
                 null,
-                null,
                 null);
         challengeServerStub.createNewMapping(config);
     }
@@ -112,7 +108,6 @@ public class RunnerSteps {
                 "^(.*)",
                 returnCode,
                 body,
-                null,
                 null);
         challengeServerStub.createNewMapping(config);
     }
@@ -149,7 +144,7 @@ public class RunnerSteps {
     }
 
     @Given("recording server is returning error")
-    public void recoringServerNotExposingEndpoints() throws UnirestException {
+    public void recoringServerNotExposingEndpoints() throws IOException, InterruptedException {
         recordingServerStub.reset();
     }
 
@@ -159,7 +154,7 @@ public class RunnerSteps {
     }
 
     @Given("the challenge server is broken")
-    public void challengeServerIsBroken() throws UnirestException {
+    public void challengeServerIsBroken() throws IOException, InterruptedException {
         challengeServerStub.reset();
     }
 
@@ -202,12 +197,12 @@ public class RunnerSteps {
     }
 
     @And("the recording system should be notified with \"([^\"]*)\"$")
-    public void recording_system_should_be_notified_with(String expectedOutput) throws UnirestException {
+    public void recording_system_should_be_notified_with(String expectedOutput) throws IOException, InterruptedException {
         recordingServerStub.verifyEndpointWasHit("/notify", "POST", expectedOutput);
     }
 
     @And("the recording system should have received a stop signal$")
-    public void recording_system_should_receive_stop_signal() throws UnirestException {
+    public void recording_system_should_receive_stop_signal() throws IOException, InterruptedException {
         recordingServerStub.verifyEndpointWasHit("/stop", "POST", "");
     }
 

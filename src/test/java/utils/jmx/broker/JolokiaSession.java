@@ -2,74 +2,75 @@ package utils.jmx.broker;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.util.EntityUtils;
 
 import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.util.Map;
 
 /**
  * Created by julianghionoiu on 27/09/2015.
  */
 class JolokiaSession {
-    private final CloseableHttpClient httpClient;
+    private final HttpClient httpClient;
     private final Gson gson;
 
     private final URI jolokiaURI;
 
     private JolokiaSession(URI jolokiaURI) {
         this.jolokiaURI = jolokiaURI;
-        this.httpClient = HttpClients.createDefault();
+        this.httpClient = HttpClient.newHttpClient();
         this.gson = new Gson();
     }
 
     static JolokiaSession connect(String host, int adminPort) throws Exception {
-        CloseableHttpClient httpClient = HttpClients.createDefault();
         URI jolokiaURI = URI.create("http://" + host + ":" + adminPort + "/api/jolokia");
 
-        HttpGet httpGet = new HttpGet(jolokiaURI.resolve("/api/jolokia/version"));
-        try (CloseableHttpResponse response = httpClient.execute(httpGet)) {
-            String content = EntityUtils.toString(response.getEntity());
-
-            Gson gson = new Gson();
-            JsonElement jsonElement = gson.fromJson(content, JsonElement.class);
-            JsonElement value = jsonElement.getAsJsonObject().get("value");
-            String jolokiaVersion = value.getAsJsonObject().getAsJsonPrimitive("agent").getAsString();
+        HttpRequest httpGet = HttpRequest.newBuilder()
+                .uri(jolokiaURI.resolve("/api/jolokia/version"))
+                .GET()
+                .build();
 
 
-            String expectedJolokiaVersion = "1.2.2";
-            if (!expectedJolokiaVersion.equals(jolokiaVersion)) {
-                throw new Exception(String.format("Failed to retrieve the right Jolokia version. Expected: %s got %s",
-                        expectedJolokiaVersion, jolokiaVersion));
-            }
+        HttpResponse<String> response = HttpClient.newHttpClient().send(httpGet, HttpResponse.BodyHandlers.ofString());
+
+        Gson gson = new Gson();
+        JsonElement jsonElement = gson.fromJson(response.body(), JsonElement.class);
+        JsonElement value = jsonElement.getAsJsonObject().get("value");
+        String jolokiaVersion = value.getAsJsonObject().getAsJsonPrimitive("agent").getAsString();
+
+
+        String expectedJolokiaVersion = "1.2.2";
+        if (!expectedJolokiaVersion.equals(jolokiaVersion)) {
+            throw new Exception(String.format("Failed to retrieve the right Jolokia version. Expected: %s got %s",
+                    expectedJolokiaVersion, jolokiaVersion));
         }
 
-        httpClient.close();
         return new JolokiaSession(jolokiaURI);
     }
 
     JsonElement request(Map<String, Object> jolokiaPayload) throws Exception {
         String jsonPayload = gson.toJson(jolokiaPayload);
-        HttpPost httpPost = new HttpPost(jolokiaURI);
-        httpPost.addHeader("Content-Type", "application/json");
-        httpPost.setEntity(new StringEntity(jsonPayload));
 
-        try (CloseableHttpResponse response = httpClient.execute(httpPost)) {
-            int statusCode = response.getStatusLine().getStatusCode();
-            String content = EntityUtils.toString(response.getEntity());
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(jolokiaURI)
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(jsonPayload))
+                .build();
 
-            if (statusCode != 200) {
-                throw new Exception(String.format("Failed Jolokia call: %d: %s", statusCode, content));
-            }
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
-            JsonElement jsonElement = gson.fromJson(content, JsonElement.class);
-            return jsonElement.getAsJsonObject().get("value");
+
+        int statusCode = response.statusCode();
+        String content = response.body();
+
+        if (statusCode != 200) {
+            throw new Exception(String.format("Failed Jolokia call: %d: %s", statusCode, content));
         }
+
+        JsonElement jsonElement = gson.fromJson(content, JsonElement.class);
+        return jsonElement.getAsJsonObject().get("value");
     }
 
 }

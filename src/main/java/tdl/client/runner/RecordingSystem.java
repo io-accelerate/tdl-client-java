@@ -1,8 +1,10 @@
 package tdl.client.runner;
 
-import com.mashape.unirest.http.HttpResponse;
-import com.mashape.unirest.http.Unirest;
-import com.mashape.unirest.http.exceptions.UnirestException;
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 
 class RecordingSystem implements RoundChangesListener {
 
@@ -41,11 +43,16 @@ class RecordingSystem implements RoundChangesListener {
 
     private static boolean isRunning() {
         try {
-            HttpResponse<String> stringHttpResponse = Unirest.get(RECORDING_SYSTEM_ENDPOINT + "/status").asString();
-            if (stringHttpResponse.getStatus() == 200 && stringHttpResponse.getBody().startsWith("OK")) {
+            HttpClient client = HttpClient.newHttpClient();
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(RECORDING_SYSTEM_ENDPOINT + "/status"))
+                    .GET()
+                    .build();
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() == 200 && response.body().startsWith("OK")) {
                 return true;
             }
-        } catch (UnirestException e) {
+        } catch (IOException | InterruptedException e) {
             System.err.println("Could not reach recording system: " + e.getMessage());
         }
 
@@ -68,18 +75,22 @@ class RecordingSystem implements RoundChangesListener {
         }
 
         try {
-            HttpResponse<String> stringHttpResponse = Unirest.post(RECORDING_SYSTEM_ENDPOINT + endpoint)
-                    .body(body)
-                    .asString();
-            if (stringHttpResponse.getStatus() != 200) {
-                System.err.println("Recording system returned code: "+stringHttpResponse.getStatus());
+            HttpClient client = HttpClient.newHttpClient();
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(RECORDING_SYSTEM_ENDPOINT + endpoint))
+                    .POST(HttpRequest.BodyPublishers.ofString(body))
+                    .build();
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() != 200) {
+                System.err.println("Recording system returned code: "+response.statusCode());
                 return;
             }
 
-            if (!stringHttpResponse.getBody().startsWith("ACK")) {
-                System.err.println("Recording system returned body: "+stringHttpResponse.getStatus());
+            if (!response.body().startsWith("ACK")) {
+                System.err.println("Recording system returned body: "+response.statusCode());
             }
-        } catch (UnirestException e) {
+        } catch (IOException | InterruptedException e) {
             System.err.println("Could not reach recording system: " + e.getMessage());
         }
     }

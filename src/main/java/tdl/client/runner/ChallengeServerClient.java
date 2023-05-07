@@ -1,11 +1,12 @@
 package tdl.client.runner;
 
-import com.mashape.unirest.http.HttpResponse;
-import com.mashape.unirest.http.Unirest;
-import com.mashape.unirest.http.exceptions.UnirestException;
-
-import java.io.UnsupportedEncodingException;
+import java.io.IOException;
+import java.net.URI;
 import java.net.URLEncoder;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 
 
 class ChallengeServerClient {
@@ -37,15 +38,19 @@ class ChallengeServerClient {
 
     private String get(String name) throws OtherCommunicationException, ServerErrorException, ClientErrorException {
         try {
-            String encodedPath = URLEncoder.encode(this.journeyId, "UTF-8");
-            String url = String.format("http://%s:%d/%s/%s", this.hostname, port, name, encodedPath);
-            HttpResponse<String> response = Unirest.get(url)
+            HttpClient client = HttpClient.newHttpClient();
+            String encodedPath = URLEncoder.encode(this.journeyId, StandardCharsets.UTF_8);
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(String.format("http://%s:%d/%s/%s", this.hostname, port, name, encodedPath)))
                     .header("Accept", this.acceptHeader)
                     .header("Accept-Charset", "UTF-8")
-                    .asString();
+                    .GET()
+                    .build();
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
             ensureStatusOk(response);
-            return response.getBody();
-        } catch (UnirestException | UnsupportedEncodingException e ) {
+
+            return response.body();
+        } catch (IOException | InterruptedException e ) {
             throw new OtherCommunicationException("Could not perform GET request",e);
         }
     }
@@ -55,15 +60,20 @@ class ChallengeServerClient {
     String sendAction(String action) throws
             ClientErrorException, ServerErrorException, OtherCommunicationException {
         try {
-            String encodedPath = URLEncoder.encode(this.journeyId, "UTF-8");
-            String url = String.format("http://%s:%d/action/%s/%s", this.hostname, port, action, encodedPath);
-            HttpResponse<String> response =  Unirest.post(url)
+            HttpClient client = HttpClient.newHttpClient();
+            String encodedPath = URLEncoder.encode(this.journeyId, StandardCharsets.UTF_8);
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(String.format("http://%s:%d/action/%s/%s", this.hostname, port, action, encodedPath)))
                     .header("Accept", this.acceptHeader)
                     .header("Accept-Charset", "UTF-8")
-                    .asString();
+                    .POST(HttpRequest.BodyPublishers.noBody())
+                    .build();
+
+
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
             ensureStatusOk(response);
-            return response.getBody();
-        } catch (UnirestException | UnsupportedEncodingException e ) {
+            return response.body();
+        } catch (IOException | InterruptedException e ) {
             throw new OtherCommunicationException("Could not perform POST request",e);
         }
     }
@@ -73,9 +83,9 @@ class ChallengeServerClient {
 
     private static void ensureStatusOk(HttpResponse<String> response) throws ClientErrorException,
             ServerErrorException, OtherCommunicationException {
-        int responseStatus = response.getStatus();
+        int responseStatus = response.statusCode();
         if (isClientError(responseStatus)) {
-            throw new ClientErrorException(response.getBody());
+            throw new ClientErrorException(response.body());
         } else if (isServerError(responseStatus)) {
             throw new ServerErrorException();
         } else if (isOtherErrorResponse(responseStatus)) {

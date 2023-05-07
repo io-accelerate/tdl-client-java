@@ -1,12 +1,14 @@
 package acceptance.runner;
 
 import com.google.gson.*;
-import com.mashape.unirest.http.HttpResponse;
-import com.mashape.unirest.http.JsonNode;
-import com.mashape.unirest.http.Unirest;
-import com.mashape.unirest.http.exceptions.UnirestException;
 
+import java.io.IOException;
 import java.lang.reflect.Type;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.util.Map;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
@@ -21,38 +23,52 @@ class WiremockProcess {
         this.port = port;
     }
 
-    void createNewMapping(RunnerSteps.ServerConfig config) throws UnirestException {
+    void createNewMapping(RunnerSteps.ServerConfig config) throws IOException, InterruptedException {
         final Gson gson = new GsonBuilder().registerTypeAdapter(RunnerSteps.ServerConfig.class, new ServerConfigSerialiser()).create();
         String json = gson.toJson(config);
 
-        String url = String.format("http://%s:%d/%s", hostname, port, "__admin/mappings/new");
-        Unirest.post(url).body(json).asJson();
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(String.format("http://%s:%d/%s", hostname, port, "__admin/mappings/new")))
+                .POST(HttpRequest.BodyPublishers.ofString(json))
+                .build();
+        HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
     }
 
-    void reset() throws UnirestException {
-        String url = String.format("http://%s:%d/%s", hostname, port, "__admin/reset");
-        Unirest.post(url).asJson();
+    void reset() throws IOException, InterruptedException {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(String.format("http://%s:%d/%s", hostname, port, "__admin/reset")))
+                .POST(HttpRequest.BodyPublishers.noBody())
+                .build();
+        HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
     }
 
 
     @SuppressWarnings("SameParameterValue")
-    void verifyEndpointWasHit(String endpoint, String methodType, String body) throws UnirestException {
+    void verifyEndpointWasHit(String endpoint, String methodType, String body) throws IOException, InterruptedException {
         String failMessage = "Endpoint \"" + endpoint + "\" should have been hit exactly once, with methodType \"" + methodType + "\"";
         assertThat(failMessage, countRequestsWithEndpoint(endpoint, methodType, body), equalTo(1));
     }
 
-    private int countRequestsWithEndpoint(String endpoint, String verb, String body) throws UnirestException {
+    private int countRequestsWithEndpoint(String endpoint, String verb, String body) throws IOException, InterruptedException {
         String url = String.format("http://%s:%d/%s", hostname, port, "__admin/requests/count");
-        RequestMatchingData request = new RequestMatchingData();
-        request.verb = verb;
-        request.url = endpoint;
-        request.equalTo = body;
+        RequestMatchingData requestMatchingData = new RequestMatchingData();
+        requestMatchingData.verb = verb;
+        requestMatchingData.url = endpoint;
+        requestMatchingData.equalTo = body;
 
         final Gson gson = new GsonBuilder().registerTypeAdapter(RequestMatchingData.class, new RequestMatchingSerialiser()).create();
-        String json = gson.toJson(request);
+        String json = gson.toJson(requestMatchingData);
 
-        HttpResponse<JsonNode> response = Unirest.post(url).body(json).asJson();
-        return response.getBody().getObject().getInt("count");
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .POST(HttpRequest.BodyPublishers.ofString(json))
+                .build();
+
+        HttpClient client = HttpClient.newHttpClient();
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+        @SuppressWarnings("rawtypes") Map map = gson.fromJson(response.body(), Map.class);
+        return ((Double) map.get("count")).intValue();
     }
 
     private static class RequestMatchingData {
@@ -115,10 +131,6 @@ class WiremockProcess {
 
             if (data.responseBody() != null) {
                 responseJsonObj.addProperty("body", data.responseBody());
-            }
-
-            if (data.statusMessage() != null) {
-                responseJsonObj.addProperty("statusMessage", data.statusMessage());
             }
 
             responseJsonObj.addProperty("status", data.status());
