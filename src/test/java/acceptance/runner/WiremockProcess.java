@@ -84,7 +84,7 @@ class WiremockProcess {
         public JsonElement serialize(final RequestMatchingData request, final Type typeOfSrc, final JsonSerializationContext context) {
             final JsonObject requestJsonObj = new JsonObject();
 
-            if (request.equalTo != null) {
+            if (request.equalTo != null && !request.equalTo.isEmpty()) {
                 JsonArray bodyPatterns = new JsonArray();
                 final JsonObject jsonObject = new JsonObject();
                 jsonObject.addProperty("equalTo", request.equalTo);
