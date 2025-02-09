@@ -4,10 +4,10 @@ import acceptance.SingletonTestBroker;
 import com.google.gson.JsonElement;
 import io.cucumber.java.DataTableType;
 import io.cucumber.java.en.*;
-import tdl.client.audit.StdoutAuditStream;
-import tdl.client.queue.ImplementationRunnerConfig;
-import tdl.client.queue.QueueBasedImplementationRunner;
-import tdl.client.queue.abstractions.UserImplementation;
+import io.accelerate.client.audit.StdoutAuditStream;
+import io.accelerate.client.queue.ImplementationRunnerConfig;
+import io.accelerate.client.queue.QueueBasedImplementationRunner;
+import io.accelerate.client.queue.abstractions.UserImplementation;
 import utils.jmx.broker.RemoteJmxQueue;
 import utils.logging.LogAuditStream;
 

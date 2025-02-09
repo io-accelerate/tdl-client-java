@@ -8,7 +8,7 @@ plugins {
 sourceCompatibility = JavaVersion.VERSION_21
 targetCompatibility = JavaVersion.VERSION_21
 
-group = 'ro.ghionoiu'
+group = 'io.accelerate'
 version = project.version.toString()
 
 repositories {
@@ -57,7 +57,7 @@ publishing {
             pom {
                 name = 'Java client for TDL system'
                 description = 'A Java client that allows users to get up to speed with the TDL system.'
-                url = 'https://github.com/julianghionoiu/tdl-client-java'
+                url = 'https://github.com/io-accelerate/tdl-client-java'
                 licenses {
                     license {
                         name = 'Apache License, Version 2.0'
@@ -69,13 +69,13 @@ publishing {
                         name = 'Iulian (Julian) Ghionoiu'
                         email = 'iulian.ghionoiu@gmail.com'
                         organization = 'Iulian Ghionoiu'
-                        organizationUrl = 'https://github.com/julianghionoiu'
+                        organizationUrl = 'https://github.com/io-accelerate'
                     }
                 }
                 scm {
-                    connection = 'scm:git:git@github.com:julianghionoiu/tdl-client-java.git'
-                    developerConnection = 'scm:git:git@github.com:julianghionoiu/tdl-client-java.git'
-                    url = 'git@github.com:julianghionoiu/tdl-client-java.git'
+                    connection = 'scm:git:git@github.com:io-accelerate/tdl-client-java.git'
+                    developerConnection = 'scm:git:git@github.com:io-accelerate/tdl-client-java.git'
+                    url = 'git@github.com:io-accelerate/tdl-client-java.git'
                 }
             }
         }

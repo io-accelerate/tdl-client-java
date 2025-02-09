@@ -3,12 +3,12 @@ package acceptance.runner;
 import acceptance.queue.NoisyImplementationRunner;
 import io.cucumber.java.DataTableType;
 import io.cucumber.java.en.*;
-import tdl.client.audit.AuditStream;
-import tdl.client.queue.ImplementationRunner;
+import io.accelerate.client.audit.AuditStream;
+import io.accelerate.client.queue.ImplementationRunner;
 import acceptance.queue.QuietImplementationRunner;
-import tdl.client.runner.ActionProvider;
-import tdl.client.runner.ChallengeSession;
-import tdl.client.runner.ChallengeSessionConfig;
+import io.accelerate.client.runner.ActionProvider;
+import io.accelerate.client.runner.ChallengeSession;
+import io.accelerate.client.runner.ChallengeSessionConfig;
 
 import java.io.BufferedReader;
 import java.io.File;

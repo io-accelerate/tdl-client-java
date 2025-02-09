@@ -1,6 +1,6 @@
 package acceptance.queue;
 
-import tdl.client.queue.ImplementationRunner;
+import io.accelerate.client.queue.ImplementationRunner;
 
 public class QuietImplementationRunner implements ImplementationRunner {
     @Override

@@ -1,6 +1,6 @@
 package acceptance.runner;
 
-import tdl.client.audit.AuditStream;
+import io.accelerate.client.audit.AuditStream;
 
 public class TestAuditStream implements AuditStream {
     private String total = "";

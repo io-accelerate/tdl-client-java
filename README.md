@@ -1,5 +1,5 @@
-[![Java Version](http://img.shields.io/badge/Java-17-blue.svg)](http://docs.aws.amazon.com/corretto/latest/corretto-17-ug/downloads-list.html)
-[![Maven Version](http://img.shields.io/maven-central/v/ro.ghionoiu/tdl-client-java.svg)](http://search.maven.org/#search%7Cgav%7C1%7Cg%3A%22ro.ghionoiu%22%20AND%20a%3A%22tdl-client-java%22)
+[![Java Version](http://img.shields.io/badge/Java-21-blue.svg)](http://docs.aws.amazon.com/corretto/latest/corretto-17-ug/downloads-list.html)
+[![Maven Version](http://img.shields.io/maven-central/v/io.accelerate/tdl-client-java.svg)](http://search.maven.org/#search%7Cgav%7C1%7Cg%3A%22io.accelerate%22%20AND%20a%3A%22tdl-client-java%22)
 
 ### Submodules
 
@@ -64,24 +64,22 @@ Create publishing bundle into Maven Local
 
 Check Maven Local contains release version:
 ```
-ls -l /Users/julianghionoiu/.m2/repository/ro/ghionoiu/tdl-client-java/$(cat gradle.properties | grep version | cut -d "=" -f2)
+CURRENT_VERSION=$(cat gradle.properties | grep version | cut -d "=" -f2)
+
+ls -l $HOME/.m2/repository/io/accelerate/tdl-client-java/${CURRENT_VERSION}
 ```
 
-Publish to Maven Central Staging repo
 
-### Publish to Maven Central
+### Publish to Maven Central - the manual way
 
-Publish to Maven Central Staging repo
-```bash
-./gradlew publish
+At this point publishing to Maven Central from Gradle is only possible manually.
+Things might have changed, check this page:
+https://central.sonatype.org/publish/publish-portal-gradle/
+
+Generate the Maven Central bundle:
+```
+./generateMavenCentralBundle.sh
 ```
 
-A Staging repository is created automatically:
-https://oss.sonatype.org/#stagingRepositories
-
-To promote to the Live repo, do the following:
-- "Close" the Staging repo, Sonatype Lift will scan the repo for vuln, check the email
-- "Refresh" the Staging repos
-- "Release" the repo
-- wait between 15 mins and up to 2 hours for the new version to appear in Central
-- check: https://repo1.maven.org/maven2/ro/ghionoiu/tdl-client-java/
+Upload the bundle to Maven Central by clicking the "Publish Component" button.
+https://central.sonatype.com/publishing
