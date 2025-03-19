@@ -9,5 +9,5 @@ import java.util.List;
  */ //Obs: serializedParam can become Request and the returned object could be called Response
 @FunctionalInterface
 public interface UserImplementation {
-    Object process(List<JsonElement> params);
+    Object process(List<ParamAccessor> params);
 }

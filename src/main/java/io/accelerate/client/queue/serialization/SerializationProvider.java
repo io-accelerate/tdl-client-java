@@ -13,5 +13,5 @@ public interface SerializationProvider {
 
     Optional<Request> deserialize(StringMessage messageText) throws DeserializationException;
 
-    String serialize(Response response);
+    String serialize(Response response) throws SerializationException;
 }

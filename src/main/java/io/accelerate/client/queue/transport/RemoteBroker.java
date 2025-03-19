@@ -1,12 +1,10 @@
 package io.accelerate.client.queue.transport;
 
+import io.accelerate.client.queue.serialization.*;
 import org.apache.activemq.ActiveMQConnectionFactory;
 import org.slf4j.LoggerFactory;
-import io.accelerate.client.queue.serialization.DeserializationException;
 import io.accelerate.client.queue.abstractions.Request;
 import io.accelerate.client.queue.abstractions.response.Response;
-import io.accelerate.client.queue.serialization.JsonRpcSerializationProvider;
-import io.accelerate.client.queue.serialization.SerializationProvider;
 
 import javax.jms.*;
 import java.util.Optional;
@@ -63,7 +61,7 @@ public class RemoteBroker implements AutoCloseable {
             messageProducer.send(txtMessage);
 
             request.getOriginalMessage().acknowledge();
-        } catch (JMSException e) {
+        } catch (JMSException | SerializationException e) {
             throw new BrokerCommunicationException(e);
         }
     }

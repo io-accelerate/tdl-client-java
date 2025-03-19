@@ -1,12 +1,12 @@
 package io.accelerate.client.queue.abstractions;
 
-import com.google.gson.JsonElement;
 import io.accelerate.client.audit.Auditable;
 import io.accelerate.client.audit.PresentationUtils;
 import io.accelerate.client.queue.serialization.JsonRpcRequest;
 import io.accelerate.client.queue.transport.StringMessage;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Created by julianghionoiu on 20/06/2015.
@@ -25,15 +25,15 @@ public class Request implements Auditable {
     }
 
     public String getId() {
-        return requestData.getId();
+        return requestData.id();
     }
 
     public String getMethodName() {
-        return requestData.getMethod();
+        return requestData.method();
     }
 
-    public List<JsonElement> getParams() {
-        return requestData.getParams();
+    public List<ParamAccessor> getParams() {
+        return requestData.params().stream().map(ParamAccessor::new).collect(Collectors.toList());
     }
 
 

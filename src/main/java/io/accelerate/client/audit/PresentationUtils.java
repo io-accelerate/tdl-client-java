@@ -1,6 +1,9 @@
 package io.accelerate.client.audit;
 
-import com.google.gson.JsonElement;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import io.accelerate.client.queue.abstractions.ParamAccessor;
 
 import java.util.List;
 
@@ -8,29 +11,26 @@ import java.util.List;
  * Created by julianghionoiu on 03/02/2016.
  */
 public final class PresentationUtils {
-
-    private PresentationUtils() {
-        //Utility class
-    }
-
-    public static String toDisplayableRequest(List<JsonElement> items) {
+    
+    public static String toDisplayableRequest(List<ParamAccessor> items) {
+        ObjectMapper objectMapper = new ObjectMapper();
         StringBuilder sb = new StringBuilder();
-        for (JsonElement item : items) {
-            if (sb.length() > 0) {
+        for (ParamAccessor item : items) {
+            if (!sb.isEmpty()) {
                 sb.append(", ");
             }
 
             String representation;
-
-            if (item.isJsonArray()) {
-                representation = item.toString();
+            try {
+                representation = objectMapper.writeValueAsString(item.getAsObject(Object.class));
+            } catch (JsonProcessingException e) {
+                representation = "serializationError";
+            }
+            
+            if (item.isArray()) {
                 representation = representation.replaceAll(",", ", ");
-            } else {
-                representation = item.toString();
-
-                if (isMultilineString(representation)) {
-                    representation = suppressExtraLines(representation);
-                }
+            } else if (isMultilineString(representation)) {
+                representation = suppressExtraLines(representation);
             }
 
             sb.append(representation);
@@ -39,13 +39,21 @@ public final class PresentationUtils {
     }
 
     public static String toDisplayableResponse(Object item) {
+        ObjectMapper objectMapper = new ObjectMapper();
         if (item == null) {
             return "null";
         }
 
-        String representation = item.toString();
+        String representation;
+        try {
+            representation = objectMapper.writeValueAsString(item);
+        } catch (JsonProcessingException e) {
+            representation = "serializationError";
+        }
 
-        if (isMultilineString(representation)) {
+        if (item instanceof List) {
+            representation = representation.replaceAll(",", ", ");
+        } else if (isMultilineString(representation)) {
             representation = suppressExtraLines(representation);
         }
 

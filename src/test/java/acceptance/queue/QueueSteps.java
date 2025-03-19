@@ -1,7 +1,6 @@
 package acceptance.queue;
 
 import acceptance.SingletonTestBroker;
-import com.google.gson.JsonElement;
 import io.cucumber.java.DataTableType;
 import io.cucumber.java.en.*;
 import io.accelerate.client.audit.StdoutAuditStream;
@@ -90,11 +89,15 @@ public class QueueSteps {
                 queueBasedImplementationRunnerBuilder.create().getRequestTimeoutMillis(), equalTo(expectedTimeout));
     }
 
-    record RequestRepresentation (String payload) {}
+    public record RequestRepresentation (String payload) {}
 
     @DataTableType
     public RequestRepresentation requestRepresentation(Map<String, String> entry) {
-        return new RequestRepresentation(entry.get("payload"));
+        return new RequestRepresentation(escapeNewlines(entry.get("payload")));
+    }
+
+    private String escapeNewlines(String payload) {
+        return payload.replace("\n", "\\n");
     }
 
     @Given("^I receive the following requests:$")
@@ -117,31 +120,34 @@ public class QueueSteps {
 
     //~~~~~ Implementations
 
+    private record TestItem(String field1, Integer field2) {}
+        
+
     private static final Map<String, UserImplementation> USER_IMPLEMENTATIONS = new HashMap<>() {{
         put("add two numbers", params -> {
-            Integer x = params.get(0).getAsInt();
-            Integer y = params.get(1).getAsInt();
+            Integer x = params.get(0).getAsInteger();
+            Integer y = params.get(1).getAsInteger();
             return x + y;
         });
         put("increment number", params -> {
-            Integer x = params.get(0).getAsInt();
+            Integer x = params.get(0).getAsInteger();
             return x + 1;
         });
         put("return null", params -> null);
         put("throw exception", param -> {
             throw new IllegalStateException("faulty user code");
         });
-        put("replay the value", params -> params.get(0));
+        put("replay the value", params -> params.getFirst().getAsObject(Object.class));
         put("sum the elements of an array", params -> {
             int sum = 0;
-            for (JsonElement jsonElement : params.get(0).getAsJsonArray()) {
-                sum += jsonElement.getAsInt();
+            for (Integer element : params.getFirst().getAsListOf(Integer.class)) {
+                sum += element;
             }
             return sum;
         });
         put("generate array of integers", params -> {
-            int start_incl = params.get(0).getAsInt();
-            int end_excl = params.get(1).getAsInt();
+            int start_incl = params.get(0).getAsInteger();
+            int end_excl = params.get(1).getAsInteger();
             return IntStream.range(start_incl, end_excl).boxed().collect(Collectors.toList());
         });
         put("some logic", params -> "ok");
@@ -152,6 +158,15 @@ public class QueueSteps {
                 e.printStackTrace();
             }
             return "OK";
+        });
+        put("concatenate fields as string", params -> {
+            TestItem testItem = params.getFirst().getAsObject(TestItem.class);
+            return testItem.field1 + testItem.field2;
+        });
+        put("build an object with two fields", params -> {
+            String field1 = params.get(0).getAsString();
+            Integer field2 = params.get(1).getAsInteger();
+            return new TestItem(field1, field2);
         });
     }};
 
@@ -164,7 +179,7 @@ public class QueueSteps {
         }
     }
 
-    record ProcessingRuleRepresentation(String method, String call) {}
+    public record ProcessingRuleRepresentation(String method, String call) {}
 
     @DataTableType
     public ProcessingRuleRepresentation processingRuleRepresentation(Map<String, String> entry) {
