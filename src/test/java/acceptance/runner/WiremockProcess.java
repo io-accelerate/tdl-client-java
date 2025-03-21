@@ -28,7 +28,7 @@ class WiremockProcess {
         String json = gson.toJson(config);
 
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(String.format("http://%s:%d/%s", hostname, port, "__admin/mappings/new")))
+                .uri(URI.create(String.format("http://%s:%d/%s", hostname, port, "__admin/mappings")))
                 .POST(HttpRequest.BodyPublishers.ofString(json))
                 .build();
         HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());

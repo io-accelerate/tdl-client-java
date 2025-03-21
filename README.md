@@ -3,47 +3,53 @@
 
 ### Submodules
 
-Project contains submodules as mentioned in the `.gitmodules` file:
+Project contains the client spec as mentioned in the `.gitmodules` file:
 
-- broker
 - src/test/resources/tdl/client (gets cloned into src/test/resources/acceptance)
-- wiremock 
 
 Use the below command to update the submodules of the project:
 
 ```
 git submodule update --init
 ```
-
 ### Getting started
 
-Java client to connect to the central kata server.
+JVM client to connect to the central kata server.
 
-#### Manual 
-To run the acceptance tests, start the WireMock servers:
-```
-python3 wiremock/wiremock-wrapper.py start 41375
-python3 wiremock/wiremock-wrapper.py start 8222
-```
+# Installing
 
-And the broker, with:
-```
-python3 broker/activemq-wrapper.py start
-```
-
-Stopping the above services would be the same, using the `stop` command instead of the `start` command.
-
-#### Automatic (via script)
-
-Start and stop the wiremocks and broker services with the below:
- 
-```bash
-./startExternalDependencies.sh
-``` 
+## Installing dependencies needed by this project
 
 ```bash
-./stopExternalDependencies.sh
-``` 
+./gradlew build
+```
+
+# Testing
+
+All test require the ActiveMQ broker and Wiremock to be started.
+
+Start ActiveMQ
+```shell
+export ACTIVEMQ_CONTAINER=apache/activemq-classic:6.1.0
+docker run -d -it --rm -p 28161:8161 -p 21616:61616 --name activemq ${ACTIVEMQ_CONTAINER}
+```
+
+The ActiveMQ web UI can be accessed at:
+http://localhost:28161/admin/
+use admin/admin to login
+
+Start two Wiremock servers
+```shell
+export WIREMOCK_CONTAINER=wiremock/wiremock:3.7.0
+docker run -d -it --rm -p 8222:8080 --name challenge-server ${WIREMOCK_CONTAINER}
+docker run -d -it --rm -p 41375:8080 --name recording-server ${WIREMOCK_CONTAINER}
+```
+
+The Wiremock admin UI can be found at:
+http://localhost:8222/__admin/
+and docs at
+http://localhost:8222/__admin/docs
+
 
 Then run the tests in RunAllAcceptanceTest.java via the CLI:
 
