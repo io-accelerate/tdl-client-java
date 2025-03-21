@@ -1,5 +1,6 @@
 package io.accelerate.client.queue.transport;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.accelerate.client.queue.serialization.*;
 import org.apache.activemq.ActiveMQConnectionFactory;
 import org.slf4j.LoggerFactory;
@@ -18,13 +19,14 @@ public class RemoteBroker implements AutoCloseable {
     private final MessageProducer messageProducer;
     private final int requestTimeoutMillis;
 
-    private SerializationProvider serializationProvider;
+    private final SerializationProvider serializationProvider;
 
     public RemoteBroker(String hostname,
                         int port,
                         int requestTimeoutMillis,
                         String requestQueue,
-                        String responseQueue) throws JMSException {
+                        String responseQueue, 
+                        ObjectMapper objectMapper) throws JMSException {
         String brokerURL = String.format("tcp://%s:%s", hostname, port);
         ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(brokerURL);
         connection = connectionFactory.createConnection();
@@ -39,7 +41,7 @@ public class RemoteBroker implements AutoCloseable {
         messageProducer.setDeliveryMode(DeliveryMode.NON_PERSISTENT);
 
         this.requestTimeoutMillis = requestTimeoutMillis;
-        serializationProvider = new JsonRpcSerializationProvider();
+        serializationProvider = new JsonRpcSerializationProvider(objectMapper);
     }
 
     public Optional<Request> receive() throws BrokerCommunicationException {

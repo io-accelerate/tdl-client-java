@@ -1,5 +1,6 @@
 package io.accelerate.client.queue.abstractions;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.accelerate.client.audit.Auditable;
 import io.accelerate.client.audit.PresentationUtils;
 import io.accelerate.client.queue.serialization.JsonRpcRequest;
@@ -14,10 +15,12 @@ import java.util.stream.Collectors;
 public class Request implements Auditable {
     private final StringMessage originalMessage;
     private final JsonRpcRequest requestData;
+    private final ObjectMapper objectMapper;
 
-    public Request(StringMessage originalMessage, JsonRpcRequest requestData) {
+    public Request(StringMessage originalMessage, JsonRpcRequest requestData, ObjectMapper objectMapper) {
         this.originalMessage = originalMessage;
         this.requestData = requestData;
+        this.objectMapper = objectMapper;
     }
 
     public StringMessage getOriginalMessage() {
@@ -33,7 +36,7 @@ public class Request implements Auditable {
     }
 
     public List<ParamAccessor> getParams() {
-        return requestData.params().stream().map(ParamAccessor::new).collect(Collectors.toList());
+        return requestData.params().stream().map(jsonNode -> new ParamAccessor(jsonNode, objectMapper)).collect(Collectors.toList());
     }
 
 

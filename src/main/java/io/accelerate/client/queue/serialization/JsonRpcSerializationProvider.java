@@ -1,11 +1,7 @@
 package io.accelerate.client.queue.serialization;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonSyntaxException;
 import io.accelerate.client.queue.abstractions.Request;
 import io.accelerate.client.queue.abstractions.response.Response;
 import io.accelerate.client.queue.transport.StringMessage;
@@ -19,8 +15,8 @@ import java.util.Optional;
 public class JsonRpcSerializationProvider implements SerializationProvider {
     private final ObjectMapper objectMapper;
 
-    public JsonRpcSerializationProvider() {
-        objectMapper = new ObjectMapper();
+    public JsonRpcSerializationProvider(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -30,7 +26,7 @@ public class JsonRpcSerializationProvider implements SerializationProvider {
         if (messageText.isValid()) {
             try {
                 JsonRpcRequest jsonRpcRequest = objectMapper.readValue(messageText.getContent(), JsonRpcRequest.class);
-                request = Optional.of(new Request(messageText, jsonRpcRequest));
+                request = Optional.of(new Request(messageText, jsonRpcRequest, objectMapper));
             } catch (JMSException | JsonProcessingException e) {
                 throw new DeserializationException("Invalid message format", e);
             }

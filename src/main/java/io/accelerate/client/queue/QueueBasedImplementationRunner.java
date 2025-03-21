@@ -1,5 +1,9 @@
 package io.accelerate.client.queue;
 
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.Module;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.accelerate.client.audit.AuditStream;
@@ -11,6 +15,8 @@ import io.accelerate.client.queue.abstractions.response.Response;
 import io.accelerate.client.queue.transport.BrokerCommunicationException;
 import io.accelerate.client.queue.transport.RemoteBroker;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 public class QueueBasedImplementationRunner implements ImplementationRunner {
@@ -18,19 +24,26 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
     private final Audit audit;
     private final ProcessingRules deployProcessingRules;
     private final ImplementationRunnerConfig config;
-
-    private QueueBasedImplementationRunner(ImplementationRunnerConfig config, ProcessingRules deployProcessingRules) {
+    private final ObjectMapper objectMapper;
+    
+    private QueueBasedImplementationRunner(ImplementationRunnerConfig config, ProcessingRules deployProcessingRules, List<Module> additionalJacksonModules) {
         this.config = config;
         this.deployProcessingRules = deployProcessingRules;
-        audit = new Audit(config.getAuditStream());
+        this.audit = new Audit(config.getAuditStream());
+        this.objectMapper = JsonMapper.builder()
+                .configure(MapperFeature.ALLOW_COERCION_OF_SCALARS, false)
+                .build();
+        this.objectMapper.registerModules(additionalJacksonModules);
     }
 
     public static class Builder {
         private final ProcessingRules deployProcessingRules;
         private ImplementationRunnerConfig config;
+        private List<Module> additionalJacksonModules;
 
         public Builder() {
             deployProcessingRules = createDeployProcessingRules();
+            additionalJacksonModules = new ArrayList<>();
         }
 
         public Builder setConfig(ImplementationRunnerConfig config) {
@@ -38,7 +51,7 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
             return this;
         }
 
-        @SuppressWarnings("unused")
+        @SuppressWarnings({"unused", "UnusedReturnValue"})
         public Builder withSolutionFor(String methodName, UserImplementation userImplementation) {
             deployProcessingRules
                     .on(methodName)
@@ -46,9 +59,15 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
                     .build();
             return this;
         }
+        
+        @SuppressWarnings("unused")
+        public Builder withJacksonModule(Module module) {
+            additionalJacksonModules.add(module);
+            return this;
+        }
 
         public QueueBasedImplementationRunner create() {
-            return new QueueBasedImplementationRunner(config, deployProcessingRules);
+            return new QueueBasedImplementationRunner(config, deployProcessingRules, additionalJacksonModules);
         }
 
         private static ProcessingRules createDeployProcessingRules() {
@@ -71,7 +90,8 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
                 config.getPort(),
                 config.getRequestTimeoutMillis(),
                 config.getRequestQueueName(),
-                config.getResponseQueueName())) {
+                config.getResponseQueueName(),
+                objectMapper)) {
             //Design: We use a while loop instead of an ActiveMQ MessageListener to process the messages in order
             audit.logLine("Waiting for requests");
             Optional<Request> request = remoteBroker.receive();

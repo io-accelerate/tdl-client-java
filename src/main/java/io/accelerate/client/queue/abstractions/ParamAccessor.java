@@ -8,17 +8,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 
 import java.util.List;
-import java.util.StringJoiner;
 
 public class ParamAccessor {
     private final JsonNode jsonNode;
     private final ObjectMapper objectMapper;
 
-    public ParamAccessor(JsonNode jsonNode) {
+    public ParamAccessor(JsonNode jsonNode, ObjectMapper objectMapper) {
         this.jsonNode = jsonNode;
-        this.objectMapper = JsonMapper.builder()
-                .configure(MapperFeature.ALLOW_COERCION_OF_SCALARS, false)
-                .build();
+        this.objectMapper = objectMapper;
     }
     
     public String getAsString() {
