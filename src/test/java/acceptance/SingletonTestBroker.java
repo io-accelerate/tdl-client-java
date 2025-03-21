@@ -10,7 +10,7 @@ public class SingletonTestBroker {
     // Test broker admin connection
     private static final String HOSTNAME = "localhost";
     private static final int JMX_PORT = 28161;
-    private static final String BROKER_NAME = "TEST.BROKER";
+    private static final String BROKER_NAME = "localhost";
 
     private static RemoteJmxBroker BROKER_INSTANCE;
 

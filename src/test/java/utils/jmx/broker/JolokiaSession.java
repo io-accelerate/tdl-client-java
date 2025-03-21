@@ -26,27 +26,7 @@ class JolokiaSession {
 
     static JolokiaSession connect(String host, int adminPort) throws Exception {
         URI jolokiaURI = URI.create("http://" + host + ":" + adminPort + "/api/jolokia");
-
-        HttpRequest httpGet = HttpRequest.newBuilder()
-                .uri(jolokiaURI.resolve("/api/jolokia/version"))
-                .GET()
-                .build();
-
-
-        HttpResponse<String> response = HttpClient.newHttpClient().send(httpGet, HttpResponse.BodyHandlers.ofString());
-
-        Gson gson = new Gson();
-        JsonElement jsonElement = gson.fromJson(response.body(), JsonElement.class);
-        JsonElement value = jsonElement.getAsJsonObject().get("value");
-        String jolokiaVersion = value.getAsJsonObject().getAsJsonPrimitive("agent").getAsString();
-
-
-        String expectedJolokiaVersion = "1.2.2";
-        if (!expectedJolokiaVersion.equals(jolokiaVersion)) {
-            throw new Exception(String.format("Failed to retrieve the right Jolokia version. Expected: %s got %s",
-                    expectedJolokiaVersion, jolokiaVersion));
-        }
-
+        
         return new JolokiaSession(jolokiaURI);
     }
 
@@ -56,6 +36,7 @@ class JolokiaSession {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(jolokiaURI)
                 .header("Content-Type", "application/json")
+                .header("Origin", "http://localhost")
                 .POST(HttpRequest.BodyPublishers.ofString(jsonPayload))
                 .build();
 

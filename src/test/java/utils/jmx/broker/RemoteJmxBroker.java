@@ -30,7 +30,7 @@ public class RemoteJmxBroker {
     public RemoteJmxQueue addQueue(String queueName) throws Exception {
         Map<String, Object> operation = new HashMap<>();
         operation.put("type", "exec");
-        operation.put("mbean", "org.apache.activemq:type=Broker,brokerName=TEST.BROKER");
+        operation.put("mbean", "org.apache.activemq:type=Broker,brokerName="+brokerName);
         operation.put("operation", "addQueue");
         operation.put("arguments", Collections.singletonList(queueName));
         jolokiaSession.request(operation);
