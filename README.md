@@ -59,6 +59,15 @@ Then run the tests in RunAllAcceptanceTest.java via the CLI:
 
 Or via the IDE
 
+# Cleanup
+
+Stop dependencies
+```
+docker stop activemq
+docker stop recording-server
+docker stop challenge-server
+```
+
 ### Release
 
 Configure the version inside the "gradle.properties" file
