@@ -1,24 +1,23 @@
 package io.accelerate.client.queue.abstractions;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.accelerate.client.queue.serialization.JsonRpcRequest;
 import io.accelerate.client.queue.transport.StringMessage;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Created by julianghionoiu on 20/06/2015.
  */
 public class Request {
     private final StringMessage originalMessage;
-    private final JsonRpcRequest requestData;
-    private final ObjectMapper objectMapper;
+    private final String id;
+    private final String methodName;
+    private final List<ParamAccessor> params;
 
-    public Request(StringMessage originalMessage, JsonRpcRequest requestData, ObjectMapper objectMapper) {
-        this.originalMessage = originalMessage;
-        this.requestData = requestData;
-        this.objectMapper = objectMapper;
+    public Request(StringMessage messageText, String id, String method, List<ParamAccessor> params) {
+        this.originalMessage = messageText;
+        this.id = id;
+        this.methodName = method;
+        this.params = params;
     }
 
     public StringMessage getOriginalMessage() {
@@ -26,14 +25,14 @@ public class Request {
     }
 
     public String getId() {
-        return requestData.id();
+        return id;
     }
 
     public String getMethodName() {
-        return requestData.method();
+        return methodName;
     }
 
     public List<ParamAccessor> getParams() {
-        return requestData.params().stream().map(jsonNode -> new ParamAccessor(jsonNode, objectMapper)).collect(Collectors.toList());
+        return params;
     }
 }

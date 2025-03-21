@@ -2,11 +2,13 @@ package io.accelerate.client.queue.serialization;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.accelerate.client.queue.abstractions.ParamAccessor;
 import io.accelerate.client.queue.abstractions.Request;
 import io.accelerate.client.queue.abstractions.response.Response;
 import io.accelerate.client.queue.transport.StringMessage;
 
 import javax.jms.JMSException;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -26,7 +28,8 @@ public class JsonRpcSerializationProvider implements SerializationProvider {
         if (messageText.isValid()) {
             try {
                 JsonRpcRequest jsonRpcRequest = objectMapper.readValue(messageText.getContent(), JsonRpcRequest.class);
-                request = Optional.of(new Request(messageText, jsonRpcRequest, objectMapper));
+                List<ParamAccessor> paramAccessors = jsonRpcRequest.params().stream().map(jsonNode -> new ParamAccessor(jsonNode, objectMapper)).toList();
+                request = Optional.of(new Request(messageText, jsonRpcRequest.id(), jsonRpcRequest.method(), paramAccessors));
             } catch (JMSException | JsonProcessingException e) {
                 throw new DeserializationException("Invalid message format", e);
             }
