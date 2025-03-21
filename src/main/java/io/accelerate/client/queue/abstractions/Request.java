@@ -16,11 +16,13 @@ public class Request implements Auditable {
     private final StringMessage originalMessage;
     private final JsonRpcRequest requestData;
     private final ObjectMapper objectMapper;
+    private final PresentationUtils presentationUtils;
 
     public Request(StringMessage originalMessage, JsonRpcRequest requestData, ObjectMapper objectMapper) {
         this.originalMessage = originalMessage;
         this.requestData = requestData;
         this.objectMapper = objectMapper;
+        this.presentationUtils = new PresentationUtils(objectMapper);
     }
 
     public StringMessage getOriginalMessage() {
@@ -45,8 +47,11 @@ public class Request implements Auditable {
     @Override
     public String getAuditText() {
         return String.format("id = %s, req = %s(%s)",
-                getId(), getMethodName(), PresentationUtils.toDisplayableRequest(getParams()));
+                getId(), getMethodName(), presentationUtils.toDisplayableRequest(getParams()));
     }
 
 
+    public ObjectMapper getObjectMapper() {
+        return this.objectMapper;
+    }
 }

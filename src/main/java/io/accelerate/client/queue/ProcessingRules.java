@@ -66,7 +66,7 @@ public class ProcessingRules {
         Response response;
         try {
             Object result = rule.getUserImplementation().process(request.getParams());
-            response = new ValidResponse(request.getId(), result);
+            response = new ValidResponse(request.getId(), result, request.getObjectMapper());
         } catch (Exception e) {
             String message = "user implementation raised exception";
             LoggerFactory.getLogger(ProcessingRules.class).warn(message, e);

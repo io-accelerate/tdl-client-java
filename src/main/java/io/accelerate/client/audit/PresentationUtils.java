@@ -2,7 +2,6 @@ package io.accelerate.client.audit;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
 import io.accelerate.client.queue.abstractions.ParamAccessor;
 
 import java.util.List;
@@ -11,9 +10,14 @@ import java.util.List;
  * Created by julianghionoiu on 03/02/2016.
  */
 public final class PresentationUtils {
-    
-    public static String toDisplayableRequest(List<ParamAccessor> items) {
-        ObjectMapper objectMapper = new ObjectMapper();
+
+    private final ObjectMapper objectMapper;
+
+    public PresentationUtils(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+    }
+
+    public  String toDisplayableRequest(List<ParamAccessor> items) {
         StringBuilder sb = new StringBuilder();
         for (ParamAccessor item : items) {
             if (!sb.isEmpty()) {
@@ -38,7 +42,7 @@ public final class PresentationUtils {
         return sb.toString();
     }
 
-    public static String toDisplayableResponse(Object item) {
+    public String toDisplayableResponse(Object item) {
         ObjectMapper objectMapper = new ObjectMapper();
         if (item == null) {
             return "null";

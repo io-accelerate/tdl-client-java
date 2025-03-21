@@ -1,5 +1,6 @@
 package io.accelerate.client.queue.abstractions.response;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.accelerate.client.audit.PresentationUtils;
 
 /**
@@ -8,10 +9,12 @@ import io.accelerate.client.audit.PresentationUtils;
 public class ValidResponse implements Response {
     private final String id;
     private final Object result;
+    private final PresentationUtils presentationUtils;
 
-    public ValidResponse(String id, Object result) {
+    public ValidResponse(String id, Object result, ObjectMapper objectMapper) {
         this.id = id;
         this.result = result;
+        presentationUtils = new PresentationUtils(objectMapper);
     }
 
     @Override
@@ -27,7 +30,7 @@ public class ValidResponse implements Response {
     //~~~ Pretty print
     @Override
     public String getAuditText() {
-        return String.format("resp = %s", PresentationUtils.toDisplayableResponse(result));
+        return String.format("resp = %s", presentationUtils.toDisplayableResponse(result));
     }
 
 }
