@@ -4,10 +4,10 @@ import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
+import io.accelerate.client.audit.PresentationUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.accelerate.client.audit.AuditStream;
-import io.accelerate.client.audit.Auditable;
 import io.accelerate.client.queue.abstractions.Request;
 import io.accelerate.client.queue.abstractions.UserImplementation;
 import io.accelerate.client.queue.abstractions.response.FatalErrorResponse;
@@ -29,11 +29,11 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
     private QueueBasedImplementationRunner(ImplementationRunnerConfig config, ProcessingRules deployProcessingRules, List<Module> additionalJacksonModules) {
         this.config = config;
         this.deployProcessingRules = deployProcessingRules;
-        this.audit = new Audit(config.getAuditStream());
         this.objectMapper = JsonMapper.builder()
                 .configure(MapperFeature.ALLOW_COERCION_OF_SCALARS, false)
                 .build();
         this.objectMapper.registerModules(additionalJacksonModules);
+        this.audit = new Audit(config.getAuditStream(), objectMapper);
     }
 
     public static class Builder {
@@ -114,11 +114,11 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
             Request request, ProcessingRules processingRules, RemoteBroker remoteBroker)
             throws BrokerCommunicationException {
         audit.startLine();
-        audit.log(request);
+        audit.logRequest(request);
 
         //Obtain response from user
         Response response = processingRules.getResponseFor(request);
-        audit.log(response);
+        audit.logResponse(response);
 
         //Act
         if (response instanceof FatalErrorResponse) {
@@ -140,42 +140,51 @@ public class QueueBasedImplementationRunner implements ImplementationRunner {
 
     private static class Audit {
         private final AuditStream auditStream;
-        private StringBuilder line;
+        private final List<String> messages = new ArrayList<>();
+        private final PresentationUtils presentationUtils;
 
-        Audit(AuditStream auditStream) {
+        Audit(AuditStream auditStream, ObjectMapper objectMapper) {
             this.auditStream = auditStream;
-            startLine();
+            presentationUtils = new PresentationUtils(objectMapper);
         }
 
         //~~~ Normal output
 
         void startLine() {
-            line = new StringBuilder();
+            messages.clear();
         }
 
-        void log(Auditable auditable) {
-            String text = auditable.getAuditText();
-            if (!text.isEmpty() && line.length() > 0) {
-                line.append(", ");
+        void logRequest(Request request) {
+            String requestLogLine = String.format("id = %s, req = %s(%s)",
+                    request.getId(), request.getMethodName(), presentationUtils.toDisplayableRequest(request.getParams()));
+            messages.add(requestLogLine);
+        }
+
+        void logResponse(Response response) {
+            String responseLogLine ;
+            if (response.isError()) {
+                responseLogLine = String.format("%s = \"%s\", %s",  response.id(), response.result(), "(NOT PUBLISHED)" );
+            } else {
+                responseLogLine = String.format("resp = %s", presentationUtils.toDisplayableResponse(response.result()));
             }
-            line.append(text);
+            messages.add(responseLogLine);
         }
 
         void endLine() {
-            auditStream.println(line.toString());
+            auditStream.println(String.join(", ", messages));
         }
 
         //~~~ Exception
 
         void logException(String message, Exception e) {
             startLine();
-            line.append(message).append(": ").append(e.getMessage());
+            messages.add(message + ": " + e.getMessage());
             endLine();
         }
 
         void logLine(String text) {
             startLine();
-            this.line.append(text);
+            messages.add(text);
             endLine();
         }
     }

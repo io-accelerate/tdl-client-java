@@ -8,6 +8,6 @@ import io.accelerate.client.queue.abstractions.response.Response;
 @SuppressWarnings("FieldCanBeLocal")
 public record JsonRpcResponse(Object result, String error, String id) {
     static JsonRpcResponse from(Response response) {
-        return new JsonRpcResponse(response.getResult(), null, response.getId());
+        return new JsonRpcResponse(response.result(), null, response.id());
     }
 }

@@ -11,19 +11,17 @@ public class FatalErrorResponse implements Response {
     }
 
     @Override
-    public String getId() {
+    public String id() {
         return "error";
     }
 
     @Override
-    public Object getResult() {
+    public Object result() {
         return message;
     }
 
-    //~~~ Pretty print
     @Override
-    public String getAuditText() {
-        return String.format("%s = \"%s\", %s",  getId(), getResult(), "(NOT PUBLISHED)" );
+    public boolean isError() {
+        return true;
     }
-
 }
