@@ -1,7 +1,5 @@
 package io.accelerate.client.queue.abstractions;
 
-import com.google.gson.JsonElement;
-
 import java.util.List;
 
 /**
