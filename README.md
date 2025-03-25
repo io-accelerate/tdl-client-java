@@ -31,7 +31,7 @@ All test require the ActiveMQ broker and Wiremock to be started.
 Start ActiveMQ
 ```shell
 export ACTIVEMQ_CONTAINER=apache/activemq-classic:6.1.0
-docker run -d -it --rm -p 28161:8161 -p 21616:61616 --name activemq ${ACTIVEMQ_CONTAINER}
+docker run -d -it --rm -p 28161:8161 -p 21613:61613 -p 21616:61616 --name activemq ${ACTIVEMQ_CONTAINER}
 ```
 
 The ActiveMQ web UI can be accessed at:

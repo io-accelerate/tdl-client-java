@@ -23,31 +23,16 @@ public final class PresentationUtils {
             if (!sb.isEmpty()) {
                 sb.append(", ");
             }
-
-            String representation;
-            try {
-                representation = objectMapper.writeValueAsString(item.getAsObject(Object.class));
-            } catch (JsonProcessingException e) {
-                representation = "serializationError";
-            }
-            
-            if (item.isArray()) {
-                representation = representation.replaceAll(",", ", ");
-            } else if (isMultilineString(representation)) {
-                representation = suppressExtraLines(representation);
-            }
-
-            sb.append(representation);
+            sb.append(serialiseAndCompress(item.getAsObject(Object.class)));
         }
         return sb.toString();
     }
 
     public String toDisplayableResponse(Object item) {
-        ObjectMapper objectMapper = new ObjectMapper();
-        if (item == null) {
-            return "null";
-        }
+        return serialiseAndCompress(item);
+    }
 
+    private String serialiseAndCompress(Object item) {
         String representation;
         try {
             representation = objectMapper.writeValueAsString(item);
@@ -60,7 +45,6 @@ public final class PresentationUtils {
         } else if (isMultilineString(representation)) {
             representation = suppressExtraLines(representation);
         }
-
         return representation;
     }
 
