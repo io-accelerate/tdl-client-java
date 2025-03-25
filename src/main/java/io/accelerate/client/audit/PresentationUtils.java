@@ -40,15 +40,17 @@ public final class PresentationUtils {
             representation = "serializationError";
         }
 
-        if (item instanceof List) {
+        if (isList(item)) {
             representation = representation.replaceAll(",", ", ");
         } else if (isMultilineString(representation)) {
             representation = suppressExtraLines(representation);
         }
         return representation;
     }
-
-    //~~~ Handle individual item
+    
+    private static boolean isList(Object item) {
+        return item instanceof List;
+    }
 
     private static boolean isMultilineString(String representation) {
         return representation.contains("\\n");
