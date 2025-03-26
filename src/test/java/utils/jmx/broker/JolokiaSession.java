@@ -43,8 +43,8 @@ class JolokiaSession {
         JsonObject json = gson.fromJson(response.body(), JsonObject.class);
         JsonObject value = json.getAsJsonObject("value");
 
-        if (value == null || !value.has("agent") || value.get("agent").getAsString().isEmpty()) {
-            throw new Exception("Failed to retrieve the right Jolokia version.");
+        if (response.statusCode() != 200) {
+            throw new Exception("Failed to connect to Jolokia. HTTP status: " + response.statusCode());
         }
         
         return new JolokiaSession(jolokiaURI);
