@@ -123,6 +123,7 @@ public class QueueSteps {
     private record TestItem(String field1, Integer field2) {}
         
 
+    @SuppressWarnings("CodeBlock2Expr")
     private static final Map<String, UserImplementation> USER_IMPLEMENTATIONS = new HashMap<>() {{
         put("add two numbers", params -> {
             Integer x = params.get(0).getAsInteger();
@@ -130,7 +131,7 @@ public class QueueSteps {
             return x + y;
         });
         put("increment number", params -> {
-            Integer x = params.get(0).getAsInteger();
+            Integer x = params.getFirst().getAsInteger();
             return x + 1;
         });
         put("return null", params -> null);
@@ -167,6 +168,9 @@ public class QueueSteps {
             String field1 = params.get(0).getAsString();
             Integer field2 = params.get(1).getAsInteger();
             return new TestItem(field1, field2);
+        });
+        put("retrieve a value from a map", params -> {
+            return params.getFirst().getAsMapOf(String.class).get("key1");
         });
     }};
 
