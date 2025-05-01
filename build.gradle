@@ -32,7 +32,7 @@ dependencies {
 
     testImplementation 'io.cucumber:cucumber-java:7.21.0'
     testImplementation 'io.cucumber:cucumber-junit-platform-engine:7.21.0'
-    testImplementation 'io.cucumber:cucumber-picocontainer:7.21.0'
+    testImplementation 'io.cucumber:cucumber-picocontainer:7.22.1'
 }
 
 test {
