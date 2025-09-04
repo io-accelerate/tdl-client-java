@@ -73,7 +73,7 @@ publishing {
                     developer {
                         name = 'Iulian (Julian) Ghionoiu'
                         email = 'iulian.ghionoiu@gmail.com'
-                        organization = 'Iulian Ghionoiu'
+                        organization = 'Accelerate.io'
                         organizationUrl = 'https://github.com/io-accelerate'
                     }
                 }
