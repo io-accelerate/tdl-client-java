@@ -17,7 +17,7 @@ repositories {
 }
 
 dependencies {
-    implementation 'ch.qos.logback:logback-classic:1.4.12'
+    implementation 'ch.qos.logback:logback-classic:1.5.19'
     implementation 'org.apache.activemq:activemq-client:5.18.3'
 
     implementation platform('com.fasterxml.jackson:jackson-bom:2.19.2')
