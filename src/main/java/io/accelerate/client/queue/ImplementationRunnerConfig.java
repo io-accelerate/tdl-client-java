@@ -13,7 +13,7 @@ public class ImplementationRunnerConfig {
 
     public ImplementationRunnerConfig() {
         port = 61616;
-        requestTimeoutMillis = 500;
+        requestTimeoutMillis = 1500;
         auditStream = new StdoutAuditStream();
     }
 
